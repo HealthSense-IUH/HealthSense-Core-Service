@@ -1,4 +1,4 @@
-package fit.iuh.se.hsshared.exception;
+package fit.iuh.se.hsshared.advice.entity.enums;
 
 import org.springframework.http.HttpStatus;
 

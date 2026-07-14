@@ -1,6 +1,8 @@
-package fit.iuh.se.hsshared.exception;
+package fit.iuh.se.hsshared.advice.handler;
 
 import fit.iuh.se.hsshared.dto.response.ApiResponse;
+import fit.iuh.se.hsshared.advice.entity.AppException;
+import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;

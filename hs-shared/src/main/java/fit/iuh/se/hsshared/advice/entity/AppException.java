@@ -1,4 +1,6 @@
-package fit.iuh.se.hsshared.exception;
+package fit.iuh.se.hsshared.advice.entity;
+
+import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 
 public class AppException extends RuntimeException {
 
