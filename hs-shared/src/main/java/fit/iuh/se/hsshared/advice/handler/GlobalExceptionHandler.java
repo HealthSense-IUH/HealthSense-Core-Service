@@ -28,7 +28,7 @@ public class GlobalExceptionHandler {
                 .orElse(errorCode.getMessage());
 
         return ResponseEntity.status(errorCode.getStatus())
-                .body(new ApiResponse<>(errorCode.getCode(), exception.getMessage()));
+                .body(new ApiResponse<>(errorCode.getCode(), message));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
