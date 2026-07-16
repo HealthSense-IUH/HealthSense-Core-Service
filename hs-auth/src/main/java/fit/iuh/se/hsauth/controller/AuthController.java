@@ -1,8 +1,10 @@
 package fit.iuh.se.hsauth.controller;
 
+import fit.iuh.se.hsauth.dto.request.LoginRequest;
 import fit.iuh.se.hsauth.dto.request.RegisterRequest;
+import fit.iuh.se.hsauth.dto.response.LoginResponse;
 import fit.iuh.se.hsauth.dto.response.RegisterResponse;
-import fit.iuh.se.hsauth.service.AuthService;
+import fit.iuh.se.hsauth.service.auth.AuthService;
 import fit.iuh.se.hsshared.dto.response.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
@@ -24,5 +26,10 @@ public class AuthController {
     @PostMapping("/register")
     public ApiResponse<RegisterResponse> register(@Valid @RequestBody RegisterRequest request) {
         return new ApiResponse<>(authService.register(request));
+    }
+
+    @PostMapping("/login")
+    public ApiResponse<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
+        return new ApiResponse<>(authService.login(request));
     }
 }
