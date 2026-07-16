@@ -1,7 +1,7 @@
 package fit.iuh.se.hsauth.controller;
 
 import fit.iuh.se.hsauth.dto.request.RegisterRequest;
-import fit.iuh.se.hsauth.dto.response.UserSessionResponse;
+import fit.iuh.se.hsauth.dto.response.RegisterResponse;
 import fit.iuh.se.hsauth.service.AuthService;
 import fit.iuh.se.hsshared.dto.response.ApiResponse;
 import jakarta.validation.Valid;
@@ -22,7 +22,7 @@ public class AuthController {
     AuthService authService;
 
     @PostMapping("/register")
-    public ApiResponse<UserSessionResponse> register(@Valid @RequestBody RegisterRequest request) {
+    public ApiResponse<RegisterResponse> register(@Valid @RequestBody RegisterRequest request) {
         return new ApiResponse<>(authService.register(request));
     }
 }
