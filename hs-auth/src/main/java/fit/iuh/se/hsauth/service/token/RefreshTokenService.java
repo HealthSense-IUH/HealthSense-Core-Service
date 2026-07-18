@@ -1,6 +1,6 @@
 package fit.iuh.se.hsauth.service.token;
 
-import fit.iuh.se.hsauth.entity.RefreshTokenClaims;
+import fit.iuh.se.hsauth.dto.token.RefreshTokenClaims;
 import fit.iuh.se.hsuser.entity.UserAccount;
 
 public interface RefreshTokenService {

@@ -1,6 +1,6 @@
 package fit.iuh.se.hsauth.service.token.impl;
 
-import fit.iuh.se.hsauth.entity.RefreshTokenClaims;
+import fit.iuh.se.hsauth.dto.token.RefreshTokenClaims;
 import fit.iuh.se.hsauth.service.token.RefreshTokenService;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;

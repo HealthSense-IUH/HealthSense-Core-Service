@@ -1,6 +1,6 @@
 package fit.iuh.se.hsauth.service.session;
 
-import fit.iuh.se.hsauth.entity.AuthSession;
+import fit.iuh.se.hsauth.dto.session.AuthSession;
 
 import java.time.Duration;
 import java.util.Optional;

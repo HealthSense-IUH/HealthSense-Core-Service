@@ -1,4 +1,4 @@
-package fit.iuh.se.hsauth.entity;
+package fit.iuh.se.hsauth.dto.session;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;

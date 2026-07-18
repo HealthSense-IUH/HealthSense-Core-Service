@@ -3,7 +3,7 @@ package fit.iuh.se.hsauth.service.auth;
 import fit.iuh.se.hsauth.dto.request.LoginRequest;
 import fit.iuh.se.hsauth.dto.request.RegisterRequest;
 import fit.iuh.se.hsauth.dto.response.RegisterResponse;
-import fit.iuh.se.hsauth.entity.AuthenticationResult;
+import fit.iuh.se.hsauth.dto.token.AuthenticationResult;
 
 public interface AuthService {
 

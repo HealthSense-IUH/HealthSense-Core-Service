@@ -1,6 +1,6 @@
 package fit.iuh.se.hsauth.service.session.impl;
 
-import fit.iuh.se.hsauth.entity.AuthSession;
+import fit.iuh.se.hsauth.dto.session.AuthSession;
 import fit.iuh.se.hsauth.service.session.AuthSessionService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
