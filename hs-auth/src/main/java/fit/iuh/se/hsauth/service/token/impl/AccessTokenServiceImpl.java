@@ -33,8 +33,13 @@ public class AccessTokenServiceImpl implements AccessTokenService {
 
     @Override
     public String generateAccessToken(UserAccount user) {
+        return generateAccessToken(user, accessTokenTtl);
+    }
+
+    @Override
+    public String generateAccessToken(UserAccount user, Duration tokenTtl) {
         Instant issuedAt = Instant.now();
-        Instant expiresAt = issuedAt.plus(accessTokenTtl);
+        Instant expiresAt = issuedAt.plus(tokenTtl);
 
         JwtClaimsSet claims = JwtClaimsSet.builder()
                 .issuer(issuer)
