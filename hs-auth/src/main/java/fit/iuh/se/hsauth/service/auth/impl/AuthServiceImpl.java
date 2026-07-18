@@ -53,6 +53,10 @@ public class AuthServiceImpl implements AuthService {
     @Value("${security.jwt.refresh-token-ttl}")
     Duration refreshTokenTtl;
 
+    @NonFinal
+    @Value("${security.jwt.mobile-access-token-ttl}")
+    Duration mobileAccessTokenTtl;
+
     @Override
     @Transactional
     public RegisterResponse register(RegisterRequest request) {
@@ -84,14 +88,25 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public AuthenticationResult login(LoginRequest request) {
+        UserAccount userAccount = authenticate(request);
+        return createAuthenticationResult(userAccount, UUID.randomUUID().toString());
+    }
+
+    @Override
+    public LoginResponse mobileLogin(LoginRequest request) {
+        UserAccount userAccount = authenticate(request);
+        String accessToken = accessTokenService.generateAccessToken(userAccount, mobileAccessTokenTtl);
+        return buildLoginResponse(accessToken, userAccount);
+    }
+
+    private UserAccount authenticate(LoginRequest request) {
         String email = normalizeEmail(request.getEmail());
         UserAccount userAccount = userRepository.findUserByEmail(email)
                 .orElseThrow(() -> new AppException(ErrorCode.INVALID_CREDENTIALS));
         validateActiveAccount(userAccount);
         if (!passwordEncoder.matches(request.getPassword(), userAccount.getPasswordHash()))
             throw new AppException(ErrorCode.INVALID_CREDENTIALS);
-
-        return createAuthenticationResult(userAccount, UUID.randomUUID().toString());
+        return userAccount;
     }
 
     @Override
@@ -125,7 +140,7 @@ public class AuthServiceImpl implements AuthService {
         );
 
         return new AuthenticationResult(
-                buildLoginResponse(accessToken),
+                buildLoginResponse(accessToken, userAccount),
                 newRefreshToken,
                 sessionId
         );
@@ -161,16 +176,17 @@ public class AuthServiceImpl implements AuthService {
                 .build(), refreshTokenTtl);
 
         return new AuthenticationResult(
-                buildLoginResponse(accessToken),
+                buildLoginResponse(accessToken, userAccount),
                 refreshToken,
                 sessionId
         );
     }
 
-    private LoginResponse buildLoginResponse(String accessToken) {
+    private LoginResponse buildLoginResponse(String accessToken, UserAccount userAccount) {
         return LoginResponse.builder()
                 .accessToken(accessToken)
                 .tokenType("Bearer")
+                .userSession(authUserMapper.toUserSession(userAccount))
                 .build();
     }
 
