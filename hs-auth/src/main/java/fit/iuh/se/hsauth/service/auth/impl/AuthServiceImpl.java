@@ -86,7 +86,7 @@ public class AuthServiceImpl implements AuthService {
     public AuthenticationResult login(LoginRequest request) {
         String email = normalizeEmail(request.getEmail());
         UserAccount userAccount = userRepository.findUserByEmail(email)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+                .orElseThrow(() -> new AppException(ErrorCode.INVALID_CREDENTIALS));
         validateActiveAccount(userAccount);
         if (!passwordEncoder.matches(request.getPassword(), userAccount.getPasswordHash()))
             throw new AppException(ErrorCode.INVALID_CREDENTIALS);
