@@ -45,16 +45,16 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(
-            HttpServletRequest request,
+            @NonNull HttpServletRequest request,
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain) throws ServletException, IOException {
         String key = resolveKey(request);
         RateLimitResult result = rateLimiterService.consume(key);
 
-        response.setHeader(RATE_LIMIT_LIMIT, String.valueOf(result.limit()));
-        response.setHeader(RATE_LIMIT_REMAINING, String.valueOf(result.remaining()));
+        response.setHeader(RATE_LIMIT_LIMIT, String.valueOf(result.getLimit()));
+        response.setHeader(RATE_LIMIT_REMAINING, String.valueOf(result.getRemaining()));
 
-        if (result.allowed()) {
+        if (result.isAllowed()) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -62,7 +62,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         ErrorCode errorCode = ErrorCode.TOO_MANY_REQUESTS;
         response.setStatus(errorCode.getStatus().value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        response.setHeader(RETRY_AFTER, String.valueOf(result.retryAfterSeconds()));
+        response.setHeader(RETRY_AFTER, String.valueOf(result.getRetryAfterSeconds()));
         objectMapper.writeValue(response.getWriter(), new ApiResponse<>(errorCode.getCode(), errorCode.getMessage()));
     }
 
