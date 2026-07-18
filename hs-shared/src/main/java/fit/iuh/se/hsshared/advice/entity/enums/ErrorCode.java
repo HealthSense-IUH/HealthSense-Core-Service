@@ -10,6 +10,7 @@ public enum ErrorCode {
     BAD_REQUEST(400, "Bad request", HttpStatus.BAD_REQUEST),
     VALIDATION_FAILED(401, "Validation failed", HttpStatus.BAD_REQUEST),
     ACCESS_DENIED(403, "Access denied", HttpStatus.FORBIDDEN),
+    TOO_MANY_REQUESTS(429, "Too many requests", HttpStatus.TOO_MANY_REQUESTS),
     USER_NOT_FOUND(404, "User not found", HttpStatus.NOT_FOUND),
     INVALID_CREDENTIALS(1001, "Invalid email or password", HttpStatus.UNAUTHORIZED),
     EMAIL_ALREADY_EXISTS(1002, "Email already exists", HttpStatus.CONFLICT),

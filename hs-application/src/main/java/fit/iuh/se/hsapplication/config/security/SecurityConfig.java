@@ -28,9 +28,11 @@ public class SecurityConfig {
     String allowedOrigins;
 
     final JwtAuthenticationFilter jwtAuthenticationFilter;
+    final RateLimitFilter rateLimitFilter;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, RateLimitFilter rateLimitFilter) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.rateLimitFilter = rateLimitFilter;
     }
 
     private static final String[] PUBLIC_ENDPOINTS = {
@@ -55,6 +57,7 @@ public class SecurityConfig {
                 .anyRequest().authenticated()
         );
         httpSecurity.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+        httpSecurity.addFilterAfter(rateLimitFilter, JwtAuthenticationFilter.class);
         return httpSecurity.build();
     }
 
