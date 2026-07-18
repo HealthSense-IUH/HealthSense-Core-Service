@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/auth/")
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-public class WebAuthController {
+public class DefaultAuthController {
 
     AuthService authService;
     AuthCookieService authCookieService;
