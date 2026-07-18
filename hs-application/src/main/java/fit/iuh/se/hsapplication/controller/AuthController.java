@@ -1,10 +1,10 @@
-package fit.iuh.se.hsauth.controller;
+package fit.iuh.se.hsapplication.controller;
 
 import fit.iuh.se.hsauth.dto.request.LoginRequest;
 import fit.iuh.se.hsauth.dto.request.RegisterRequest;
 import fit.iuh.se.hsauth.dto.response.LoginResponse;
 import fit.iuh.se.hsauth.dto.response.RegisterResponse;
-import fit.iuh.se.hsauth.entity.AuthenticationResult;
+import fit.iuh.se.hsauth.dto.token.AuthenticationResult;
 import fit.iuh.se.hsauth.entity.enums.CookieType;
 import fit.iuh.se.hsauth.service.auth.AuthService;
 import fit.iuh.se.hsauth.service.cookie.AuthCookieService;
