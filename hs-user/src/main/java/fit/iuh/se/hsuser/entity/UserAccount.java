@@ -15,7 +15,7 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Builder
 @Entity
-@Table(name = "users")
+@Table(name = "user_accounts")
 public class UserAccount extends BaseEntity {
 
     @Id

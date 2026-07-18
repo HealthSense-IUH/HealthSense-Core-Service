@@ -12,7 +12,7 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Entity
-@Table(name = "user_sensitive_datas")
+@Table(name = "user_sensitive_data")
 public class UserSensitiveData extends BaseEntity {
 
     @Id

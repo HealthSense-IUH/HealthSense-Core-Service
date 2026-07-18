@@ -12,7 +12,7 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Entity
-@Table(name = "roles")
+@Table(name = "user_roles")
 public class Role extends fit.iuh.se.hsuser.entity.BaseEntity {
 
     @Id

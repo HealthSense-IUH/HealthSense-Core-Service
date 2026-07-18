@@ -20,7 +20,7 @@ import fit.iuh.se.hsuser.entity.UserProfile;
 import fit.iuh.se.hsuser.entity.UserSensitiveData;
 import fit.iuh.se.hsuser.entity.enums.AccountStatus;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
-import fit.iuh.se.hsuser.repository.UserRepository;
+import fit.iuh.se.hsuser.repository.UserAccountRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -41,7 +41,7 @@ import java.util.UUID;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class AuthServiceImpl implements AuthService {
 
-    UserRepository userRepository;
+    UserAccountRepository userAccountRepository;
     PasswordEncoder passwordEncoder;
     AuthUserMapper authUserMapper;
     AccessTokenService accessTokenService;
@@ -61,7 +61,7 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public RegisterResponse register(RegisterRequest request) {
         String email = normalizeEmail(request.getEmail());
-        if (userRepository.existsByEmail(email))
+        if (userAccountRepository.existsByEmail(email))
             throw new AppException(ErrorCode.EMAIL_ALREADY_EXISTS);
 
         UserAccount user = UserAccount.builder()
@@ -83,7 +83,7 @@ public class AuthServiceImpl implements AuthService {
         user.setProfile(profile);
         user.setSensitiveData(sensitiveData);
 
-        return authUserMapper.toUserSession(userRepository.save(user));
+        return authUserMapper.toUserSession(userAccountRepository.save(user));
     }
 
     @Override
@@ -101,7 +101,7 @@ public class AuthServiceImpl implements AuthService {
 
     private UserAccount authenticate(LoginRequest request) {
         String email = normalizeEmail(request.getEmail());
-        UserAccount userAccount = userRepository.findUserByEmail(email)
+        UserAccount userAccount = userAccountRepository.findUserByEmail(email)
                 .orElseThrow(() -> new AppException(ErrorCode.INVALID_CREDENTIALS));
         validateActiveAccount(userAccount);
         if (!passwordEncoder.matches(request.getPassword(), userAccount.getPasswordHash()))
@@ -126,7 +126,7 @@ public class AuthServiceImpl implements AuthService {
             throw new AppException(ErrorCode.REFRESH_TOKEN_REUSED);
         }
 
-        UserAccount userAccount = userRepository.findById(claims.getUserId())
+        UserAccount userAccount = userAccountRepository.findById(claims.getUserId())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
         validateActiveAccount(userAccount);
 
