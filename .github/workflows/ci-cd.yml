@@ -52,7 +52,7 @@ jobs:
 
     - name: Build and Push Docker image
       run: |
-        ./mvnw compile jib:build -pl hs-application -am \
+        ./mvnw compile com.google.cloud.tools:jib-maven-plugin:build -pl hs-application -am \
           -Dimage=${{ env.IMAGE_NAME }}:latest \
           -Djib.to.tags=${{ github.sha }} \
           -Djib.to.auth.username=${{ secrets.DOCKERHUB_USERNAME }} \
