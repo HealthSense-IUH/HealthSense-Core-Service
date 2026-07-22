@@ -25,6 +25,9 @@ import java.util.Base64;
 @Configuration
 public class JwtConfig {
 
+    @Value("${security.jwt.key-id}")
+    private String keyId;
+
     @Bean
     public RSAPrivateKey jwtPrivateKey(
             @Value("${security.jwt.private-key-location}") Resource privateKeyResource) throws Exception {
@@ -47,7 +50,7 @@ public class JwtConfig {
     public JwtEncoder jwtEncoder(RSAPublicKey publicKey, RSAPrivateKey privateKey) {
         RSAKey rsaKey = new RSAKey.Builder(publicKey)
                 .privateKey(privateKey)
-                .keyID("healthsense-auth-key")
+                .keyID(keyId)
                 .build();
         JWKSource<SecurityContext> jwkSource = new ImmutableJWKSet<>(new JWKSet(rsaKey));
         return new NimbusJwtEncoder(jwkSource);
@@ -60,6 +63,10 @@ public class JwtConfig {
 
     private byte[] parsePem(String pem) {
         String normalized = pem
+                .replace("-----BEGIN PRIVATE KEY-----", "")
+                .replace("-----END PRIVATE KEY-----", "")
+                .replace("-----BEGIN PUBLIC KEY-----", "")
+                .replace("-----END PUBLIC KEY-----", "")
                 .replaceAll("\\s", "");
         return Base64.getDecoder().decode(normalized);
     }

@@ -28,6 +28,10 @@ public class AuthCookieServiceImpl implements AuthCookieService {
     boolean secure;
 
     @NonFinal
+    @Value("${security.cookie.same-site:Lax}")
+    String sameSite;
+
+    @NonFinal
     @Value("${security.jwt.refresh-token-ttl}")
     Duration refreshTokenTtl;
 
@@ -67,7 +71,7 @@ public class AuthCookieServiceImpl implements AuthCookieService {
         return ResponseCookie.from(name, value)
                 .httpOnly(true)
                 .secure(secure)
-                .sameSite("Lax")
+                .sameSite(sameSite)
                 .path(cookiePath)
                 .maxAge(maxAge)
                 .build();
