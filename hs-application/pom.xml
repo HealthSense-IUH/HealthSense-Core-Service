@@ -58,14 +58,6 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- dev tool -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-devtools</artifactId>
-            <scope>runtime</scope>
-            <optional>true</optional>
-        </dependency>
-
         <!-- database -->
         <dependency>
             <groupId>org.postgresql</groupId>
