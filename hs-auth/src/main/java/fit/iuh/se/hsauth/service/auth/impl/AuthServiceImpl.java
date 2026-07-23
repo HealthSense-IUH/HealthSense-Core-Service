@@ -191,7 +191,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private void validateActiveAccount(UserAccount userAccount) {
-        if (userAccount.getActive() == null || !userAccount.getActive())
+        if (userAccount.getStatus() != AccountStatus.ACTIVE)
             throw new AppException(ErrorCode.ACCOUNT_DISABLED);
     }
 
