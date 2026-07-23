@@ -38,3 +38,10 @@ build/
 private_key*
 id_rsa
 id_ed25519
+
+### Ignore Environment Configs ###
+**/application-dev.properties
+**/application-prod.properties
+**/application-local.properties
+.env
+.env.*
