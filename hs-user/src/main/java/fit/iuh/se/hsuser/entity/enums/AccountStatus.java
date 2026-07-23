@@ -2,5 +2,8 @@ package fit.iuh.se.hsuser.entity.enums;
 
 public enum AccountStatus {
     ACTIVE,
-    INACTIVE
+    INACTIVE,
+    BANNED,
+    LOCKED,
+    PENDING_VERIFY
 }
