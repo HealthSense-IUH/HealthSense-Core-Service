@@ -22,6 +22,7 @@ public class ApiResponse<T> {
     }
 
     public ApiResponse(T data) {
+        this.code = 1000;
         this.data = data;
     }
 }

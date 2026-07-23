@@ -1,7 +1,9 @@
 package fit.iuh.se.hsapplication.controller;
 
 import fit.iuh.se.hsauth.dto.request.LoginRequest;
-import fit.iuh.se.hsauth.dto.response.LoginResponse;
+import fit.iuh.se.hsauth.dto.request.MobileLogoutRequest;
+import fit.iuh.se.hsauth.dto.request.MobileRefreshRequest;
+import fit.iuh.se.hsauth.dto.response.MobileLoginResponse;
 import fit.iuh.se.hsauth.service.auth.AuthService;
 import fit.iuh.se.hsshared.dto.response.ApiResponse;
 import jakarta.validation.Valid;
@@ -22,7 +24,19 @@ public class MobileAuthController {
     AuthService authService;
 
     @PostMapping("/login")
-    public ApiResponse<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
+    public ApiResponse<MobileLoginResponse> login(@Valid @RequestBody LoginRequest request) {
         return new ApiResponse<>(authService.mobileLogin(request));
     }
+
+    @PostMapping("/refresh")
+    public ApiResponse<MobileLoginResponse> refresh(@Valid @RequestBody MobileRefreshRequest request) {
+        return new ApiResponse<>(authService.mobileRefresh(request));
+    }
+
+    @PostMapping("/logout")
+    public ApiResponse<Void> logout(@Valid @RequestBody MobileLogoutRequest request) {
+        authService.mobileLogout(request);
+        return new ApiResponse<>();
+    }
 }
+
