@@ -27,6 +27,14 @@ public interface UserAccountRepository extends JpaRepository<UserAccount, Long> 
     Page<UserAccount> findAllByStatusNot(AccountStatus status, Pageable pageable);
 
     @EntityGraph(attributePaths = "profile")
+    Page<UserAccount> findAllByStatusNotAndRoleAndIdNot(
+            AccountStatus status,
+            UserRole role,
+            Long id,
+            Pageable pageable
+    );
+
+    @EntityGraph(attributePaths = "profile")
     Optional<UserAccount> findByIdAndStatusNot(Long id, AccountStatus status);
 
     boolean existsByEmailAndIdNot(String email, Long id);
