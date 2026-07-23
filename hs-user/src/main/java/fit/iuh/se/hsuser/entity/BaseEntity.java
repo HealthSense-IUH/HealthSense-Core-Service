@@ -39,7 +39,4 @@ public class BaseEntity {
     @LastModifiedBy
     @Column(name = "updated_by")
     String updatedBy;
-
-    @Column(name = "active", nullable = false, columnDefinition = "BOOLEAN DEFAULT TRUE")
-    Boolean active = true;
 }
