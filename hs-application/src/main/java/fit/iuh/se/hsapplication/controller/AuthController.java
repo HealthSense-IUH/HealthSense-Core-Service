@@ -6,7 +6,7 @@ import fit.iuh.se.hsauth.dto.response.RegisterResponse;
 import fit.iuh.se.hsauth.service.auth.AuthService;
 import fit.iuh.se.hsshared.dto.response.ApiResponse;
 import fit.iuh.se.hsuser.dto.response.UserResponse;
-import fit.iuh.se.hsuser.service.admin.UserService;
+import fit.iuh.se.hsuser.service.admin.AdminUserService;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     AuthService authService;
-    UserService userService;
+    AdminUserService adminUserService;
 
     @PostMapping("/register")
     public ApiResponse<RegisterResponse> register(@Valid @RequestBody RegisterRequest request) {
@@ -34,6 +34,6 @@ public class AuthController {
 
     @GetMapping("/me")
     public ApiResponse<UserResponse> me(@AuthenticationPrincipal UserAuthentication user) {
-        return new ApiResponse<>(userService.getUser(user.getUserId()));
+        return new ApiResponse<>(adminUserService.getUser(user.getUserId()));
     }
 }
