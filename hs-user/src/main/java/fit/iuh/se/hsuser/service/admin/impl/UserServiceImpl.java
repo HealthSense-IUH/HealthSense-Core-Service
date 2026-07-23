@@ -9,6 +9,7 @@ import fit.iuh.se.hsuser.dto.response.UserResponse;
 import fit.iuh.se.hsuser.entity.UserAccount;
 import fit.iuh.se.hsuser.entity.UserProfile;
 import fit.iuh.se.hsuser.entity.enums.AccountStatus;
+import fit.iuh.se.hsuser.entity.enums.UserRole;
 import fit.iuh.se.hsuser.mapper.UserMapper;
 import fit.iuh.se.hsuser.repository.UserAccountRepository;
 import fit.iuh.se.hsuser.service.admin.UserService;
@@ -19,6 +20,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
 
 /**
  * @author : user664dntp
@@ -36,10 +39,18 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(readOnly = true)
-    public PageResponse<UserResponse> getUsers(Pageable pageable) {
+    public PageResponse<UserResponse> getUsers(Long currentUserId, UserRole currentUserRole, UserRole targetRole, Pageable pageable) {
+        if (currentUserId == null)
+            throw new AppException(ErrorCode.INVALID_ARGUMENT, "Current user ID must not be null");
+        if (currentUserRole == null)
+            throw new AppException(ErrorCode.INVALID_ARGUMENT, "Current user role must not be null");
+        if (targetRole == null)
+            throw new AppException(ErrorCode.INVALID_ARGUMENT, "Target role must not be null");
         if (pageable == null)
             throw new AppException(ErrorCode.INVALID_ARGUMENT, "Pageable must not be null");
-        Page<UserResponse> users = userAccountRepository.findAllByStatusNot(AccountStatus.INACTIVE, pageable)
+        validateRoleVisibility(currentUserRole, targetRole);
+        Page<UserResponse> users = userAccountRepository
+                .findAllByStatusNotAndRoleAndIdNot(AccountStatus.INACTIVE, targetRole, currentUserId, pageable)
                 .map(userMapper::toUserResponse);
         return new PageResponse<>(users);
     }
@@ -62,6 +73,7 @@ public class UserServiceImpl implements UserService {
         UserAccount user = findAvailableUser(id);
         updateAccount(user, request);
         updateProfile(user.getProfile(), request);
+        user.setUpdatedAt(Instant.now());
         return userMapper.toUserResponse(userAccountRepository.save(user));
     }
 
@@ -80,6 +92,15 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
     }
 
+    private void validateRoleVisibility(UserRole currentUserRole, UserRole targetRole) {
+        if (currentUserRole == UserRole.SUPER_ADMIN && targetRole != UserRole.SUPER_ADMIN)
+            return;
+        if (currentUserRole == UserRole.ADMIN
+                && (targetRole == UserRole.DOCTOR || targetRole == UserRole.MEMBER))
+            return;
+        throw new AppException(ErrorCode.ACCESS_DENIED, "You are not allowed to view users with this role");
+    }
+
     private void updateAccount(UserAccount user, UserUpdateRequest request) {
         if (request.getEmail() != null) {
             String email = TextNormalize.normalizeEmail(
@@ -96,20 +117,15 @@ public class UserServiceImpl implements UserService {
     }
 
     private void updateProfile(UserProfile profile, UserUpdateRequest request) {
-        if (request.getDisplayName() != null) {
+        if (request.getDisplayName() != null)
             profile.setDisplayName(TextNormalize.requireText(request.getDisplayName(), "Display name must not be blank"));
-        }
-        if (request.getPhone() != null) {
+        if (request.getPhone() != null)
             profile.setPhone(request.getPhone().trim());
-        }
-        if (request.getDateOfBirth() != null) {
+        if (request.getDateOfBirth() != null)
             profile.setDateOfBirth(request.getDateOfBirth());
-        }
-        if (request.getGender() != null) {
+        if (request.getGender() != null)
             profile.setGender(request.getGender().trim());
-        }
-        if (request.getAddress() != null) {
+        if (request.getAddress() != null)
             profile.setAddress(request.getAddress().trim());
-        }
     }
 }
