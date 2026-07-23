@@ -31,3 +31,10 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Ignore Security Keys ###
+*.pem
+*.key
+private_key*
+id_rsa
+id_ed25519
