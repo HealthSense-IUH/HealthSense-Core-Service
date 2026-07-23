@@ -43,6 +43,9 @@ public class SecurityConfig {
         "/api/auth/me",
         "/api/auth/mobile/login",
         "/api/auth/mobile/refresh",
+        "/api/auth/forgot-password/request-otp",
+        "/api/auth/forgot-password/verify-otp",
+        "/api/auth/forgot-password/reset",
     };
 
     static String[] ADMIN_ENDPOINTS = {

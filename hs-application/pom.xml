@@ -46,6 +46,11 @@
             <artifactId>hs-shared</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>fit.iuh.se</groupId>
+            <artifactId>hs-notification</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <!-- spring web -->
         <dependency>
