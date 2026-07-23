@@ -1,9 +1,11 @@
 package fit.iuh.se.hsapplication.controller.admin;
 
+import fit.iuh.se.hsapplication.dto.auth.UserAuthentication;
 import fit.iuh.se.hsshared.dto.response.ApiResponse;
 import fit.iuh.se.hsshared.dto.response.PageResponse;
 import fit.iuh.se.hsuser.dto.request.UserUpdateRequest;
 import fit.iuh.se.hsuser.dto.response.UserResponse;
+import fit.iuh.se.hsuser.entity.enums.UserRole;
 import fit.iuh.se.hsuser.service.admin.UserService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
@@ -13,6 +15,7 @@ import lombok.experimental.FieldDefaults;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,10 +30,12 @@ public class AdminUserController {
 
     @GetMapping
     public ApiResponse<PageResponse<UserResponse>> getUsers(
+            @AuthenticationPrincipal UserAuthentication currentUser,
+            @RequestParam UserRole role,
             @RequestParam(defaultValue = "1") @Min(1) int page,
             @RequestParam(defaultValue = "10") @Min(1) int size) {
         Pageable pageable = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-        return new ApiResponse<>(userService.getUsers(pageable));
+        return new ApiResponse<>(userService.getUsers(currentUser.getUserId(), currentUser.getRole(), role, pageable));
     }
 
     @GetMapping("/{id}")
