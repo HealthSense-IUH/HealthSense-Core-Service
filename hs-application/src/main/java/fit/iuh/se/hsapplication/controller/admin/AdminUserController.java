@@ -54,9 +54,9 @@ public class AdminUserController {
     @GetMapping
     public ApiResponse<PageResponse<UserResponse>> getUsers(
             @AuthenticationPrincipal UserAuthentication currentUser,
-            @RequestParam UserRole role,
-            @RequestParam(defaultValue = "1") @Min(1) int page,
-            @RequestParam(defaultValue = "10") @Min(1) int size) {
+            @RequestParam(name = "role") UserRole role,
+            @RequestParam(name = "page", defaultValue = "1") @Min(1) int page,
+            @RequestParam(name = "size", defaultValue = "10") @Min(1) int size) {
         Pageable pageable = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         return new ApiResponse<>(adminUserService.getUsers(currentUser.getUserId(), currentUser.getRole(), role, pageable));
     }
