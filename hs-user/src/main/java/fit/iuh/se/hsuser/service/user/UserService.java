@@ -11,5 +11,7 @@ import fit.iuh.se.hsuser.entity.enums.UserRole;
  **/
 public interface UserService {
 
+    UserResponse getProfile(Long currentUserId);
+
     UserResponse updateProfile(Long currentUserId, UserRole currentUserRole, UserProfileUpdateRequest request);
 }

@@ -34,6 +34,16 @@ public class UserServiceImpl implements UserService {
     UserMapper userMapper;
 
     @Override
+    @Transactional(readOnly = true)
+    public UserResponse getProfile(Long currentUserId) {
+        if (currentUserId == null)
+            throw new AppException(ErrorCode.INVALID_ARGUMENT, "Current user ID must not be null");
+        UserAccount user = userAccountRepository.findByIdAndStatusNot(currentUserId, AccountStatus.INACTIVE)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        return userMapper.toUserResponse(user);
+    }
+
+    @Override
     @Transactional
     public UserResponse updateProfile(Long currentUserId, UserRole currentUserRole, UserProfileUpdateRequest request) {
         if (currentUserId == null)
