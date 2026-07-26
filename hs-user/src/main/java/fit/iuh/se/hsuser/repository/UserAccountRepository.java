@@ -24,13 +24,38 @@ public interface UserAccountRepository extends JpaRepository<UserAccount, Long> 
     Optional<UserAccount> findUserByEmail(String email);
 
     @EntityGraph(attributePaths = "profile")
-    Page<UserAccount> findAllByStatusNot(AccountStatus status, Pageable pageable);
+    @Query("""
+        select u
+        from UserAccount u
+        where u.role = :role
+          and u.id <> :excludedId
+          and (:status is null or u.status = :status)
+    """)
+    Page<UserAccount> findUsers(
+            UserRole role,
+            AccountStatus status,
+            Long excludedId,
+            Pageable pageable
+    );
 
     @EntityGraph(attributePaths = "profile")
-    Page<UserAccount> findAllByStatusNotAndRoleAndIdNot(
-            AccountStatus status,
+    @Query("""
+        select u
+        from UserAccount u
+        where u.role = :role
+          and u.id <> :excludedId
+          and (:status is null or u.status = :status)
+          and (
+              cast(u.id as string) like concat('%', :keyword, '%')
+              or lower(u.email) like lower(concat('%', :keyword, '%'))
+              or u.profile.phone like concat('%', :keyword, '%')
+          )
+    """)
+    Page<UserAccount> searchUsers(
             UserRole role,
-            Long id,
+            AccountStatus status,
+            Long excludedId,
+            String keyword,
             Pageable pageable
     );
 
