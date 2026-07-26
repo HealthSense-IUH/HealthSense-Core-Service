@@ -32,7 +32,8 @@ public enum ErrorCode {
 
     // Data & persistence
     ENTITY_NOT_FOUND(3000, "Entity was not found", HttpStatus.NOT_FOUND),
-    DATA_INTEGRITY_VIOLATION(3001, "Data violates system constraints", HttpStatus.CONFLICT);
+    DATA_INTEGRITY_VIOLATION(3001, "Data violates system constraints", HttpStatus.CONFLICT),
+    HEALTH_RECORD_NOT_FOUND(3002, "Health record not found", HttpStatus.NOT_FOUND);
 
     private final int code;
     private final String message;

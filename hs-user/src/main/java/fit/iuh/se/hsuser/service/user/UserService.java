@@ -1,6 +1,8 @@
 package fit.iuh.se.hsuser.service.user;
 
+import fit.iuh.se.hsuser.dto.request.AvatarPresignedUrlRequest;
 import fit.iuh.se.hsuser.dto.request.UserProfileUpdateRequest;
+import fit.iuh.se.hsuser.dto.response.AvatarPresignedUrlResponse;
 import fit.iuh.se.hsuser.dto.response.UserResponse;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
 
@@ -14,4 +16,6 @@ public interface UserService {
     UserResponse getProfile(Long currentUserId);
 
     UserResponse updateProfile(Long currentUserId, UserRole currentUserRole, UserProfileUpdateRequest request);
+
+    AvatarPresignedUrlResponse generateAvatarPresignedUrl(Long currentUserId, AvatarPresignedUrlRequest request);
 }

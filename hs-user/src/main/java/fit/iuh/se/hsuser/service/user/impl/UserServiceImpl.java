@@ -2,8 +2,11 @@ package fit.iuh.se.hsuser.service.user.impl;
 
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
+import fit.iuh.se.hsshared.service.s3.S3Service;
 import fit.iuh.se.hsshared.utils.TextNormalize;
+import fit.iuh.se.hsuser.dto.request.AvatarPresignedUrlRequest;
 import fit.iuh.se.hsuser.dto.request.UserProfileUpdateRequest;
+import fit.iuh.se.hsuser.dto.response.AvatarPresignedUrlResponse;
 import fit.iuh.se.hsuser.dto.response.UserResponse;
 import fit.iuh.se.hsuser.entity.UserAccount;
 import fit.iuh.se.hsuser.entity.UserProfile;
@@ -15,6 +18,7 @@ import fit.iuh.se.hsuser.service.user.UserService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,10 +32,12 @@ import java.time.Instant;
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@Slf4j
 public class UserServiceImpl implements UserService {
 
     UserAccountRepository userAccountRepository;
     UserMapper userMapper;
+    S3Service s3Service;
 
     @Override
     @Transactional(readOnly = true)
@@ -61,6 +67,48 @@ public class UserServiceImpl implements UserService {
         return userMapper.toUserResponse(userAccountRepository.save(user));
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public AvatarPresignedUrlResponse generateAvatarPresignedUrl(Long currentUserId, AvatarPresignedUrlRequest request) {
+        if (currentUserId == null)
+            throw new AppException(ErrorCode.INVALID_ARGUMENT, "Current user ID must not be null");
+        if (request == null || request.getFileName() == null || request.getFileName().trim().isEmpty())
+            throw new AppException(ErrorCode.INVALID_ARGUMENT, "Yêu cầu tạo Presigned URL không hợp lệ: Thiếu tên file ảnh");
+
+        String fileName = request.getFileName().trim();
+        String lowerName = fileName.toLowerCase();
+        String contentType = request.getContentType() != null ? request.getContentType().trim().toLowerCase() : "";
+
+        if (!contentType.startsWith("image/") || contentType.equals("application/octet-stream")) {
+            if (lowerName.endsWith(".jpg") || lowerName.endsWith(".jpeg") || lowerName.endsWith(".jfif") || lowerName.endsWith(".pjpeg")) contentType = "image/jpeg";
+            else if (lowerName.endsWith(".png")) contentType = "image/png";
+            else if (lowerName.endsWith(".webp")) contentType = "image/webp";
+            else if (lowerName.endsWith(".gif")) contentType = "image/gif";
+            else if (lowerName.endsWith(".bmp")) contentType = "image/bmp";
+            else if (lowerName.endsWith(".svg")) contentType = "image/svg+xml";
+            else if (lowerName.endsWith(".heic") || lowerName.endsWith(".heif")) contentType = "image/heic";
+            else if (lowerName.endsWith(".avif")) contentType = "image/avif";
+            else if (lowerName.endsWith(".tiff") || lowerName.endsWith(".tif")) contentType = "image/tiff";
+            else if (lowerName.endsWith(".ico")) contentType = "image/x-icon";
+            else {
+                throw new AppException(ErrorCode.INVALID_ARGUMENT, "Định dạng file ảnh không hợp lệ (hỗ trợ .jpg, .jpeg, .png, .webp, .gif, .heic, .avif, .svg...)");
+            }
+        }
+
+        userAccountRepository.findByIdAndStatusNot(currentUserId, AccountStatus.INACTIVE)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        String s3Key = s3Service.generateObjectKey(S3Service.FOLDER_TMP_AVATARS, currentUserId, fileName);
+        String uploadUrl = s3Service.generatePresignedUploadUrl(s3Key, contentType);
+        String publicUrl = s3Service.getPublicUrl(s3Key);
+
+        return AvatarPresignedUrlResponse.builder()
+                .uploadUrl(uploadUrl)
+                .s3Key(s3Key)
+                .publicUrl(publicUrl)
+                .build();
+    }
+
     private void validateSelfUpdateRole(UserRole currentUserRole) {
         if (currentUserRole == UserRole.DOCTOR || currentUserRole == UserRole.MEMBER)
             return;
@@ -78,5 +126,24 @@ public class UserServiceImpl implements UserService {
             profile.setGender(request.getGender().trim());
         if (request.getAddress() != null)
             profile.setAddress(request.getAddress().trim());
+        if (request.getAvatarUrl() != null && !request.getAvatarUrl().trim().isEmpty()) {
+            String newAvatarUrl = request.getAvatarUrl().trim();
+            String newKey = s3Service.extractObjectKeyFromUrl(newAvatarUrl);
+            if (newKey != null && (newKey.startsWith(S3Service.FOLDER_TMP_AVATARS) || newKey.startsWith("tmp/"))) {
+                String destinationKey = newKey.replaceFirst("^tmp/", "");
+                log.info("Promoting temp avatar from {} to {}", newKey, destinationKey);
+                newAvatarUrl = s3Service.moveFile(newKey, destinationKey);
+            }
+
+            String oldAvatarUrl = profile.getAvatarUrl();
+            if (oldAvatarUrl != null && !oldAvatarUrl.equals(newAvatarUrl)) {
+                String oldKey = s3Service.extractObjectKeyFromUrl(oldAvatarUrl);
+                if (oldKey != null && (oldKey.startsWith(S3Service.FOLDER_AVATARS) || oldKey.startsWith(S3Service.FOLDER_TMP_AVATARS) || oldKey.startsWith("tmp/"))) {
+                    log.info("Deleting old avatar from S3: {}", oldKey);
+                    s3Service.deleteFile(oldKey);
+                }
+            }
+            profile.setAvatarUrl(newAvatarUrl);
+        }
     }
 }

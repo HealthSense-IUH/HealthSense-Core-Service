@@ -11,5 +11,6 @@ public interface AuthUserMapper {
     @Mapping(target = "userId", source = "id")
     @Mapping(target = "fullName", source = "profile.displayName")
     @Mapping(target = "accountStatus", source = "status")
+    @Mapping(target = "avatarUrl", source = "profile.avatarUrl")
     RegisterResponse toUserSession(UserAccount user);
 }
