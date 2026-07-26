@@ -16,4 +16,5 @@ public class RegisterResponse {
     String fullName;
     UserRole role;
     AccountStatus accountStatus;
+    String avatarUrl;
 }
