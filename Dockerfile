@@ -7,6 +7,7 @@ COPY hs-shared/pom.xml hs-shared/pom.xml
 COPY hs-user/pom.xml hs-user/pom.xml
 COPY hs-auth/pom.xml hs-auth/pom.xml
 COPY hs-notification/pom.xml hs-notification/pom.xml
+COPY hs-health-record/pom.xml hs-health-record/pom.xml
 COPY hs-application/pom.xml hs-application/pom.xml
 
 RUN mvn -pl hs-application -am dependency:go-offline
@@ -15,6 +16,7 @@ COPY hs-shared hs-shared
 COPY hs-user hs-user
 COPY hs-auth hs-auth
 COPY hs-notification hs-notification
+COPY hs-health-record hs-health-record
 COPY hs-application hs-application
 
 RUN mvn -pl hs-application -am -DskipTests package
