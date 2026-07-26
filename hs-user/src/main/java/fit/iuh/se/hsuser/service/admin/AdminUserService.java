@@ -5,6 +5,7 @@ import fit.iuh.se.hsuser.dto.request.AdminUserCreateRequest;
 import fit.iuh.se.hsuser.dto.request.UserUpdateRequest;
 import fit.iuh.se.hsuser.dto.response.AdminUserCreateResult;
 import fit.iuh.se.hsuser.dto.response.UserResponse;
+import fit.iuh.se.hsuser.entity.enums.AccountStatus;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
 import org.springframework.data.domain.Pageable;
 
@@ -17,7 +18,14 @@ public interface AdminUserService {
 
     AdminUserCreateResult createUser(Long currentUserId, UserRole currentUserRole, AdminUserCreateRequest request);
 
-    PageResponse<UserResponse> getUsers(Long currentUserId, UserRole currentUserRole, UserRole targetRole, Pageable pageable);
+    PageResponse<UserResponse> getUsers(
+            Long currentUserId,
+            UserRole currentUserRole,
+            UserRole targetRole,
+            AccountStatus status,
+            String keyword,
+            Pageable pageable
+    );
 
     UserResponse getUser(Long id);
 

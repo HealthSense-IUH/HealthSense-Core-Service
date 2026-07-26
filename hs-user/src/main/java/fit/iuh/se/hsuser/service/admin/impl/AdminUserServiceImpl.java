@@ -96,7 +96,13 @@ public class AdminUserServiceImpl implements AdminUserService {
 
     @Override
     @Transactional(readOnly = true)
-    public PageResponse<UserResponse> getUsers(Long currentUserId, UserRole currentUserRole, UserRole targetRole, Pageable pageable) {
+    public PageResponse<UserResponse> getUsers(
+            Long currentUserId,
+            UserRole currentUserRole,
+            UserRole targetRole,
+            AccountStatus status,
+            String keyword,
+            Pageable pageable) {
         if (currentUserId == null)
             throw new AppException(ErrorCode.INVALID_ARGUMENT, "Current user ID must not be null");
         if (currentUserRole == null)
@@ -106,8 +112,17 @@ public class AdminUserServiceImpl implements AdminUserService {
         if (pageable == null)
             throw new AppException(ErrorCode.INVALID_ARGUMENT, "Pageable must not be null");
         validateRoleVisibility(currentUserRole, targetRole);
-        Page<UserResponse> users = userAccountRepository
-                .findAllByStatusNotAndRoleAndIdNot(AccountStatus.INACTIVE, targetRole, currentUserId, pageable)
+        String normalizedKeyword = trimToNull(keyword);
+        Page<UserAccount> userPage = normalizedKeyword == null
+                ? userAccountRepository.findUsers(targetRole, status, currentUserId, pageable)
+                : userAccountRepository.searchUsers(
+                        targetRole,
+                        status,
+                        currentUserId,
+                        normalizedKeyword,
+                        pageable
+                );
+        Page<UserResponse> users = userPage
                 .map(userMapper::toUserResponse);
         return new PageResponse<>(users);
     }
@@ -153,7 +168,7 @@ public class AdminUserServiceImpl implements AdminUserService {
     private UserAccount findAvailableUser(Long id) {
         if (id == null)
             throw new AppException(ErrorCode.INVALID_ARGUMENT, "User ID must not be null");
-        return userAccountRepository.findByIdAndStatusNot(id, AccountStatus.INACTIVE)
+        return userAccountRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
     }
 
