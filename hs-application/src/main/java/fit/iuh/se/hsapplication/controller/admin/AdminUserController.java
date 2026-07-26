@@ -8,6 +8,7 @@ import fit.iuh.se.hsuser.dto.request.AdminUserCreateRequest;
 import fit.iuh.se.hsuser.dto.request.UserUpdateRequest;
 import fit.iuh.se.hsuser.dto.response.AdminUserCreateResult;
 import fit.iuh.se.hsuser.dto.response.UserResponse;
+import fit.iuh.se.hsuser.entity.enums.AccountStatus;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
 import fit.iuh.se.hsuser.service.admin.AdminUserService;
 import jakarta.validation.Valid;
@@ -55,10 +56,12 @@ public class AdminUserController {
     public ApiResponse<PageResponse<UserResponse>> getUsers(
             @AuthenticationPrincipal UserAuthentication currentUser,
             @RequestParam(name = "role") UserRole role,
+            @RequestParam(name = "status", required = false) AccountStatus status,
+            @RequestParam(name = "keyword", required = false) String keyword,
             @RequestParam(name = "page", defaultValue = "1") @Min(1) int page,
             @RequestParam(name = "size", defaultValue = "10") @Min(1) int size) {
         Pageable pageable = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-        return new ApiResponse<>(adminUserService.getUsers(currentUser.getUserId(), currentUser.getRole(), role, pageable));
+        return new ApiResponse<>(adminUserService.getUsers(currentUser.getUserId(), currentUser.getRole(), role, status, keyword, pageable));
     }
 
     @GetMapping("/{id}")
