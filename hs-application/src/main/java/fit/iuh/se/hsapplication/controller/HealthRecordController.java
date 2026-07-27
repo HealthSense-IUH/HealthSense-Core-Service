@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.*;
 
 @Validated
 @RestController
-@RequestMapping("/api/v1/health-records")
+@RequestMapping("/api/health-records")
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class HealthRecordController {
@@ -38,14 +38,14 @@ public class HealthRecordController {
     @PostMapping("/{id}/confirm")
     public ApiResponse<HealthRecordResponse> confirmUpload(
             @AuthenticationPrincipal UserAuthentication currentUser,
-            @PathVariable("id") Long id) {
+            @PathVariable Long id) {
         return new ApiResponse<>(healthRecordService.confirmUpload(currentUser.getUserId(), id));
     }
 
     @GetMapping("/{id}")
     public ApiResponse<HealthRecordResponse> getRecordById(
             @AuthenticationPrincipal UserAuthentication currentUser,
-            @PathVariable("id") Long id) {
+            @PathVariable Long id) {
         return new ApiResponse<>(healthRecordService.getRecordById(currentUser.getUserId(), id));
     }
 

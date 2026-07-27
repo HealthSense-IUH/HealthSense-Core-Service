@@ -30,7 +30,6 @@ public class SecurityConfig {
     @NonFinal
     @Value("${security.cors.allowed-origins}")
     String allowedOrigins;
-
     JwtAuthenticationFilter jwtAuthenticationFilter;
     RateLimitFilter rateLimitFilter;
     RestAuthenticationEntryPoint restAuthenticationEntryPoint;
@@ -46,7 +45,7 @@ public class SecurityConfig {
         "/api/auth/forgot-password/request-otp",
         "/api/auth/forgot-password/verify-otp",
         "/api/auth/forgot-password/reset",
-        "/api/v1/health-records/ai-callback",
+        "/api/health-records/ai-callback",
     };
 
     static String[] ADMIN_ENDPOINTS = {
