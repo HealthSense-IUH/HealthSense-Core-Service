@@ -11,7 +11,8 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
-
+import software.amazon.awssdk.core.sync.RequestBody;
+import java.io.InputStream;
 import java.time.Duration;
 
 @Service
@@ -164,5 +165,25 @@ public class S3Service {
 
     public String getBucketName() {
         return s3Config.getBucketName();
+    }
+
+    /**
+     * Upload trực tiếp InputStream từ Backend lên S3 / MinIO (dành cho API tiện ích 1-bước uploadDirect)
+     */
+    public String uploadFileDirect(String objectKey, InputStream inputStream, long contentLength, String contentType) {
+        log.info("Direct uploading file to S3 key: {} in bucket: {} (size: {} bytes)", objectKey, s3Config.getBucketName(), contentLength);
+        try {
+            s3Client.putObject(PutObjectRequest.builder()
+                    .bucket(s3Config.getBucketName())
+                    .key(objectKey)
+                    .contentType(contentType)
+                    .build(),
+                    RequestBody.fromInputStream(inputStream, contentLength));
+            log.info("Successfully direct uploaded file to S3: {}", objectKey);
+            return getPublicUrl(objectKey);
+        } catch (Exception e) {
+            log.error("Failed direct upload to S3 for key {}: {}", objectKey, e.getMessage(), e);
+            throw new RuntimeException("Không thể upload trực tiếp lên S3: " + e.getMessage(), e);
+        }
     }
 }
