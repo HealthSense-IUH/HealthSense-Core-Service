@@ -8,8 +8,11 @@ import fit.iuh.se.hshealthrecord.entity.HealthRecord;
 import fit.iuh.se.hshealthrecord.entity.enums.RecordStatus;
 import fit.iuh.se.hshealthrecord.mapper.HealthRecordMapper;
 import fit.iuh.se.hshealthrecord.repository.HealthRecordRepository;
+import fit.iuh.se.hshealthrecord.dto.message.RecordProcessingMessage;
 import fit.iuh.se.hshealthrecord.service.HealthRecordService;
 import fit.iuh.se.hsshared.advice.entity.AppException;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Value;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsshared.dto.response.PageResponse;
 import fit.iuh.se.hsshared.service.s3.S3Service;
@@ -19,6 +22,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+import java.io.IOException;
 
 @Service
 @RequiredArgsConstructor
@@ -28,6 +33,13 @@ public class HealthRecordServiceImpl implements HealthRecordService {
     private final HealthRecordRepository repository;
     private final HealthRecordMapper mapper;
     private final S3Service s3Service;
+    private final RabbitTemplate rabbitTemplate;
+
+    @Value("${app.rabbitmq.exchange:health.record.exchange}")
+    private String exchange;
+
+    @Value("${app.rabbitmq.routing-key.processing:health.record.process.routing}")
+    private String routingKey;
 
     @Override
     @Transactional
@@ -64,9 +76,54 @@ public class HealthRecordServiceImpl implements HealthRecordService {
         record.setStatus(RecordStatus.PROCESSING);
         record = repository.save(record);
 
-        log.info("Record {} status updated to PROCESSING. Ready for AI Service processing.", recordId);
-        // Ở giai đoạn sau (Phase 2), đây là nơi trigger Message Queue (RabbitMQ) hoặc gửi HTTP request sang AI Service
+        log.info("Record {} status updated to PROCESSING. Triggering RabbitMQ event...", recordId);
+        RecordProcessingMessage message = RecordProcessingMessage.builder()
+                .recordId(record.getId())
+                .s3Key(record.getS3FileKey())
+                .userId(record.getUserId())
+                .fileName(record.getFileName())
+                .build();
+        rabbitTemplate.convertAndSend(exchange, routingKey, message);
+        log.info("Sent RecordProcessingMessage to exchange '{}' with routingKey '{}': {}", exchange, routingKey, message);
         
+        return mapper.toResponse(record);
+    }
+
+    @Override
+    @Transactional
+    public HealthRecordResponse uploadDirectAndProcess(Long userId, MultipartFile file) {
+        log.info("Direct upload and process for user {} with file {}", userId, file != null ? file.getOriginalFilename() : "null");
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("File upload không được để trống");
+        }
+        String fileName = file.getOriginalFilename() != null ? file.getOriginalFilename() : "health_record.csv";
+        String s3Key = s3Service.generateObjectKey(S3Service.FOLDER_RECORDS, userId, fileName);
+        try {
+            s3Service.uploadFileDirect(s3Key, file.getInputStream(), file.getSize(), file.getContentType() != null ? file.getContentType() : "text/csv");
+        } catch (IOException e) {
+            log.error("Error reading upload file: {}", e.getMessage(), e);
+            throw new RuntimeException("Lỗi đọc file upload: " + e.getMessage(), e);
+        }
+
+        HealthRecord record = HealthRecord.builder()
+                .userId(userId)
+                .fileName(fileName)
+                .s3FileKey(s3Key)
+                .fileSize(file.getSize())
+                .status(RecordStatus.PROCESSING)
+                .build();
+        record = repository.save(record);
+
+        log.info("Record {} saved via direct upload. Triggering RabbitMQ event...", record.getId());
+        RecordProcessingMessage message = RecordProcessingMessage.builder()
+                .recordId(record.getId())
+                .s3Key(record.getS3FileKey())
+                .userId(record.getUserId())
+                .fileName(record.getFileName())
+                .build();
+        rabbitTemplate.convertAndSend(exchange, routingKey, message);
+        log.info("Sent RecordProcessingMessage to exchange '{}' with routingKey '{}': {}", exchange, routingKey, message);
+
         return mapper.toResponse(record);
     }
 

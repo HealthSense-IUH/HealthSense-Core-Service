@@ -18,6 +18,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.http.MediaType;
 
 @Validated
 @RestController
@@ -33,6 +35,13 @@ public class HealthRecordController {
             @AuthenticationPrincipal UserAuthentication currentUser,
             @Valid @RequestBody PresignedUrlRequest request) {
         return new ApiResponse<>(healthRecordService.createPresignedUploadUrl(currentUser.getUserId(), request));
+    }
+
+    @PostMapping(value = "/upload-direct", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponse<HealthRecordResponse> uploadDirect(
+            @AuthenticationPrincipal UserAuthentication currentUser,
+            @RequestParam("file") MultipartFile file) {
+        return new ApiResponse<>(healthRecordService.uploadDirectAndProcess(currentUser.getUserId(), file));
     }
 
     @PostMapping("/{id}/confirm")
