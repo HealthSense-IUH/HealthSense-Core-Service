@@ -33,7 +33,21 @@ public enum ErrorCode {
     // Data & persistence
     ENTITY_NOT_FOUND(3000, "Entity was not found", HttpStatus.NOT_FOUND),
     DATA_INTEGRITY_VIOLATION(3001, "Data violates system constraints", HttpStatus.CONFLICT),
-    HEALTH_RECORD_NOT_FOUND(3002, "Health record not found", HttpStatus.NOT_FOUND);
+    HEALTH_RECORD_NOT_FOUND(3002, "Health record not found", HttpStatus.NOT_FOUND),
+
+    // Consultation
+    CONSULTATION_NOT_FOUND(4000, "Consultation session not found", HttpStatus.NOT_FOUND),
+    CONSULTATION_REQUEST_NOT_FOUND(4001, "Consultation request not found", HttpStatus.NOT_FOUND),
+    CONSULTATION_ACCESS_DENIED(4002, "You do not have access to this consultation", HttpStatus.FORBIDDEN),
+    CONSULTATION_NOT_ACTIVE(4003, "Consultation session is not active", HttpStatus.CONFLICT),
+    MEMBER_ALREADY_HAS_ACTIVE_CONSULTATION(4004, "Member already has an active consultation", HttpStatus.CONFLICT),
+    MEMBER_ALREADY_HAS_PENDING_CONSULTATION_REQUEST(4005, "Member already has a pending consultation request", HttpStatus.CONFLICT),
+    DOCTOR_CAPACITY_EXCEEDED(4006, "Doctor has reached the maximum active consultations", HttpStatus.CONFLICT),
+    DOCTOR_NOT_FOUND(4007, "Doctor not found", HttpStatus.NOT_FOUND),
+    MEMBER_NOT_FOUND(4008, "Member not found", HttpStatus.NOT_FOUND),
+    INVALID_CONSULTATION_STATUS(4009, "Invalid consultation status", HttpStatus.CONFLICT),
+    CONSULTATION_MESSAGE_NOT_FOUND(4010, "Consultation message not found", HttpStatus.NOT_FOUND),
+    CONSULTATION_PARTICIPANT_NOT_FOUND(4011, "Consultation participant not found", HttpStatus.NOT_FOUND);
 
     private final int code;
     private final String message;
