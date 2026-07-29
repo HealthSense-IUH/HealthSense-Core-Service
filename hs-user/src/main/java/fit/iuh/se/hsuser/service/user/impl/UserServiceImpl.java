@@ -19,6 +19,9 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import fit.iuh.se.hsshared.service.s3.event.S3FileDeleteEvent;
+import fit.iuh.se.hsshared.service.s3.event.S3FileMoveEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,6 +41,7 @@ public class UserServiceImpl implements UserService {
     UserAccountRepository userAccountRepository;
     UserMapper userMapper;
     S3Service s3Service;
+    ApplicationEventPublisher applicationEventPublisher;
 
     @Override
     @Transactional(readOnly = true)
@@ -131,16 +135,17 @@ public class UserServiceImpl implements UserService {
             String newKey = s3Service.extractObjectKeyFromUrl(newAvatarUrl);
             if (newKey != null && (newKey.startsWith(S3Service.FOLDER_TMP_AVATARS) || newKey.startsWith("tmp/"))) {
                 String destinationKey = newKey.replaceFirst("^tmp/", "");
-                log.info("Promoting temp avatar from {} to {}", newKey, destinationKey);
-                newAvatarUrl = s3Service.moveFile(newKey, destinationKey);
+                log.info("Dispatching S3FileMoveEvent for temp avatar from {} to {}", newKey, destinationKey);
+                applicationEventPublisher.publishEvent(new S3FileMoveEvent(newKey, destinationKey));
+                newAvatarUrl = s3Service.getPublicUrl(destinationKey);
             }
 
             String oldAvatarUrl = profile.getAvatarUrl();
             if (oldAvatarUrl != null && !oldAvatarUrl.equals(newAvatarUrl)) {
                 String oldKey = s3Service.extractObjectKeyFromUrl(oldAvatarUrl);
                 if (oldKey != null && (oldKey.startsWith(S3Service.FOLDER_AVATARS) || oldKey.startsWith(S3Service.FOLDER_TMP_AVATARS) || oldKey.startsWith("tmp/"))) {
-                    log.info("Deleting old avatar from S3: {}", oldKey);
-                    s3Service.deleteFile(oldKey);
+                    log.info("Dispatching S3FileDeleteEvent for old avatar: {}", oldKey);
+                    applicationEventPublisher.publishEvent(new S3FileDeleteEvent(oldKey));
                 }
             }
             profile.setAvatarUrl(newAvatarUrl);

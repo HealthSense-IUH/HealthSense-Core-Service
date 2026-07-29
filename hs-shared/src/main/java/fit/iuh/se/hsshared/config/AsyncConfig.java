@@ -1,4 +1,4 @@
-package fit.iuh.se.hsnotification.config;
+package fit.iuh.se.hsshared.config;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableAsync;
