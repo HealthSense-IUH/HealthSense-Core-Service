@@ -1,4 +1,4 @@
-package fit.iuh.se.hsapplication.controller;
+package fit.iuh.se.hsapplication.controller.auth;
 
 import fit.iuh.se.hsauth.dto.request.LoginRequest;
 import fit.iuh.se.hsauth.dto.request.MobileLogoutRequest;
