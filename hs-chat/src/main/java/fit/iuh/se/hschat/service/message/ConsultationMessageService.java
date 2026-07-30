@@ -9,20 +9,20 @@ import org.springframework.data.domain.Pageable;
 
 public interface ConsultationMessageService {
 
-    ConsultationMessageResponse sendMessage(Long senderId, String sessionId, SendConsultationMessageRequest request);
+    ConsultationMessageResponse sendMessage(Long senderId, Long sessionId, SendConsultationMessageRequest request);
 
-    PageResponse<ConsultationMessageResponse> getMessages(Long userId, String sessionId, Pageable pageable);
+    PageResponse<ConsultationMessageResponse> getMessages(Long userId, Long sessionId, Pageable pageable);
 
     PageResponse<ConsultationMessageResponse> getMessagesBefore(
             Long userId,
-            String sessionId,
+            Long sessionId,
             String beforeMessageId,
             Pageable pageable
     );
 
     ConsultationParticipantResponse markAsRead(
             Long userId,
-            String sessionId,
+            Long sessionId,
             MarkConsultationReadRequest request
     );
 }

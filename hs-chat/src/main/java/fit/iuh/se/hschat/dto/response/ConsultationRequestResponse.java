@@ -14,14 +14,14 @@ import java.time.Instant;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ConsultationRequestResponse {
 
-    String id;
+    Long id;
     Long memberId;
     Long healthRecordId;
     String reason;
     Long preferredDoctorId;
     ConsultationRequestStatus status;
     Long assignedDoctorId;
-    String consultationSessionId;
+    Long consultationSessionId;
     Long reviewedByAdminId;
     Instant reviewedAt;
     String rejectionReason;

@@ -14,8 +14,8 @@ import java.time.Instant;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ConsultationParticipantResponse {
 
-    String id;
-    String sessionId;
+    Long id;
+    Long sessionId;
     Long userId;
     ConsultationParticipantRole role;
     String lastReadMessageId;

@@ -2,13 +2,11 @@ package fit.iuh.se.hschat.entity;
 
 import fit.iuh.se.hschat.entity.enums.ConsultationSourceType;
 import fit.iuh.se.hschat.entity.enums.ConsultationStatus;
+import fit.iuh.se.hsshared.generator.SnowflakeGenerated;
+import fit.iuh.se.hsuser.entity.BaseEntity;
+import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.index.CompoundIndex;
-import org.springframework.data.mongodb.core.index.CompoundIndexes;
-import org.springframework.data.mongodb.core.mapping.Document;
-import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.time.Instant;
 
@@ -18,68 +16,71 @@ import java.time.Instant;
 @Setter
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-@Document(collection = "consultation_sessions")
-@CompoundIndexes({
-        @CompoundIndex(name = "idx_session_member_status", def = "{'member_id': 1, 'status': 1}"),
-        @CompoundIndex(name = "idx_session_doctor_status", def = "{'doctor_id': 1, 'status': 1}"),
-        @CompoundIndex(name = "idx_session_status_ends_at", def = "{'status': 1, 'ends_at': 1}"),
-        @CompoundIndex(name = "idx_session_member_last_message", def = "{'member_id': 1, 'last_message_at': -1}"),
-        @CompoundIndex(name = "idx_session_doctor_last_message", def = "{'doctor_id': 1, 'last_message_at': -1}"),
-        @CompoundIndex(name = "uq_session_request_id", def = "{'request_id': 1}", unique = true, sparse = true)
-})
-public class ConsultationSession {
+@Entity
+@Table(
+        name = "consultation_sessions",
+        indexes = {
+                @Index(name = "idx_session_member_status", columnList = "member_id, status"),
+                @Index(name = "idx_session_doctor_status", columnList = "doctor_id, status"),
+                @Index(name = "idx_session_status_ends_at", columnList = "status, ends_at"),
+                @Index(name = "idx_session_member_last_message", columnList = "member_id, last_message_at"),
+                @Index(name = "idx_session_doctor_last_message", columnList = "doctor_id, last_message_at")
+        },
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uq_session_request_id", columnNames = "request_id")
+        }
+)
+public class ConsultationSession extends BaseEntity {
 
     @Id
-    String id;
+    @SnowflakeGenerated
+    @Column(name = "id", nullable = false, updatable = false)
+    Long id;
 
-    @Field("member_id")
+    @Column(name = "member_id", nullable = false)
     Long memberId;
 
-    @Field("doctor_id")
+    @Column(name = "doctor_id", nullable = false)
     Long doctorId;
 
-    @Field("created_by_admin_id")
+    @Column(name = "created_by_admin_id")
     Long createdByAdminId;
 
-    @Field("source_type")
+    @Enumerated(EnumType.STRING)
+    @Column(name = "source_type", nullable = false, length = 40)
     ConsultationSourceType sourceType;
 
-    @Field("status")
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 30)
     ConsultationStatus status;
 
-    @Field("started_at")
+    @Column(name = "started_at")
     Instant startedAt;
 
-    @Field("ends_at")
+    @Column(name = "ends_at", nullable = false)
     Instant endsAt;
 
-    @Field("support_ends_at")
+    @Column(name = "support_ends_at")
     Instant supportEndsAt;
 
-    @Field("closed_at")
+    @Column(name = "closed_at")
     Instant closedAt;
 
-    @Field("close_reason")
+    @Column(name = "close_reason", length = 500)
     String closeReason;
 
-    @Field("health_record_id")
+    @Column(name = "health_record_id")
     Long healthRecordId;
 
-    @Field("request_id")
-    String requestId;
+    @Column(name = "request_id", unique = true)
+    Long requestId;
 
-    @Field("last_message_id")
+    @Column(name = "last_message_id", length = 100)
     String lastMessageId;
 
-    @Field("last_message_preview")
+    @Column(name = "last_message_preview", length = 500)
     String lastMessagePreview;
 
-    @Field("last_message_at")
+    @Column(name = "last_message_at")
     Instant lastMessageAt;
-
-    @Field("created_at")
-    Instant createdAt;
-
-    @Field("updated_at")
-    Instant updatedAt;
 }

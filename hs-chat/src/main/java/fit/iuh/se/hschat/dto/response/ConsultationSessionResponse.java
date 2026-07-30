@@ -15,7 +15,7 @@ import java.time.Instant;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ConsultationSessionResponse {
 
-    String id;
+    Long id;
     Long memberId;
     Long doctorId;
     Long createdByAdminId;
@@ -27,7 +27,7 @@ public class ConsultationSessionResponse {
     Instant closedAt;
     String closeReason;
     Long healthRecordId;
-    String requestId;
+    Long requestId;
     String lastMessageId;
     String lastMessagePreview;
     Instant lastMessageAt;

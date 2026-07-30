@@ -11,7 +11,7 @@ public interface ConsultationSessionService {
 
     ConsultationSessionResponse createSessionByAdmin(Long adminId, AdminCreateConsultationSessionRequest request);
 
-    ConsultationSessionResponse getSessionById(Long userId, String sessionId);
+    ConsultationSessionResponse getSessionById(Long userId, Long sessionId);
 
     PageResponse<ConsultationSessionResponse> getMySessions(Long userId, Pageable pageable);
 
@@ -19,9 +19,9 @@ public interface ConsultationSessionService {
 
     PageResponse<ConsultationSessionResponse> getSessionsForAdmin(Pageable pageable);
 
-    ConsultationSessionResponse extendSession(Long adminId, String sessionId, ExtendConsultationRequest request);
+    ConsultationSessionResponse extendSession(Long adminId, Long sessionId, ExtendConsultationRequest request);
 
-    ConsultationSessionResponse closeSession(Long adminId, String sessionId, CloseConsultationRequest request);
+    ConsultationSessionResponse closeSession(Long adminId, Long sessionId, CloseConsultationRequest request);
 
     void expireOverdueSessions();
 }

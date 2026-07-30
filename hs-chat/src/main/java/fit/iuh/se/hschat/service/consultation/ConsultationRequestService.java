@@ -11,13 +11,13 @@ public interface ConsultationRequestService {
 
     ConsultationRequestResponse createRequest(Long memberId, CreateConsultationRequest request);
 
-    ConsultationRequestResponse approveRequest(Long adminId, String requestId, ApproveConsultationRequest request);
+    ConsultationRequestResponse approveRequest(Long adminId, Long requestId, ApproveConsultationRequest request);
 
-    ConsultationRequestResponse rejectRequest(Long adminId, String requestId, RejectConsultationRequest request);
+    ConsultationRequestResponse rejectRequest(Long adminId, Long requestId, RejectConsultationRequest request);
 
-    ConsultationRequestResponse cancelMyRequest(Long memberId, String requestId);
+    ConsultationRequestResponse cancelMyRequest(Long memberId, Long requestId);
 
-    ConsultationRequestResponse getMyRequestById(Long memberId, String requestId);
+    ConsultationRequestResponse getMyRequestById(Long memberId, Long requestId);
 
     PageResponse<ConsultationRequestResponse> getMyRequests(Long memberId, Pageable pageable);
 
