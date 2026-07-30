@@ -194,8 +194,21 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
     private ConsultationSessionResponse toSessionResponse(ConsultationSession session, Long userId) {
         ConsultationSessionResponse response = mapper.toSessionResponse(session);
         participantRepository.findBySessionIdAndUserId(session.getId(), userId)
-                .ifPresent(participant -> response.setUnreadCount(countUnreadMessages(session.getId(), userId, participant.getLastReadAt())));
+                .ifPresent(participant -> response.setUnreadCount(safeCountUnreadMessages(session.getId(), userId, participant.getLastReadAt())));
         return response;
+    }
+
+    private long safeCountUnreadMessages(Long sessionId, Long userId, Instant lastReadAt) {
+        try {
+            return countUnreadMessages(sessionId, userId, lastReadAt);
+        } catch (RuntimeException exception) {
+            log.warn("Could not count unread consultation messages for session {} and user {}: {}",
+                    sessionId,
+                    userId,
+                    exception.getMessage()
+            );
+            return 0;
+        }
     }
 
     private long countUnreadMessages(Long sessionId, Long userId, Instant lastReadAt) {
