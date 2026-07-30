@@ -46,6 +46,7 @@ public class SecurityConfig {
         "/api/auth/forgot-password/verify-otp",
         "/api/auth/forgot-password/reset",
         "/api/health-records/ai-callback",
+        "/ws/consultations/**",
     };
 
     static String[] ADMIN_ENDPOINTS = {
