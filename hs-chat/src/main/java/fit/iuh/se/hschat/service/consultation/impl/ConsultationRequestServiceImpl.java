@@ -28,6 +28,7 @@ import lombok.experimental.NonFinal;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
@@ -149,27 +150,68 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
 
     @Override
     public ConsultationRequestResponse rejectRequest(Long adminId, Long requestId, RejectConsultationRequest request) {
-        throw new UnsupportedOperationException("rejectRequest is not implemented yet");
+        log.info("Rejecting consultation request {} by admin {}", requestId, adminId);
+
+        ConsultationRequest consultationRequest = requestRepository.findById(requestId)
+                .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_REQUEST_NOT_FOUND));
+
+        if (consultationRequest.getStatus() != ConsultationRequestStatus.PENDING)
+            throw new AppException(ErrorCode.INVALID_CONSULTATION_STATUS);
+
+        Instant now = Instant.now();
+        consultationRequest.setStatus(ConsultationRequestStatus.REJECTED);
+        consultationRequest.setReviewedByAdminId(adminId);
+        consultationRequest.setReviewedAt(now);
+        consultationRequest.setRejectionReason(request.getRejectionReason());
+
+        consultationRequest = requestRepository.save(consultationRequest);
+        return mapper.toRequestResponse(consultationRequest);
     }
 
     @Override
     public ConsultationRequestResponse cancelMyRequest(Long memberId, Long requestId) {
-        throw new UnsupportedOperationException("cancelMyRequest is not implemented yet");
+        log.info("Cancelling consultation request {} by member {}", requestId, memberId);
+
+        ConsultationRequest consultationRequest = requestRepository.findById(requestId)
+                .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_REQUEST_NOT_FOUND));
+
+        if (!consultationRequest.getMemberId().equals(memberId))
+            throw new AppException(ErrorCode.CONSULTATION_ACCESS_DENIED);
+
+        if (consultationRequest.getStatus() != ConsultationRequestStatus.PENDING)
+            throw new AppException(ErrorCode.INVALID_CONSULTATION_STATUS);
+
+        consultationRequest.setStatus(ConsultationRequestStatus.CANCELLED);
+
+        consultationRequest = requestRepository.save(consultationRequest);
+        return mapper.toRequestResponse(consultationRequest);
     }
 
     @Override
     public ConsultationRequestResponse getMyRequestById(Long memberId, Long requestId) {
-        throw new UnsupportedOperationException("getMyRequestById is not implemented yet");
+        ConsultationRequest consultationRequest = requestRepository.findById(requestId)
+                .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_REQUEST_NOT_FOUND));
+
+        if (!consultationRequest.getMemberId().equals(memberId))
+            throw new AppException(ErrorCode.CONSULTATION_ACCESS_DENIED);
+
+        return mapper.toRequestResponse(consultationRequest);
     }
 
     @Override
     public PageResponse<ConsultationRequestResponse> getMyRequests(Long memberId, Pageable pageable) {
-        throw new UnsupportedOperationException("getMyRequests is not implemented yet");
+        Page<ConsultationRequestResponse> page = requestRepository
+                .findByMemberIdOrderByCreatedAtDesc(memberId, pageable)
+                .map(mapper::toRequestResponse);
+        return new PageResponse<>(page);
     }
 
     @Override
     public PageResponse<ConsultationRequestResponse> getRequestsForAdmin(Pageable pageable) {
-        throw new UnsupportedOperationException("getRequestsForAdmin is not implemented yet");
+        Page<ConsultationRequestResponse> page = requestRepository
+                .findAll(pageable)
+                .map(mapper::toRequestResponse);
+        return new PageResponse<>(page);
     }
 
     private void validateMember(Long memberId) {
