@@ -35,7 +35,7 @@ public class ConsultationMessage {
     String id;
 
     @Field("session_id")
-    String sessionId;
+    Long sessionId;
 
     @Field("sender_id")
     Long senderId;

@@ -1,13 +1,11 @@
 package fit.iuh.se.hschat.entity;
 
 import fit.iuh.se.hschat.entity.enums.ConsultationRequestStatus;
+import fit.iuh.se.hsshared.generator.SnowflakeGenerated;
+import fit.iuh.se.hsuser.entity.BaseEntity;
+import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.index.CompoundIndex;
-import org.springframework.data.mongodb.core.index.CompoundIndexes;
-import org.springframework.data.mongodb.core.mapping.Document;
-import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.time.Instant;
 
@@ -17,57 +15,54 @@ import java.time.Instant;
 @Setter
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-@Document(collection = "consultation_requests")
-@CompoundIndexes({
-        @CompoundIndex(name = "idx_request_member_status", def = "{'member_id': 1, 'status': 1}"),
-        @CompoundIndex(name = "idx_request_status_created_at", def = "{'status': 1, 'created_at': -1}"),
-        @CompoundIndex(name = "idx_request_assigned_doctor", def = "{'assigned_doctor_id': 1}"),
-        @CompoundIndex(name = "idx_request_health_record", def = "{'health_record_id': 1}", sparse = true),
-        @CompoundIndex(
-                name = "uq_request_consultation_session",
-                def = "{'consultation_session_id': 1}",
-                unique = true,
-                sparse = true
-        )
-})
-public class ConsultationRequest {
+@Entity
+@Table(
+        name = "consultation_requests",
+        indexes = {
+                @Index(name = "idx_request_member_status", columnList = "member_id, status"),
+                @Index(name = "idx_request_status_created_at", columnList = "status, created_at"),
+                @Index(name = "idx_request_assigned_doctor", columnList = "assigned_doctor_id"),
+                @Index(name = "idx_request_health_record", columnList = "health_record_id")
+        },
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uq_request_consultation_session", columnNames = "consultation_session_id")
+        }
+)
+public class ConsultationRequest extends BaseEntity {
 
     @Id
-    String id;
+    @SnowflakeGenerated
+    @Column(name = "id", nullable = false, updatable = false)
+    Long id;
 
-    @Field("member_id")
+    @Column(name = "member_id", nullable = false)
     Long memberId;
 
-    @Field("health_record_id")
+    @Column(name = "health_record_id")
     Long healthRecordId;
 
-    @Field("reason")
+    @Column(name = "reason", nullable = false, length = 1000)
     String reason;
 
-    @Field("preferred_doctor_id")
+    @Column(name = "preferred_doctor_id")
     Long preferredDoctorId;
 
-    @Field("status")
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 30)
     ConsultationRequestStatus status;
 
-    @Field("assigned_doctor_id")
+    @Column(name = "assigned_doctor_id")
     Long assignedDoctorId;
 
-    @Field("consultation_session_id")
-    String consultationSessionId;
+    @Column(name = "consultation_session_id", unique = true)
+    Long consultationSessionId;
 
-    @Field("reviewed_by_admin_id")
+    @Column(name = "reviewed_by_admin_id")
     Long reviewedByAdminId;
 
-    @Field("reviewed_at")
+    @Column(name = "reviewed_at")
     Instant reviewedAt;
 
-    @Field("rejection_reason")
+    @Column(name = "rejection_reason", length = 500)
     String rejectionReason;
-
-    @Field("created_at")
-    Instant createdAt;
-
-    @Field("updated_at")
-    Instant updatedAt;
 }
