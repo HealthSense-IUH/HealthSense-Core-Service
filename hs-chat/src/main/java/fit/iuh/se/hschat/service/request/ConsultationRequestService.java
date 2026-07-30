@@ -1,4 +1,4 @@
-package fit.iuh.se.hschat.service.consultation;
+package fit.iuh.se.hschat.service.request;
 
 import fit.iuh.se.hschat.dto.request.ApproveConsultationRequest;
 import fit.iuh.se.hschat.dto.request.CreateConsultationRequest;

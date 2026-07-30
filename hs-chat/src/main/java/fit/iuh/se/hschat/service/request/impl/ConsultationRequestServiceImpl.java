@@ -1,4 +1,4 @@
-package fit.iuh.se.hschat.service.consultation.impl;
+package fit.iuh.se.hschat.service.request.impl;
 
 import fit.iuh.se.hschat.dto.request.ApproveConsultationRequest;
 import fit.iuh.se.hschat.dto.request.CreateConsultationRequest;
@@ -15,7 +15,7 @@ import fit.iuh.se.hschat.mapper.ConsultationMapper;
 import fit.iuh.se.hschat.repository.ConsultationParticipantRepository;
 import fit.iuh.se.hschat.repository.ConsultationRequestRepository;
 import fit.iuh.se.hschat.repository.ConsultationSessionRepository;
-import fit.iuh.se.hschat.service.consultation.ConsultationRequestService;
+import fit.iuh.se.hschat.service.request.ConsultationRequestService;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsshared.dto.response.PageResponse;
