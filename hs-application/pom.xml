@@ -56,6 +56,11 @@
             <artifactId>hs-health-record</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>fit.iuh.se</groupId>
+            <artifactId>hs-chat</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <!-- spring web -->
         <dependency>
@@ -82,6 +87,10 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-mongodb</artifactId>
         </dependency>
 
         <!-- security -->
