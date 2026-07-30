@@ -50,6 +50,7 @@ public class SecurityConfig {
 
     static String[] ADMIN_ENDPOINTS = {
             "/api/admin/users/**",
+            "/api/admin/consultation-requests/**",
     };
 
     @Bean
