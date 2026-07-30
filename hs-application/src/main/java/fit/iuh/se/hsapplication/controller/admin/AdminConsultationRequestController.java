@@ -4,7 +4,7 @@ import fit.iuh.se.hsapplication.dto.auth.UserAuthentication;
 import fit.iuh.se.hschat.dto.request.ApproveConsultationRequest;
 import fit.iuh.se.hschat.dto.request.RejectConsultationRequest;
 import fit.iuh.se.hschat.dto.response.ConsultationRequestResponse;
-import fit.iuh.se.hschat.service.consultation.ConsultationRequestService;
+import fit.iuh.se.hschat.service.request.ConsultationRequestService;
 import fit.iuh.se.hsshared.dto.response.ApiResponse;
 import fit.iuh.se.hsshared.dto.response.PageResponse;
 import jakarta.validation.Valid;

@@ -1,4 +1,4 @@
-package fit.iuh.se.hsapplication.controller;
+package fit.iuh.se.hsapplication.controller.user;
 
 import fit.iuh.se.hsapplication.dto.auth.UserAuthentication;
 import fit.iuh.se.hsshared.dto.response.ApiResponse;

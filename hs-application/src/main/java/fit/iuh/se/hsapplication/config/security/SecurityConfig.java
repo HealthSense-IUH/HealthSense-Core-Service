@@ -46,11 +46,14 @@ public class SecurityConfig {
         "/api/auth/forgot-password/verify-otp",
         "/api/auth/forgot-password/reset",
         "/api/health-records/ai-callback",
+        "/ws/consultations/**",
     };
 
     static String[] ADMIN_ENDPOINTS = {
             "/api/admin/users/**",
+            "/api/admin/health-records/**",
             "/api/admin/consultation-requests/**",
+            "/api/admin/consultation-sessions/**",
     };
 
     @Bean

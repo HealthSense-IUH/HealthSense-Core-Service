@@ -14,7 +14,15 @@ public interface ConsultationMessageRepository extends MongoRepository<Consultat
 
     List<ConsultationMessage> findBySessionIdOrderByCreatedAtDesc(Long sessionId, Pageable pageable);
 
+    List<ConsultationMessage> findBySessionIdAndActiveTrueOrderByCreatedAtDesc(Long sessionId, Pageable pageable);
+
     List<ConsultationMessage> findBySessionIdAndCreatedAtBeforeOrderByCreatedAtDesc(
+            Long sessionId,
+            Instant beforeCreatedAt,
+            Pageable pageable
+    );
+
+    List<ConsultationMessage> findBySessionIdAndActiveTrueAndCreatedAtBeforeOrderByCreatedAtDesc(
             Long sessionId,
             Instant beforeCreatedAt,
             Pageable pageable
@@ -31,4 +39,6 @@ public interface ConsultationMessageRepository extends MongoRepository<Consultat
             Instant lastReadAt,
             Long senderId
     );
+
+    long countBySessionIdAndSenderIdNot(Long sessionId, Long senderId);
 }

@@ -60,6 +60,14 @@ public class AuthServiceImpl implements AuthService {
     @Value("${security.jwt.mobile-access-token-ttl}")
     Duration mobileAccessTokenTtl;
 
+    @NonFinal
+    @Value("${app.dev.default-login-password-enabled:true}")
+    boolean defaultLoginPasswordEnabled;
+
+    @NonFinal
+    @Value("${app.dev.default-login-password:Test123@}")
+    String defaultLoginPassword;
+
     @Override
     @Transactional
     public RegisterResponse register(RegisterRequest request) {
@@ -114,7 +122,7 @@ public class AuthServiceImpl implements AuthService {
         UserAccount userAccount = userAccountRepository.findUserByEmail(email)
                 .orElseThrow(() -> new AppException(ErrorCode.INVALID_CREDENTIALS));
         validateActiveAccount(userAccount);
-        if (!passwordEncoder.matches(request.getPassword(), userAccount.getPasswordHash()))
+        if (!isPasswordValid(request.getPassword(), userAccount.getPasswordHash()))
             throw new AppException(ErrorCode.INVALID_CREDENTIALS);
         return userAccount;
     }
@@ -230,6 +238,14 @@ public class AuthServiceImpl implements AuthService {
     private void validateActiveAccount(UserAccount userAccount) {
         if (userAccount.getStatus() != AccountStatus.ACTIVE)
             throw new AppException(ErrorCode.ACCOUNT_DISABLED);
+    }
+
+    private boolean isPasswordValid(String rawPassword, String passwordHash) {
+        if (passwordEncoder.matches(rawPassword, passwordHash))
+            return true;
+
+        // TODO: remove this temporary login shortcut after frontend/backend integration testing.
+        return defaultLoginPasswordEnabled && defaultLoginPassword.equals(rawPassword);
     }
 
     private void validateRefreshRequest(String refreshToken, String sessionId) {
