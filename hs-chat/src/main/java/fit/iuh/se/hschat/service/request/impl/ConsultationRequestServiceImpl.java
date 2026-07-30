@@ -16,6 +16,7 @@ import fit.iuh.se.hschat.repository.ConsultationParticipantRepository;
 import fit.iuh.se.hschat.repository.ConsultationRequestRepository;
 import fit.iuh.se.hschat.repository.ConsultationSessionRepository;
 import fit.iuh.se.hschat.service.request.ConsultationRequestService;
+import fit.iuh.se.hshealthrecord.repository.HealthRecordRepository;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsshared.dto.response.PageResponse;
@@ -43,6 +44,7 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
     ConsultationRequestRepository requestRepository;
     ConsultationSessionRepository sessionRepository;
     ConsultationParticipantRepository participantRepository;
+    HealthRecordRepository healthRecordRepository;
     UserAccountRepository userAccountRepository;
     ConsultationMapper mapper;
 
@@ -65,7 +67,8 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
         if (requestRepository.existsByMemberIdAndStatus(memberId, ConsultationRequestStatus.PENDING))
             throw new AppException(ErrorCode.MEMBER_ALREADY_HAS_PENDING_CONSULTATION_REQUEST);
 
-        Instant now = Instant.now();
+        validateHealthRecordOwner(request.getHealthRecordId(), memberId);
+
         ConsultationRequest consultationRequest = ConsultationRequest.builder()
                 .memberId(memberId)
                 .healthRecordId(request.getHealthRecordId())
@@ -228,6 +231,14 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
         if (doctor.getRole() != UserRole.DOCTOR) {
             throw new AppException(ErrorCode.DOCTOR_NOT_FOUND);
         }
+    }
+
+    private void validateHealthRecordOwner(Long healthRecordId, Long memberId) {
+        if (healthRecordId == null)
+            return;
+
+        healthRecordRepository.findByIdAndUserId(healthRecordId, memberId)
+                .orElseThrow(() -> new AppException(ErrorCode.HEALTH_RECORD_NOT_FOUND));
     }
 
     private void validateConsultationPeriod(Instant endsAt, Instant supportEndsAt) {
