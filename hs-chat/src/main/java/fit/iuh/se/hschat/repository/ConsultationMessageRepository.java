@@ -12,22 +12,22 @@ import java.util.Optional;
 @Repository
 public interface ConsultationMessageRepository extends MongoRepository<ConsultationMessage, String> {
 
-    List<ConsultationMessage> findBySessionIdOrderByCreatedAtDesc(String sessionId, Pageable pageable);
+    List<ConsultationMessage> findBySessionIdOrderByCreatedAtDesc(Long sessionId, Pageable pageable);
 
     List<ConsultationMessage> findBySessionIdAndCreatedAtBeforeOrderByCreatedAtDesc(
-            String sessionId,
+            Long sessionId,
             Instant beforeCreatedAt,
             Pageable pageable
     );
 
     Optional<ConsultationMessage> findBySessionIdAndSenderIdAndClientMessageId(
-            String sessionId,
+            Long sessionId,
             Long senderId,
             String clientMessageId
     );
 
     long countBySessionIdAndCreatedAtAfterAndSenderIdNot(
-            String sessionId,
+            Long sessionId,
             Instant lastReadAt,
             Long senderId
     );

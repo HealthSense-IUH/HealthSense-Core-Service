@@ -4,7 +4,7 @@ import fit.iuh.se.hschat.entity.ConsultationSession;
 import fit.iuh.se.hschat.entity.enums.ConsultationStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
@@ -12,9 +12,9 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface ConsultationSessionRepository extends MongoRepository<ConsultationSession, String> {
+public interface ConsultationSessionRepository extends JpaRepository<ConsultationSession, Long> {
 
-    Optional<ConsultationSession> findByRequestId(String requestId);
+    Optional<ConsultationSession> findByRequestId(Long requestId);
 
     Optional<ConsultationSession> findByMemberIdAndStatus(Long memberId, ConsultationStatus status);
 

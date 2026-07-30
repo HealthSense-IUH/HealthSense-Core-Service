@@ -4,13 +4,13 @@ import fit.iuh.se.hschat.entity.ConsultationRequest;
 import fit.iuh.se.hschat.entity.enums.ConsultationRequestStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
 @Repository
-public interface ConsultationRequestRepository extends MongoRepository<ConsultationRequest, String> {
+public interface ConsultationRequestRepository extends JpaRepository<ConsultationRequest, Long> {
 
     Page<ConsultationRequest> findByMemberIdOrderByCreatedAtDesc(Long memberId, Pageable pageable);
 
@@ -25,7 +25,7 @@ public interface ConsultationRequestRepository extends MongoRepository<Consultat
             Pageable pageable
     );
 
-    Optional<ConsultationRequest> findByConsultationSessionId(String consultationSessionId);
+    Optional<ConsultationRequest> findByConsultationSessionId(Long consultationSessionId);
 
     boolean existsByMemberIdAndStatus(Long memberId, ConsultationRequestStatus status);
 }
