@@ -16,7 +16,7 @@ import java.time.Instant;
 public class ConsultationMessageResponse {
 
     String id;
-    String sessionId;
+    Long sessionId;
     Long senderId;
     ConsultationParticipantRole senderRole;
     ConsultationMessageType type;
