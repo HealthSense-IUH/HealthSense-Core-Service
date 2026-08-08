@@ -82,8 +82,9 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
     }
 
     @Override
-    public ConsultationRequestResponse approveRequest(Long adminId, Long requestId, ApproveConsultationRequest request) {
-        log.info("Approving consultation request {} by admin {}", requestId, adminId);
+    public ConsultationRequestResponse approveRequest(Long actorId, UserRole actorRole, Long requestId, ApproveConsultationRequest request) {
+        validateConsultationManager(actorRole);
+        log.info("Approving consultation request {} by actor {} with role {}", requestId, actorId, actorRole);
 
         ConsultationRequest consultationRequest = requestRepository.findById(requestId)
                 .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_REQUEST_NOT_FOUND));
@@ -113,7 +114,7 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
         ConsultationSession session = ConsultationSession.builder()
                 .memberId(memberId)
                 .doctorId(request.getDoctorId())
-                .createdByAdminId(adminId)
+                .createdByAdminId(actorId)
                 .sourceType(ConsultationSourceType.MEMBER_REQUEST)
                 .status(ConsultationStatus.ACTIVE)
                 .startedAt(startedAt)
@@ -144,7 +145,7 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
         consultationRequest.setStatus(ConsultationRequestStatus.APPROVED);
         consultationRequest.setAssignedDoctorId(request.getDoctorId());
         consultationRequest.setConsultationSessionId(session.getId());
-        consultationRequest.setReviewedByAdminId(adminId);
+        consultationRequest.setReviewedByAdminId(actorId);
         consultationRequest.setReviewedAt(now);
 
         consultationRequest = requestRepository.save(consultationRequest);
@@ -152,8 +153,9 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
     }
 
     @Override
-    public ConsultationRequestResponse rejectRequest(Long adminId, Long requestId, RejectConsultationRequest request) {
-        log.info("Rejecting consultation request {} by admin {}", requestId, adminId);
+    public ConsultationRequestResponse rejectRequest(Long actorId, UserRole actorRole, Long requestId, RejectConsultationRequest request) {
+        validateConsultationManager(actorRole);
+        log.info("Rejecting consultation request {} by actor {} with role {}", requestId, actorId, actorRole);
 
         ConsultationRequest consultationRequest = requestRepository.findById(requestId)
                 .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_REQUEST_NOT_FOUND));
@@ -163,7 +165,7 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
 
         Instant now = Instant.now();
         consultationRequest.setStatus(ConsultationRequestStatus.REJECTED);
-        consultationRequest.setReviewedByAdminId(adminId);
+        consultationRequest.setReviewedByAdminId(actorId);
         consultationRequest.setReviewedAt(now);
         consultationRequest.setRejectionReason(request.getRejectionReason());
 
@@ -210,11 +212,20 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
     }
 
     @Override
-    public PageResponse<ConsultationRequestResponse> getRequestsForAdmin(Pageable pageable) {
+    public PageResponse<ConsultationRequestResponse> getRequestsForAdmin(UserRole actorRole, Pageable pageable) {
+        validateConsultationManager(actorRole);
         Page<ConsultationRequestResponse> page = requestRepository
                 .findAll(pageable)
                 .map(mapper::toRequestResponse);
         return new PageResponse<>(page);
+    }
+
+    private void validateConsultationManager(UserRole actorRole) {
+        if (actorRole == UserRole.SUPER_ADMIN
+                || actorRole == UserRole.ADMIN
+                || actorRole == UserRole.CARE_COORDINATOR)
+            return;
+        throw new AppException(ErrorCode.ACCESS_DENIED, "You are not allowed to manage consultation requests");
     }
 
     private void validateMember(Long memberId) {
