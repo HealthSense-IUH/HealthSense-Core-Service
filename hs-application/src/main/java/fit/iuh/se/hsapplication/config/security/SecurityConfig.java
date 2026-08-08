@@ -52,6 +52,9 @@ public class SecurityConfig {
     static String[] ADMIN_ENDPOINTS = {
             "/api/admin/users/**",
             "/api/admin/health-records/**",
+    };
+
+    static String[] CONSULTATION_MANAGEMENT_ENDPOINTS = {
             "/api/admin/consultation-requests/**",
             "/api/admin/consultation-sessions/**",
     };
@@ -72,6 +75,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
                 .requestMatchers(ADMIN_ENDPOINTS).hasAnyRole("SUPER_ADMIN", "ADMIN")
+                .requestMatchers(CONSULTATION_MANAGEMENT_ENDPOINTS).hasAnyRole("SUPER_ADMIN", "ADMIN", "CARE_COORDINATOR")
                 .anyRequest().authenticated()
         );
         httpSecurity.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
