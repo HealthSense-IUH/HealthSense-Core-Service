@@ -30,10 +30,11 @@ public class AdminConsultationRequestController {
 
     @GetMapping
     public ApiResponse<PageResponse<ConsultationRequestResponse>> getRequestsForAdmin(
+            @AuthenticationPrincipal UserAuthentication currentUser,
             @RequestParam(name = "page", defaultValue = "1") @Min(1) int page,
             @RequestParam(name = "size", defaultValue = "10") @Min(1) int size) {
         Pageable pageable = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-        return new ApiResponse<>(consultationRequestService.getRequestsForAdmin(pageable));
+        return new ApiResponse<>(consultationRequestService.getRequestsForAdmin(currentUser.getRole(), pageable));
     }
 
     @PatchMapping("/{requestId}/approve")
@@ -41,7 +42,7 @@ public class AdminConsultationRequestController {
             @AuthenticationPrincipal UserAuthentication currentUser,
             @PathVariable Long requestId,
             @Valid @RequestBody ApproveConsultationRequest request) {
-        return new ApiResponse<>(consultationRequestService.approveRequest(currentUser.getUserId(), requestId, request));
+        return new ApiResponse<>(consultationRequestService.approveRequest(currentUser.getUserId(), currentUser.getRole(), requestId, request));
     }
 
     @PatchMapping("/{requestId}/reject")
@@ -49,6 +50,6 @@ public class AdminConsultationRequestController {
             @AuthenticationPrincipal UserAuthentication currentUser,
             @PathVariable Long requestId,
             @Valid @RequestBody RejectConsultationRequest request) {
-        return new ApiResponse<>(consultationRequestService.rejectRequest(currentUser.getUserId(), requestId, request));
+        return new ApiResponse<>(consultationRequestService.rejectRequest(currentUser.getUserId(), currentUser.getRole(), requestId, request));
     }
 }
