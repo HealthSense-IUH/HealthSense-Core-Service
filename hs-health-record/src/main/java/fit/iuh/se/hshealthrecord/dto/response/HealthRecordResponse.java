@@ -8,6 +8,7 @@ import tools.jackson.databind.annotation.JsonSerialize;
 import tools.jackson.databind.ser.std.ToStringSerializer;
 
 import java.time.Instant;
+import java.util.Map;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -25,7 +26,7 @@ public class HealthRecordResponse {
     RecordStatus status;
     PredictionLabel predictionLabel;
     Double confidence;
-    String hrvFeaturesJson;
+    Map<String, Object> hrvFeatures;
     Instant createdAt;
     Instant updatedAt;
 }
