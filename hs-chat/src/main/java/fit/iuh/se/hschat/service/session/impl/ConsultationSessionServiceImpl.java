@@ -53,9 +53,10 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
 
     @Override
     @Transactional
-    public ConsultationSessionResponse createSessionByAdmin(Long adminId, AdminCreateConsultationSessionRequest request) {
-        log.info("Creating consultation session by admin {} for member {} and doctor {}",
-                adminId, request.getMemberId(), request.getDoctorId());
+    public ConsultationSessionResponse createSessionByAdmin(Long actorId, UserRole actorRole, AdminCreateConsultationSessionRequest request) {
+        validateConsultationManager(actorRole);
+        log.info("Creating consultation session by actor {} with role {} for member {} and doctor {}",
+                actorId, actorRole, request.getMemberId(), request.getDoctorId());
 
         validateMember(request.getMemberId());
         validateDoctor(request.getDoctorId());
@@ -79,7 +80,7 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
         ConsultationSession session = ConsultationSession.builder()
                 .memberId(request.getMemberId())
                 .doctorId(request.getDoctorId())
-                .createdByAdminId(adminId)
+                .createdByAdminId(actorId)
                 .sourceType(ConsultationSourceType.ADMIN_CREATED)
                 .status(ConsultationStatus.ACTIVE)
                 .startedAt(startedAt)
@@ -136,7 +137,8 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
     }
 
     @Override
-    public PageResponse<ConsultationSessionResponse> getSessionsForAdmin(Pageable pageable) {
+    public PageResponse<ConsultationSessionResponse> getSessionsForAdmin(UserRole actorRole, Pageable pageable) {
+        validateConsultationManager(actorRole);
         Page<ConsultationSessionResponse> page = sessionRepository
                 .findAll(pageable)
                 .map(mapper::toSessionResponse);
@@ -144,7 +146,8 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
     }
 
     @Override
-    public ConsultationSessionResponse extendSession(Long adminId, Long sessionId, ExtendConsultationRequest request) {
+    public ConsultationSessionResponse extendSession(Long actorId, UserRole actorRole, Long sessionId, ExtendConsultationRequest request) {
+        validateConsultationManager(actorRole);
         ConsultationSession session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_NOT_FOUND));
 
@@ -163,7 +166,8 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
 
     @Override
     @Transactional
-    public ConsultationSessionResponse closeSession(Long adminId, Long sessionId, CloseConsultationRequest request) {
+    public ConsultationSessionResponse closeSession(Long actorId, UserRole actorRole, Long sessionId, CloseConsultationRequest request) {
+        validateConsultationManager(actorRole);
         ConsultationSession session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_NOT_FOUND));
 
@@ -180,7 +184,8 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
 
     @Override
     @Transactional
-    public void expireOverdueSessions() {
+    public void expireOverdueSessions(UserRole actorRole) {
+        validateConsultationManager(actorRole);
         Instant now = Instant.now();
         sessionRepository.findByStatusAndEndsAtBefore(ConsultationStatus.ACTIVE, now)
                 .forEach(session -> {
@@ -189,6 +194,14 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
                     session.setCloseReason("Consultation session expired automatically");
                     sessionRepository.save(session);
                 });
+    }
+
+    private void validateConsultationManager(UserRole actorRole) {
+        if (actorRole == UserRole.SUPER_ADMIN
+                || actorRole == UserRole.ADMIN
+                || actorRole == UserRole.CARE_COORDINATOR)
+            return;
+        throw new AppException(ErrorCode.ACCESS_DENIED, "You are not allowed to manage consultation sessions");
     }
 
     private ConsultationSessionResponse toSessionResponse(ConsultationSession session, Long userId) {

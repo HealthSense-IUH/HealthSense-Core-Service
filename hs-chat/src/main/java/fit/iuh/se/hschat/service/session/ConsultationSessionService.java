@@ -5,11 +5,12 @@ import fit.iuh.se.hschat.dto.request.CloseConsultationRequest;
 import fit.iuh.se.hschat.dto.request.ExtendConsultationRequest;
 import fit.iuh.se.hschat.dto.response.ConsultationSessionResponse;
 import fit.iuh.se.hsshared.dto.response.PageResponse;
+import fit.iuh.se.hsuser.entity.enums.UserRole;
 import org.springframework.data.domain.Pageable;
 
 public interface ConsultationSessionService {
 
-    ConsultationSessionResponse createSessionByAdmin(Long adminId, AdminCreateConsultationSessionRequest request);
+    ConsultationSessionResponse createSessionByAdmin(Long actorId, UserRole actorRole, AdminCreateConsultationSessionRequest request);
 
     ConsultationSessionResponse getSessionById(Long userId, Long sessionId);
 
@@ -17,11 +18,11 @@ public interface ConsultationSessionService {
 
     PageResponse<ConsultationSessionResponse> getDoctorSessions(Long doctorId, Pageable pageable);
 
-    PageResponse<ConsultationSessionResponse> getSessionsForAdmin(Pageable pageable);
+    PageResponse<ConsultationSessionResponse> getSessionsForAdmin(UserRole actorRole, Pageable pageable);
 
-    ConsultationSessionResponse extendSession(Long adminId, Long sessionId, ExtendConsultationRequest request);
+    ConsultationSessionResponse extendSession(Long actorId, UserRole actorRole, Long sessionId, ExtendConsultationRequest request);
 
-    ConsultationSessionResponse closeSession(Long adminId, Long sessionId, CloseConsultationRequest request);
+    ConsultationSessionResponse closeSession(Long actorId, UserRole actorRole, Long sessionId, CloseConsultationRequest request);
 
-    void expireOverdueSessions();
+    void expireOverdueSessions(UserRole actorRole);
 }
