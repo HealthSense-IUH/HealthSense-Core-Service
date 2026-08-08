@@ -1,7 +1,6 @@
-package fit.iuh.se.hshealthrecord.service;
+package fit.iuh.se.hshealthrecord.service.user;
 
 import fit.iuh.se.hshealthrecord.dto.request.AiCallbackRequest;
-import fit.iuh.se.hshealthrecord.dto.request.AdminCreateHealthRecordRequest;
 import fit.iuh.se.hshealthrecord.dto.request.PresignedUrlRequest;
 import fit.iuh.se.hshealthrecord.dto.response.HealthRecordResponse;
 import fit.iuh.se.hshealthrecord.dto.response.PresignedUrlResponse;
@@ -20,8 +19,6 @@ public interface HealthRecordService {
     HealthRecordResponse getRecordById(Long userId, Long recordId);
 
     PageResponse<HealthRecordResponse> getMyRecords(Long userId, Pageable pageable);
-
-    HealthRecordResponse createRecordForMember(Long adminId, AdminCreateHealthRecordRequest request);
 
     HealthRecordResponse updateAiResult(AiCallbackRequest request);
 }

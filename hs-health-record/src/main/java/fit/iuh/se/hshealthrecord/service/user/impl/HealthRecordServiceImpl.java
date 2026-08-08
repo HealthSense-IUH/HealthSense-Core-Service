@@ -1,26 +1,21 @@
-package fit.iuh.se.hshealthrecord.service.impl;
+package fit.iuh.se.hshealthrecord.service.user.impl;
 
-import fit.iuh.se.hshealthrecord.dto.request.AdminCreateHealthRecordRequest;
 import fit.iuh.se.hshealthrecord.dto.request.AiCallbackRequest;
 import fit.iuh.se.hshealthrecord.dto.request.PresignedUrlRequest;
 import fit.iuh.se.hshealthrecord.dto.response.HealthRecordResponse;
 import fit.iuh.se.hshealthrecord.dto.response.PresignedUrlResponse;
 import fit.iuh.se.hshealthrecord.entity.HealthRecord;
-import fit.iuh.se.hshealthrecord.entity.enums.PredictionLabel;
 import fit.iuh.se.hshealthrecord.entity.enums.RecordStatus;
 import fit.iuh.se.hshealthrecord.mapper.HealthRecordMapper;
 import fit.iuh.se.hshealthrecord.repository.HealthRecordRepository;
 import fit.iuh.se.hshealthrecord.dto.message.RecordProcessingMessage;
-import fit.iuh.se.hshealthrecord.service.HealthRecordService;
+import fit.iuh.se.hshealthrecord.service.user.HealthRecordService;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsshared.dto.response.PageResponse;
 import fit.iuh.se.hsshared.service.s3.S3Service;
-import fit.iuh.se.hsuser.entity.UserAccount;
-import fit.iuh.se.hsuser.entity.enums.UserRole;
-import fit.iuh.se.hsuser.repository.UserAccountRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -39,7 +34,6 @@ public class HealthRecordServiceImpl implements HealthRecordService {
     private final HealthRecordMapper mapper;
     private final S3Service s3Service;
     private final RabbitTemplate rabbitTemplate;
-    private final UserAccountRepository userAccountRepository;
 
     @Value("${app.rabbitmq.exchange:health.record.exchange}")
     private String exchange;
@@ -151,35 +145,6 @@ public class HealthRecordServiceImpl implements HealthRecordService {
 
     @Override
     @Transactional
-    public HealthRecordResponse createRecordForMember(Long adminId, AdminCreateHealthRecordRequest request) {
-        UserAccount member = userAccountRepository.findById(request.getMemberId())
-                .orElseThrow(() -> new AppException(ErrorCode.MEMBER_NOT_FOUND));
-        if (member.getRole() != UserRole.MEMBER)
-            throw new AppException(ErrorCode.MEMBER_NOT_FOUND);
-
-        String fileName = defaultIfBlank(request.getFileName(), "sample-hrv-consultation.csv");
-        HealthRecord record = HealthRecord.builder()
-                .userId(request.getMemberId())
-                .fileName(fileName)
-                .s3FileKey(defaultIfBlank(
-                        request.getS3FileKey(),
-                        "seed/health-records/" + request.getMemberId() + "/" + fileName
-                ))
-                .fileSize(request.getFileSize() == null ? 2048L : request.getFileSize())
-                .status(request.getStatus() == null ? RecordStatus.COMPLETED : request.getStatus())
-                .predictionLabel(request.getPredictionLabel() == null ? PredictionLabel.UNCERTAIN : request.getPredictionLabel())
-                .confidence(request.getConfidence() == null ? 0.78 : request.getConfidence())
-                .hrvFeaturesJson(defaultIfBlank(
-                        request.getHrvFeaturesJson(),
-                        "{\"sdnn\":42.5,\"rmssd\":28.1,\"pnn50\":12.4,\"meanHr\":86.2}"
-                ))
-                .build();
-
-        return mapper.toResponse(repository.save(record));
-    }
-
-    @Override
-    @Transactional
     public HealthRecordResponse updateAiResult(AiCallbackRequest request) {
         log.info("Updating AI result for record {}", request.getRecordId());
         HealthRecord record = repository.findById(request.getRecordId())
@@ -196,7 +161,4 @@ public class HealthRecordServiceImpl implements HealthRecordService {
         return mapper.toResponse(record);
     }
 
-    private String defaultIfBlank(String value, String defaultValue) {
-        return value == null || value.trim().isEmpty() ? defaultValue : value.trim();
-    }
 }
