@@ -187,7 +187,11 @@ public class AdminUserServiceImpl implements AdminUserService {
     private void validateRoleVisibility(UserRole currentUserRole, UserRole targetRole) {
         if (currentUserRole == UserRole.SUPER_ADMIN && targetRole != UserRole.SUPER_ADMIN)
             return;
-        if (currentUserRole == UserRole.ADMIN && (targetRole == UserRole.DOCTOR || targetRole == UserRole.MEMBER))
+        if (currentUserRole == UserRole.ADMIN && (
+                targetRole == UserRole.CARE_COORDINATOR
+                        || targetRole == UserRole.DOCTOR
+                        || targetRole == UserRole.MEMBER
+        ))
             return;
         throw new AppException(ErrorCode.ACCESS_DENIED, "You are not allowed to view users with this role");
     }
