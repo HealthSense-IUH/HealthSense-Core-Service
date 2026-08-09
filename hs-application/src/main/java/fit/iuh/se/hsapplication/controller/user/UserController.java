@@ -1,6 +1,8 @@
 package fit.iuh.se.hsapplication.controller.user;
 
 import fit.iuh.se.hsapplication.dto.auth.UserAuthentication;
+import fit.iuh.se.hsapplication.dto.response.MemberDetailResponse;
+import fit.iuh.se.hshealthrecord.service.user.HealthRecordService;
 import fit.iuh.se.hsshared.dto.response.ApiResponse;
 import fit.iuh.se.hsuser.dto.request.AvatarPresignedUrlRequest;
 import fit.iuh.se.hsuser.dto.request.UserProfileUpdateRequest;
@@ -26,10 +28,21 @@ import org.springframework.web.bind.annotation.RestController;
 public class UserController {
 
     UserService userService;
+    HealthRecordService healthRecordService;
 
     @GetMapping("/me")
     public ApiResponse<UserResponse> getProfile(@AuthenticationPrincipal UserAuthentication currentUser) {
         return new ApiResponse<>(userService.getProfile(currentUser.getUserId()));
+    }
+
+    @GetMapping("/me/detail")
+    public ApiResponse<MemberDetailResponse> getProfileDetail(@AuthenticationPrincipal UserAuthentication currentUser) {
+        Long userId = currentUser.getUserId();
+        return new ApiResponse<>(MemberDetailResponse.builder()
+                .user(userService.getProfile(userId))
+                .latestHealthRecord(healthRecordService.getLatestRecord(userId).orElse(null))
+                .totalHealthRecords(healthRecordService.countRecords(userId))
+                .build());
     }
 
     @PatchMapping("/me")
