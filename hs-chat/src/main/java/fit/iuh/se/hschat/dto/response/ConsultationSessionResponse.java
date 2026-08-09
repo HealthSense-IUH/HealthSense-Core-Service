@@ -5,6 +5,7 @@ import fit.iuh.se.hschat.entity.enums.ConsultationStatus;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 
 @NoArgsConstructor
@@ -24,6 +25,11 @@ public class ConsultationSessionResponse {
     Instant startedAt;
     Instant endsAt;
     Instant supportEndsAt;
+    Long packageId;
+    BigDecimal packagePriceSnapshot;
+    Integer packageDurationDaysSnapshot;
+    Instant completedAt;
+    fit.iuh.se.hschat.entity.enums.ConsultationCompletionReason completionReason;
     Instant closedAt;
     String closeReason;
     Long healthRecordId;
