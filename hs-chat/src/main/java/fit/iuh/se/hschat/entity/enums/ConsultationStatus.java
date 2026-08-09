@@ -1,9 +1,8 @@
 package fit.iuh.se.hschat.entity.enums;
 
 public enum ConsultationStatus {
-    PENDING,
+    SCHEDULED,
     ACTIVE,
-    EXPIRED,
-    CLOSED,
+    COMPLETED,
     CANCELLED
 }

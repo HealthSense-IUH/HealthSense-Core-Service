@@ -1,8 +1,10 @@
 package fit.iuh.se.hschat.entity.enums;
 
 public enum ConsultationRequestStatus {
-    PENDING,
-    APPROVED,
+    PENDING_REVIEW,
+    NEED_MORE_INFO,
+    WAITING_PAYMENT,
     REJECTED,
-    CANCELLED
+    CANCELLED,
+    EXPIRED
 }
