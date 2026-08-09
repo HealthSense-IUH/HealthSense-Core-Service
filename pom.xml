@@ -36,7 +36,7 @@
         <module>hs-shared</module>
         <module>hs-user</module>
         <module>hs-auth</module>
-        <module>hs-chat</module>
+        <module>hs-consultation</module>
         <module>hs-notification</module>
         <module>hs-health-record</module>
         <module>hs-application</module>

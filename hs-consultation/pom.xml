@@ -8,7 +8,7 @@
         <version>0.0.1-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
-    <artifactId>hs-chat</artifactId>
+    <artifactId>hs-consultation</artifactId>
     <name>hs-chat</name>
     <description>hs-chat</description>
     <url/>
