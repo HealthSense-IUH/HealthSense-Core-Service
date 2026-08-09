@@ -1,6 +1,7 @@
 package fit.iuh.se.hschat.entity;
 
 import fit.iuh.se.hschat.entity.enums.ConsultationSourceType;
+import fit.iuh.se.hschat.entity.enums.ConsultationCompletionReason;
 import fit.iuh.se.hschat.entity.enums.ConsultationStatus;
 import fit.iuh.se.hsshared.generator.SnowflakeGenerated;
 import fit.iuh.se.hsuser.entity.BaseEntity;
@@ -8,6 +9,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 
 @NoArgsConstructor
@@ -62,6 +64,22 @@ public class ConsultationSession extends BaseEntity {
 
     @Column(name = "support_ends_at")
     Instant supportEndsAt;
+
+    @Column(name = "package_id")
+    Long packageId;
+
+    @Column(name = "package_price_snapshot", precision = 14, scale = 2)
+    BigDecimal packagePriceSnapshot;
+
+    @Column(name = "package_duration_days_snapshot")
+    Integer packageDurationDaysSnapshot;
+
+    @Column(name = "completed_at")
+    Instant completedAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "completion_reason", length = 40)
+    ConsultationCompletionReason completionReason;
 
     @Column(name = "closed_at")
     Instant closedAt;
