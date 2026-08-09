@@ -2,6 +2,7 @@ package fit.iuh.se.hsapplication.controller.chat;
 
 import fit.iuh.se.hsapplication.dto.auth.UserAuthentication;
 import fit.iuh.se.hschat.dto.request.CreateConsultationRequest;
+import fit.iuh.se.hschat.dto.request.SubmitConsultationMoreInfoRequest;
 import fit.iuh.se.hschat.dto.response.ConsultationRequestResponse;
 import fit.iuh.se.hschat.service.request.ConsultationRequestService;
 import fit.iuh.se.hsshared.dto.response.ApiResponse;
@@ -48,6 +49,14 @@ public class ConsultationRequestController {
             @AuthenticationPrincipal UserAuthentication currentUser,
             @PathVariable Long requestId) {
         return new ApiResponse<>(consultationRequestService.cancelMyRequest(currentUser.getUserId(), requestId));
+    }
+
+    @PatchMapping("/{requestId}/more-info")
+    public ApiResponse<ConsultationRequestResponse> submitMoreInfo(
+            @AuthenticationPrincipal UserAuthentication currentUser,
+            @PathVariable Long requestId,
+            @Valid @RequestBody SubmitConsultationMoreInfoRequest request) {
+        return new ApiResponse<>(consultationRequestService.submitMoreInfo(currentUser.getUserId(), requestId, request));
     }
 
     @GetMapping("/{requestId}")
