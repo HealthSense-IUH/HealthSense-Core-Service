@@ -67,4 +67,11 @@ public class AdminConsultationSessionController {
         consultationSessionService.expireOverdueSessions(currentUser.getRole());
         return new ApiResponse<>();
     }
+
+    @PostMapping("/activate-scheduled")
+    public ApiResponse<Void> activateScheduledSessions(
+            @AuthenticationPrincipal UserAuthentication currentUser) {
+        consultationSessionService.activateScheduledSessions(currentUser.getRole());
+        return new ApiResponse<>();
+    }
 }
