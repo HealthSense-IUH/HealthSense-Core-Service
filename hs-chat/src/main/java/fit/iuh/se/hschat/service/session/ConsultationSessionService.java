@@ -25,4 +25,6 @@ public interface ConsultationSessionService {
     ConsultationSessionResponse closeSession(Long actorId, UserRole actorRole, Long sessionId, CloseConsultationRequest request);
 
     void expireOverdueSessions(UserRole actorRole);
+
+    void activateScheduledSessions(UserRole actorRole);
 }
