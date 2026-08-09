@@ -14,5 +14,9 @@ public interface HealthRecordRepository extends JpaRepository<HealthRecord, Long
 
     Page<HealthRecord> findByUserIdOrderByCreatedAtDesc(Long userId, Pageable pageable);
 
+    Optional<HealthRecord> findFirstByUserIdOrderByCreatedAtDesc(Long userId);
+
     Optional<HealthRecord> findByIdAndUserId(Long id, Long userId);
+
+    long countByUserId(Long userId);
 }
