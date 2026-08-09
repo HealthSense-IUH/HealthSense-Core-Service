@@ -7,6 +7,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 
 @NoArgsConstructor
@@ -22,7 +23,9 @@ import java.time.Instant;
                 @Index(name = "idx_request_member_status", columnList = "member_id, status"),
                 @Index(name = "idx_request_status_created_at", columnList = "status, created_at"),
                 @Index(name = "idx_request_assigned_doctor", columnList = "assigned_doctor_id"),
-                @Index(name = "idx_request_health_record", columnList = "health_record_id")
+                @Index(name = "idx_request_health_record", columnList = "health_record_id"),
+                @Index(name = "idx_request_package", columnList = "package_id"),
+                @Index(name = "idx_request_payment_deadline", columnList = "status, payment_deadline")
         },
         uniqueConstraints = {
                 @UniqueConstraint(name = "uq_request_consultation_session", columnNames = "consultation_session_id")
@@ -41,6 +44,15 @@ public class ConsultationRequest extends BaseEntity {
     @Column(name = "health_record_id")
     Long healthRecordId;
 
+    @Column(name = "package_id")
+    Long packageId;
+
+    @Column(name = "package_price_snapshot", precision = 14, scale = 2)
+    BigDecimal packagePriceSnapshot;
+
+    @Column(name = "package_duration_days_snapshot")
+    Integer packageDurationDaysSnapshot;
+
     @Column(name = "reason", nullable = false, length = 1000)
     String reason;
 
@@ -54,6 +66,12 @@ public class ConsultationRequest extends BaseEntity {
     @Column(name = "assigned_doctor_id")
     Long assignedDoctorId;
 
+    @Column(name = "doctor_reserved_at")
+    Instant doctorReservedAt;
+
+    @Column(name = "payment_deadline")
+    Instant paymentDeadline;
+
     @Column(name = "consultation_session_id", unique = true)
     Long consultationSessionId;
 
@@ -65,4 +83,16 @@ public class ConsultationRequest extends BaseEntity {
 
     @Column(name = "rejection_reason", length = 500)
     String rejectionReason;
+
+    @Column(name = "more_info_reason", length = 500)
+    String moreInfoReason;
+
+    @Column(name = "member_additional_note", length = 1000)
+    String memberAdditionalNote;
+
+    @Column(name = "cancelled_at")
+    Instant cancelledAt;
+
+    @Column(name = "expired_at")
+    Instant expiredAt;
 }
