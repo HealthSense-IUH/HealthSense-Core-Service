@@ -1,5 +1,6 @@
 package fit.iuh.se.hschat.dto.request;
 
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.*;
@@ -11,6 +12,9 @@ import lombok.experimental.FieldDefaults;
 @Setter
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class CreateConsultationRequest {
+
+    @NotNull(message = "Gói chăm sóc không được để trống")
+    Long packageId;
 
     Long healthRecordId;
 

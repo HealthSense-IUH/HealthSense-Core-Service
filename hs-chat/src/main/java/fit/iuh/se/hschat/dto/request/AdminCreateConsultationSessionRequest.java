@@ -20,6 +20,8 @@ public class AdminCreateConsultationSessionRequest {
     @NotNull(message = "Id bác sĩ không được để trống")
     Long doctorId;
 
+    Long packageId;
+
     Long healthRecordId;
 
     Instant startedAt;
