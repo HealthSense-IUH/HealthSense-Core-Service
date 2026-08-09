@@ -1,6 +1,8 @@
 package fit.iuh.se.hsapplication.controller.admin;
 
 import fit.iuh.se.hsapplication.dto.auth.UserAuthentication;
+import fit.iuh.se.hsapplication.dto.response.MemberDetailResponse;
+import fit.iuh.se.hshealthrecord.service.user.HealthRecordService;
 import fit.iuh.se.hsnotification.service.EmailService;
 import fit.iuh.se.hsshared.dto.response.ApiResponse;
 import fit.iuh.se.hsshared.dto.response.PageResponse;
@@ -32,6 +34,7 @@ public class AdminUserController {
 
     AdminUserService adminUserService;
     EmailService emailService;
+    HealthRecordService healthRecordService;
 
     @PostMapping
     public ApiResponse<UserResponse> createUser(
@@ -69,6 +72,18 @@ public class AdminUserController {
             @AuthenticationPrincipal UserAuthentication currentUser,
             @PathVariable Long id) {
         return new ApiResponse<>(adminUserService.getUser(currentUser.getUserId(), currentUser.getRole(), id));
+    }
+
+    @GetMapping("/{id}/detail")
+    public ApiResponse<MemberDetailResponse> getUserDetail(
+            @AuthenticationPrincipal UserAuthentication currentUser,
+            @PathVariable Long id) {
+        UserResponse user = adminUserService.getUser(currentUser.getUserId(), currentUser.getRole(), id);
+        return new ApiResponse<>(MemberDetailResponse.builder()
+                .user(user)
+                .latestHealthRecord(healthRecordService.getLatestRecord(id).orElse(null))
+                .totalHealthRecords(healthRecordService.countRecords(id))
+                .build());
     }
 
     @PatchMapping("/{id}")
