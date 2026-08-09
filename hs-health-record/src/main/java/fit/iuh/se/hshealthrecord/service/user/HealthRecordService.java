@@ -8,6 +8,8 @@ import fit.iuh.se.hsshared.dto.response.PageResponse;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Optional;
+
 public interface HealthRecordService {
 
     PresignedUrlResponse createPresignedUploadUrl(Long userId, PresignedUrlRequest request);
@@ -19,6 +21,10 @@ public interface HealthRecordService {
     HealthRecordResponse getRecordById(Long userId, Long recordId);
 
     PageResponse<HealthRecordResponse> getMyRecords(Long userId, Pageable pageable);
+
+    Optional<HealthRecordResponse> getLatestRecord(Long userId);
+
+    long countRecords(Long userId);
 
     HealthRecordResponse updateAiResult(AiCallbackRequest request);
 }

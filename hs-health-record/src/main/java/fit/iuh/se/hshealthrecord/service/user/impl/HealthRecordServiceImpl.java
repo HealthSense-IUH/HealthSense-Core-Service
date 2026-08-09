@@ -24,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -141,6 +142,19 @@ public class HealthRecordServiceImpl implements HealthRecordService {
         Page<HealthRecordResponse> page = repository.findByUserIdOrderByCreatedAtDesc(userId, pageable)
                 .map(mapper::toResponse);
         return new PageResponse<>(page);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<HealthRecordResponse> getLatestRecord(Long userId) {
+        return repository.findFirstByUserIdOrderByCreatedAtDesc(userId)
+                .map(mapper::toResponse);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public long countRecords(Long userId) {
+        return repository.countByUserId(userId);
     }
 
     @Override
