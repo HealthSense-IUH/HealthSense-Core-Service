@@ -1,7 +1,6 @@
 package fit.iuh.se.hshealthrecord.service.admin;
 
 import fit.iuh.se.hshealthrecord.dto.request.AdminCreateHealthRecordRequest;
-import fit.iuh.se.hshealthrecord.dto.request.AdminUpdateHealthRecordRequest;
 import fit.iuh.se.hshealthrecord.dto.response.HealthRecordResponse;
 import fit.iuh.se.hshealthrecord.entity.enums.PredictionLabel;
 import fit.iuh.se.hshealthrecord.entity.enums.RecordStatus;
