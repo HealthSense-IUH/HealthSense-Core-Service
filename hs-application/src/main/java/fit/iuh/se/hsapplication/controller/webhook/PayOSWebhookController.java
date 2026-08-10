@@ -22,7 +22,7 @@ import vn.payos.model.webhooks.Webhook;
 public class PayOSWebhookController {
 
     ConsultationPaymentService consultationPaymentService;
-    ObjectMapper objectMapper;
+    ObjectMapper objectMapper = new ObjectMapper();
 
     @GetMapping({"", "/"})
     public ApiResponse<String> health() {
