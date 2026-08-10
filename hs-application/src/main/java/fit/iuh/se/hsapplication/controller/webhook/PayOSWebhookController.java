@@ -16,6 +16,11 @@ public class PayOSWebhookController {
 
     ConsultationPaymentService consultationPaymentService;
 
+    @GetMapping
+    public ApiResponse<String> health() {
+        return new ApiResponse<>("payOS webhook endpoint is ready");
+    }
+
     @PostMapping
     public ApiResponse<Void> handlePayOSWebhook(@RequestBody Webhook webhook) {
         consultationPaymentService.handlePayOSWebhook(webhook);
