@@ -65,6 +65,12 @@ public class ConsultationSession extends BaseEntity {
     @Column(name = "support_ends_at")
     Instant supportEndsAt;
 
+    @Column(name = "support_schedule_snapshot_json", columnDefinition = "TEXT")
+    String supportScheduleSnapshotJson;
+
+    @Column(name = "support_timezone_snapshot", length = 80)
+    String supportTimezoneSnapshot;
+
     @Column(name = "package_id")
     Long packageId;
 
