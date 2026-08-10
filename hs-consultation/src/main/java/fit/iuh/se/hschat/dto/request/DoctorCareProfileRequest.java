@@ -1,5 +1,6 @@
 package fit.iuh.se.hschat.dto.request;
 
+import fit.iuh.se.hschat.dto.DoctorAvailabilityDto;
 import fit.iuh.se.hschat.entity.enums.DoctorSpecialty;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
@@ -26,6 +27,8 @@ public class DoctorCareProfileRequest {
 
     @Size(max = 4000, message = "Lịch hỗ trợ không được vượt quá 4000 ký tự")
     String availabilityJson;
+
+    DoctorAvailabilityDto availability;
 
     @Size(max = 80, message = "Timezone không được vượt quá 80 ký tự")
     String timezone;

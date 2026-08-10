@@ -20,6 +20,7 @@ public class CareServicePackageResponse {
     String name;
     String description;
     BigDecimal priceAmount;
+    String currency;
     Integer durationDays;
     Boolean renewable;
     CareServicePackageStatus status;
