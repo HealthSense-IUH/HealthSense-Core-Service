@@ -44,6 +44,7 @@ public class ConsultationPaymentServiceImpl implements ConsultationPaymentServic
             ConsultationPaymentStatus.PENDING,
             ConsultationPaymentStatus.FAILED
     );
+    static final long MIN_HEALTHSENSE_ORDER_CODE = 1_000_000_000_000_000L;
 
     ConsultationPaymentRepository paymentRepository;
     ConsultationRequestRepository requestRepository;
@@ -102,14 +103,15 @@ public class ConsultationPaymentServiceImpl implements ConsultationPaymentServic
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public ConsultationPaymentResponse getPayment(Long memberId, Long requestId) {
-        ConsultationRequest request = requestRepository.findById(requestId)
+        ConsultationRequest request = requestRepository.findByIdForUpdate(requestId)
                 .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_REQUEST_NOT_FOUND));
         validateMemberOwnsRequest(memberId, request);
-        return paymentRepository.findByRequestId(requestId)
-                .map(this::toResponse)
+        ConsultationPayment payment = paymentRepository.findByRequestIdForUpdate(requestId)
                 .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_PAYMENT_NOT_FOUND));
+        reconcilePaidProviderStatus(payment, request, Instant.now());
+        return toResponse(payment);
     }
 
     @Override
@@ -121,9 +123,15 @@ public class ConsultationPaymentServiceImpl implements ConsultationPaymentServic
         } catch (Exception exception) {
             throw new AppException(ErrorCode.INVALID_PAYMENT_WEBHOOK, exception.getMessage());
         }
+        log.info("payOS webhook verified, orderCode={}", verifiedPayment.getOrderCode());
 
+        log.info("Looking up consultation payment orderCode={}", verifiedPayment.getOrderCode());
         ConsultationPayment payment = paymentRepository.findByOrderCodeForUpdate(verifiedPayment.getOrderCode())
-                .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_PAYMENT_NOT_FOUND));
+                .orElse(null);
+        if (payment == null) {
+            handleUnknownVerifiedWebhook(verifiedPayment);
+            return;
+        }
         validateVerifiedPayment(payment, verifiedPayment);
 
         if (payment.getStatus() == ConsultationPaymentStatus.PAID)
@@ -182,6 +190,15 @@ public class ConsultationPaymentServiceImpl implements ConsultationPaymentServic
         paymentRepository.save(lockedPayment);
         if (request.getStatus() == ConsultationRequestStatus.WAITING_PAYMENT)
             expireRequest(request, now);
+    }
+
+    private void reconcilePaidProviderStatus(ConsultationPayment payment, ConsultationRequest request, Instant now) {
+        if (payment.getStatus() != ConsultationPaymentStatus.PENDING)
+            return;
+
+        String providerStatus = safeProviderStatus(payment);
+        if ("PAID".equalsIgnoreCase(providerStatus))
+            activatePaidPayment(payment, request, now);
     }
 
     private void activatePaidPayment(ConsultationPayment payment, ConsultationRequest request, Instant now) {
@@ -277,6 +294,19 @@ public class ConsultationPaymentServiceImpl implements ConsultationPaymentServic
                 && payment.getPaymentLinkId() != null
                 && !payment.getPaymentLinkId().equals(verifiedPayment.getPaymentLinkId()))
             throw new AppException(ErrorCode.INVALID_PAYMENT_WEBHOOK, "Webhook payment link does not match payment");
+    }
+
+    private void handleUnknownVerifiedWebhook(VerifiedPayOSPayment verifiedPayment) {
+        if (!isHealthSenseOrderCode(verifiedPayment.getOrderCode())) {
+            log.warn("Acknowledging signed payOS webhook for non-HealthSense orderCode={}", verifiedPayment.getOrderCode());
+            return;
+        }
+        log.error("Signed payOS webhook references missing HealthSense payment orderCode={}", verifiedPayment.getOrderCode());
+        throw new AppException(ErrorCode.CONSULTATION_PAYMENT_NOT_FOUND);
+    }
+
+    private boolean isHealthSenseOrderCode(Long orderCode) {
+        return orderCode != null && orderCode >= MIN_HEALTHSENSE_ORDER_CODE;
     }
 
     private Long toVndMinorUnit(BigDecimal amount) {

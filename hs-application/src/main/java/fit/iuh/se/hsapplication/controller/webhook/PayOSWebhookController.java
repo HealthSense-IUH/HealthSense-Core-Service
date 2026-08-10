@@ -24,15 +24,19 @@ public class PayOSWebhookController {
     ConsultationPaymentService consultationPaymentService;
     ObjectMapper objectMapper = new ObjectMapper();
 
-    @GetMapping({"", "/"})
+    @RequestMapping(value = {"", "/", "/**"}, method = {RequestMethod.GET, RequestMethod.HEAD})
     public ApiResponse<String> health() {
         return new ApiResponse<>("payOS webhook endpoint is ready");
     }
 
-    @PostMapping({"", "/"})
+    @PostMapping({"", "/", "/**"})
     public ApiResponse<Void> handlePayOSWebhook(@RequestBody(required = false) String body) throws Exception {
-        if (body == null || body.trim().isEmpty())
+        log.info("payOS webhook request received");
+
+        if (body == null || body.trim().isEmpty()) {
+            log.info("Received empty payOS webhook validation ping");
             return new ApiResponse<>();
+        }
 
         JsonNode root = objectMapper.readTree(body);
         if (!root.hasNonNull("data") || !root.hasNonNull("signature")) {
