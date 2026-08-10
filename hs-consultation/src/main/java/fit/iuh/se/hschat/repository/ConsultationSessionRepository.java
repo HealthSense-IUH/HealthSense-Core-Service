@@ -17,6 +17,8 @@ public interface ConsultationSessionRepository extends JpaRepository<Consultatio
 
     Optional<ConsultationSession> findByRequestId(Long requestId);
 
+    boolean existsByRequestId(Long requestId);
+
     Optional<ConsultationSession> findByMemberIdAndStatus(Long memberId, ConsultationStatus status);
 
     boolean existsByMemberIdAndStatus(Long memberId, ConsultationStatus status);
