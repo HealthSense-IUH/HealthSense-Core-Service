@@ -68,9 +68,21 @@ public interface UserAccountRepository extends JpaRepository<UserAccount, Long> 
         from UserAccount u
         where u.role = :role
           and u.status = :status
+    """)
+    Page<UserAccount> findDoctors(
+            UserRole role,
+            AccountStatus status,
+            Pageable pageable
+    );
+
+    @EntityGraph(attributePaths = "profile")
+    @Query("""
+        select u
+        from UserAccount u
+        where u.role = :role
+          and u.status = :status
           and (
-              :keyword is null
-              or cast(u.id as string) like concat('%', :keyword, '%')
+              cast(u.id as string) like concat('%', :keyword, '%')
               or lower(u.email) like lower(concat('%', :keyword, '%'))
               or lower(u.profile.displayName) like lower(concat('%', :keyword, '%'))
               or u.profile.phone like concat('%', :keyword, '%')

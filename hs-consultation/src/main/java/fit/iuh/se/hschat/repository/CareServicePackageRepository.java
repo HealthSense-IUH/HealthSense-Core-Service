@@ -12,6 +12,8 @@ import java.util.Optional;
 @Repository
 public interface CareServicePackageRepository extends JpaRepository<CareServicePackage, Long> {
 
+    boolean existsByCode(String code);
+
     Optional<CareServicePackage> findByIdAndStatus(Long id, CareServicePackageStatus status);
 
     Page<CareServicePackage> findByStatusOrderByCreatedAtDesc(CareServicePackageStatus status, Pageable pageable);
