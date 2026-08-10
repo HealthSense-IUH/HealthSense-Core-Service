@@ -33,9 +33,15 @@ public interface ConsultationSessionRepository extends JpaRepository<Consultatio
 
     Page<ConsultationSession> findByDoctorIdOrderByLastMessageAtDesc(Long doctorId, Pageable pageable);
 
+    Page<ConsultationSession> findByDoctorIdAndStatusInOrderByLastMessageAtDesc(Long doctorId, Collection<ConsultationStatus> statuses, Pageable pageable);
+
+    Optional<ConsultationSession> findByIdAndDoctorId(Long id, Long doctorId);
+
     Page<ConsultationSession> findByStatusOrderByCreatedAtDesc(ConsultationStatus status, Pageable pageable);
 
     List<ConsultationSession> findByStatusAndEndsAtBefore(ConsultationStatus status, Instant endsAt);
 
     List<ConsultationSession> findByStatusAndStartedAtBefore(ConsultationStatus status, Instant startedAt);
+
+    List<ConsultationSession> findAllByMemberIdAndStatus(Long memberId, ConsultationStatus status);
 }
