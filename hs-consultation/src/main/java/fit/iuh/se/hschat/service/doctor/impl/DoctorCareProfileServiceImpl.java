@@ -1,5 +1,6 @@
 package fit.iuh.se.hschat.service.doctor.impl;
 
+import fit.iuh.se.hschat.dto.DoctorAvailabilityDto;
 import fit.iuh.se.hschat.dto.request.DoctorCareProfileRequest;
 import fit.iuh.se.hschat.dto.response.DoctorCareProfileResponse;
 import fit.iuh.se.hschat.entity.DoctorCareProfile;
@@ -15,8 +16,11 @@ import fit.iuh.se.hsuser.repository.UserAccountRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.bson.Document;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -51,8 +55,9 @@ public class DoctorCareProfileServiceImpl implements DoctorCareProfileService {
         validateDoctor(doctorId);
 
         String timezone = isBlank(request.getTimezone()) ? DEFAULT_TIMEZONE : request.getTimezone().trim();
+        String availabilityJson = resolveAvailabilityJson(request);
         boolean acceptingCare = Boolean.TRUE.equals(request.getAcceptsOneOnOneCare());
-        scheduleValidator.validate(request.getAvailabilityJson(), timezone, acceptingCare);
+        scheduleValidator.validate(availabilityJson, timezone, acceptingCare);
 
         DoctorCareProfile profile = profileRepository.findByDoctorId(doctorId)
                 .orElseGet(() -> DoctorCareProfile.builder()
@@ -62,10 +67,28 @@ public class DoctorCareProfileServiceImpl implements DoctorCareProfileService {
         profile.setSpecialty(request.getSpecialty());
         profile.setAcceptsOneOnOneCare(request.getAcceptsOneOnOneCare());
         profile.setMaxActiveConsultations(request.getMaxActiveConsultations());
-        profile.setAvailabilityJson(request.getAvailabilityJson());
+        profile.setAvailabilityJson(availabilityJson);
         profile.setTimezone(timezone);
 
         return mapper.toDoctorCareProfileResponse(profileRepository.save(profile));
+    }
+
+    private String resolveAvailabilityJson(DoctorCareProfileRequest request) {
+        if (request.getAvailability() == null)
+            return request.getAvailabilityJson();
+        return toAvailabilityJson(request.getAvailability());
+    }
+
+    private String toAvailabilityJson(DoctorAvailabilityDto availability) {
+        List<Document> weekly = availability.getWeekly() == null
+                ? List.of()
+                : availability.getWeekly().stream()
+                .map(slot -> new Document()
+                        .append("dayOfWeek", slot.getDayOfWeek())
+                        .append("start", slot.getStart())
+                        .append("end", slot.getEnd()))
+                .toList();
+        return new Document("weekly", weekly).toJson();
     }
 
     private void validateConsultationManager(UserRole actorRole) {

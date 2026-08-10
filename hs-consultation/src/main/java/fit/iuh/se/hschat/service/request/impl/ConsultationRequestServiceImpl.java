@@ -280,10 +280,13 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
         ConsultationRequest request = requestRepository.findById(requestId)
                 .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_REQUEST_NOT_FOUND));
 
-        Page<UserAccount> doctors = userAccountRepository.searchDoctors(
+        String normalizedKeyword = trimToNull(keyword);
+        Page<UserAccount> doctors = normalizedKeyword == null
+                ? userAccountRepository.findDoctors(UserRole.DOCTOR, AccountStatus.ACTIVE, pageable)
+                : userAccountRepository.searchDoctors(
                 UserRole.DOCTOR,
                 AccountStatus.ACTIVE,
-                trimToNull(keyword),
+                normalizedKeyword,
                 pageable
         );
         List<Long> doctorIds = doctors.stream().map(UserAccount::getId).toList();
