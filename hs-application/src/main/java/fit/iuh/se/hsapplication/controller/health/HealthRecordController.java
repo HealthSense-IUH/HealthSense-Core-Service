@@ -5,7 +5,7 @@ import fit.iuh.se.hshealthrecord.dto.request.AiCallbackRequest;
 import fit.iuh.se.hshealthrecord.dto.request.PresignedUrlRequest;
 import fit.iuh.se.hshealthrecord.dto.response.HealthRecordResponse;
 import fit.iuh.se.hshealthrecord.dto.response.PresignedUrlResponse;
-import fit.iuh.se.hshealthrecord.service.HealthRecordService;
+import fit.iuh.se.hshealthrecord.service.user.HealthRecordService;
 import fit.iuh.se.hsshared.dto.response.ApiResponse;
 import fit.iuh.se.hsshared.dto.response.PageResponse;
 import jakarta.validation.Valid;

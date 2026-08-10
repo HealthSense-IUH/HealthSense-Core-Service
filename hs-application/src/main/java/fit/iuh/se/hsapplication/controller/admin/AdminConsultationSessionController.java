@@ -33,15 +33,16 @@ public class AdminConsultationSessionController {
     public ApiResponse<ConsultationSessionResponse> createSessionByAdmin(
             @AuthenticationPrincipal UserAuthentication currentUser,
             @RequestBody @Valid AdminCreateConsultationSessionRequest request) {
-        return new ApiResponse<>(consultationSessionService.createSessionByAdmin(currentUser.getUserId(), request));
+        return new ApiResponse<>(consultationSessionService.createSessionByAdmin(currentUser.getUserId(), currentUser.getRole(), request));
     }
 
     @GetMapping
     public ApiResponse<PageResponse<ConsultationSessionResponse>> getSessionsForAdmin(
+            @AuthenticationPrincipal UserAuthentication currentUser,
             @RequestParam(name = "page", defaultValue = "1") @Min(1) int page,
             @RequestParam(name = "size", defaultValue = "10") @Min(1) int size) {
         Pageable pageable = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-        return new ApiResponse<>(consultationSessionService.getSessionsForAdmin(pageable));
+        return new ApiResponse<>(consultationSessionService.getSessionsForAdmin(currentUser.getRole(), pageable));
     }
 
     @PatchMapping("/{sessionId}/extend")
@@ -49,7 +50,7 @@ public class AdminConsultationSessionController {
             @AuthenticationPrincipal UserAuthentication currentUser,
             @PathVariable Long sessionId,
             @RequestBody @Valid ExtendConsultationRequest request) {
-        return new ApiResponse<>(consultationSessionService.extendSession(currentUser.getUserId(), sessionId, request));
+        return new ApiResponse<>(consultationSessionService.extendSession(currentUser.getUserId(), currentUser.getRole(), sessionId, request));
     }
 
     @PatchMapping("/{sessionId}/close")
@@ -57,12 +58,20 @@ public class AdminConsultationSessionController {
             @AuthenticationPrincipal UserAuthentication currentUser,
             @PathVariable Long sessionId,
             @RequestBody @Valid CloseConsultationRequest request) {
-        return new ApiResponse<>(consultationSessionService.closeSession(currentUser.getUserId(), sessionId, request));
+        return new ApiResponse<>(consultationSessionService.closeSession(currentUser.getUserId(), currentUser.getRole(), sessionId, request));
     }
 
     @PostMapping("/expire-overdue")
-    public ApiResponse<Void> expireOverdueSessions() {
-        consultationSessionService.expireOverdueSessions();
+    public ApiResponse<Void> expireOverdueSessions(
+            @AuthenticationPrincipal UserAuthentication currentUser) {
+        consultationSessionService.expireOverdueSessions(currentUser.getRole());
+        return new ApiResponse<>();
+    }
+
+    @PostMapping("/activate-scheduled")
+    public ApiResponse<Void> activateScheduledSessions(
+            @AuthenticationPrincipal UserAuthentication currentUser) {
+        consultationSessionService.activateScheduledSessions(currentUser.getRole());
         return new ApiResponse<>();
     }
 }

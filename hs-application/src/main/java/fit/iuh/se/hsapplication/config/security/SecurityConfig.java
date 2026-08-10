@@ -46,14 +46,20 @@ public class SecurityConfig {
         "/api/auth/forgot-password/verify-otp",
         "/api/auth/forgot-password/reset",
         "/api/health-records/ai-callback",
+        "/api/webhooks/payos",
         "/ws/consultations/**",
     };
 
     static String[] ADMIN_ENDPOINTS = {
             "/api/admin/users/**",
             "/api/admin/health-records/**",
+            "/api/admin/care-service-packages/**",
+    };
+
+    static String[] CONSULTATION_MANAGEMENT_ENDPOINTS = {
             "/api/admin/consultation-requests/**",
             "/api/admin/consultation-sessions/**",
+            "/api/admin/doctors/**",
     };
 
     @Bean
@@ -72,6 +78,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
                 .requestMatchers(ADMIN_ENDPOINTS).hasAnyRole("SUPER_ADMIN", "ADMIN")
+                .requestMatchers(CONSULTATION_MANAGEMENT_ENDPOINTS).hasAnyRole("SUPER_ADMIN", "ADMIN", "CARE_COORDINATOR")
                 .anyRequest().authenticated()
         );
         httpSecurity.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

@@ -114,9 +114,12 @@ public class UserServiceImpl implements UserService {
     }
 
     private void validateSelfUpdateRole(UserRole currentUserRole) {
-        if (currentUserRole == UserRole.ADMIN || currentUserRole == UserRole.DOCTOR || currentUserRole == UserRole.MEMBER)
+        if (currentUserRole == UserRole.ADMIN
+                || currentUserRole == UserRole.CARE_COORDINATOR
+                || currentUserRole == UserRole.DOCTOR
+                || currentUserRole == UserRole.MEMBER)
             return;
-        throw new AppException(ErrorCode.ACCESS_DENIED, "Only admins, doctors and members can update profile here");
+        throw new AppException(ErrorCode.ACCESS_DENIED, "Only admins, care coordinators, doctors and members can update profile here");
     }
 
     private void updateProfile(UserProfile profile, UserProfileUpdateRequest request) {

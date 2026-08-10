@@ -58,7 +58,7 @@
         </dependency>
         <dependency>
             <groupId>fit.iuh.se</groupId>
-            <artifactId>hs-chat</artifactId>
+            <artifactId>hs-consultation</artifactId>
             <version>${project.version}</version>
         </dependency>
 
