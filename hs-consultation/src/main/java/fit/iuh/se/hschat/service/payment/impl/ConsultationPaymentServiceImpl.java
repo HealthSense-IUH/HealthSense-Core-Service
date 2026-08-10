@@ -12,6 +12,7 @@ import fit.iuh.se.hschat.repository.ConsultationParticipantRepository;
 import fit.iuh.se.hschat.repository.ConsultationPaymentRepository;
 import fit.iuh.se.hschat.repository.ConsultationRequestRepository;
 import fit.iuh.se.hschat.repository.ConsultationSessionRepository;
+import fit.iuh.se.hschat.repository.DoctorCareProfileRepository;
 import fit.iuh.se.hschat.service.payment.ConsultationPaymentService;
 import fit.iuh.se.hschat.service.payment.PayOSPaymentGateway;
 import fit.iuh.se.hsshared.advice.entity.AppException;
@@ -50,6 +51,7 @@ public class ConsultationPaymentServiceImpl implements ConsultationPaymentServic
     ConsultationRequestRepository requestRepository;
     ConsultationSessionRepository sessionRepository;
     ConsultationParticipantRepository participantRepository;
+    DoctorCareProfileRepository doctorCareProfileRepository;
     PayOSPaymentGateway paymentGateway;
 
     @NonFinal
@@ -234,6 +236,8 @@ public class ConsultationPaymentServiceImpl implements ConsultationPaymentServic
 
     private ConsultationSession createActiveSession(ConsultationRequest request, Instant now) {
         Instant endsAt = now.plus(request.getPackageDurationDaysSnapshot(), ChronoUnit.DAYS);
+        var doctorProfile = doctorCareProfileRepository.findByDoctorId(request.getAssignedDoctorId())
+                .orElseThrow(() -> new AppException(ErrorCode.DOCTOR_CARE_PROFILE_NOT_FOUND));
         ConsultationSession session = ConsultationSession.builder()
                 .memberId(request.getMemberId())
                 .doctorId(request.getAssignedDoctorId())
@@ -242,6 +246,8 @@ public class ConsultationPaymentServiceImpl implements ConsultationPaymentServic
                 .startedAt(now)
                 .endsAt(endsAt)
                 .supportEndsAt(endsAt)
+                .supportScheduleSnapshotJson(doctorProfile.getAvailabilityJson())
+                .supportTimezoneSnapshot(doctorProfile.getTimezone())
                 .packageId(request.getPackageId())
                 .packagePriceSnapshot(request.getPackagePriceSnapshot())
                 .packageDurationDaysSnapshot(request.getPackageDurationDaysSnapshot())
