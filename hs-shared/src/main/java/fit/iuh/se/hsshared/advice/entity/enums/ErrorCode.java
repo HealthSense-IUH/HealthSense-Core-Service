@@ -53,7 +53,12 @@ public enum ErrorCode {
     DOCTOR_NOT_ELIGIBLE_FOR_CONSULTATION(4014, "Doctor is not eligible for consultation", HttpStatus.CONFLICT),
     INVALID_DOCTOR_SUPPORT_SCHEDULE(4015, "Doctor support schedule is invalid", HttpStatus.BAD_REQUEST),
     CARE_SERVICE_PACKAGE_CODE_ALREADY_EXISTS(4016, "Care service package code already exists", HttpStatus.CONFLICT),
-    INVALID_CARE_SERVICE_PACKAGE_STATUS(4017, "Invalid care service package status transition", HttpStatus.CONFLICT);
+    INVALID_CARE_SERVICE_PACKAGE_STATUS(4017, "Invalid care service package status transition", HttpStatus.CONFLICT),
+    CONSULTATION_PAYMENT_NOT_FOUND(4018, "Consultation payment not found", HttpStatus.NOT_FOUND),
+    INVALID_CONSULTATION_PAYMENT_STATUS(4019, "Invalid consultation payment status", HttpStatus.CONFLICT),
+    PAYMENT_PROVIDER_NOT_CONFIGURED(4020, "Payment provider is not configured", HttpStatus.INTERNAL_SERVER_ERROR),
+    PAYMENT_PROVIDER_ERROR(4021, "Payment provider error", HttpStatus.BAD_GATEWAY),
+    INVALID_PAYMENT_WEBHOOK(4022, "Invalid payment webhook", HttpStatus.BAD_REQUEST);
 
     private final int code;
     private final String message;
