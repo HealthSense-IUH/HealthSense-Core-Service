@@ -133,6 +133,33 @@ class ConsultationSessionServiceImplTest {
         verify(participantRepository, never()).save(any());
     }
 
+    @Test
+    void createSessionByAdminSnapshotsDoctorSupportSchedule() {
+        DoctorCareProfile profile = doctorProfile();
+        when(userAccountRepository.findById(1L)).thenReturn(Optional.of(user(1L, UserRole.MEMBER)));
+        when(userAccountRepository.findById(2L)).thenReturn(Optional.of(user(2L, UserRole.DOCTOR)));
+        when(doctorCareProfileRepository.findByDoctorId(2L)).thenReturn(Optional.of(profile));
+        when(scheduleValidator.isValid(anyString(), anyString(), eq(true))).thenReturn(true);
+        when(sessionRepository.existsByMemberIdAndStatusIn(eq(1L), anyCollection())).thenReturn(false);
+        when(sessionRepository.countByDoctorIdAndStatusIn(eq(2L), anyCollection())).thenReturn(0L);
+        when(requestRepository.countByAssignedDoctorIdAndStatusAndPaymentDeadlineAfter(eq(2L), any(), any())).thenReturn(0L);
+        when(sessionRepository.save(any(ConsultationSession.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        AdminCreateConsultationSessionRequest request = new AdminCreateConsultationSessionRequest();
+        request.setMemberId(1L);
+        request.setDoctorId(2L);
+        request.setStartedAt(Instant.now().minusSeconds(60));
+        request.setEndsAt(Instant.now().plusSeconds(3600));
+
+        service.createSessionByAdmin(9L, UserRole.ADMIN, request);
+
+        ArgumentCaptor<ConsultationSession> captor = ArgumentCaptor.forClass(ConsultationSession.class);
+        verify(sessionRepository).save(captor.capture());
+        ConsultationSession saved = captor.getValue();
+        assertEquals(profile.getAvailabilityJson(), saved.getSupportScheduleSnapshotJson());
+        assertEquals(profile.getTimezone(), saved.getSupportTimezoneSnapshot());
+    }
+
     private UserAccount user(Long id, UserRole role) {
         return UserAccount.builder()
                 .id(id)
