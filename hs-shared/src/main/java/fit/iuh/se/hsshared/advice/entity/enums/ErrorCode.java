@@ -51,7 +51,9 @@ public enum ErrorCode {
     CARE_SERVICE_PACKAGE_NOT_FOUND(4012, "Care service package not found", HttpStatus.NOT_FOUND),
     DOCTOR_CARE_PROFILE_NOT_FOUND(4013, "Doctor care profile not found", HttpStatus.NOT_FOUND),
     DOCTOR_NOT_ELIGIBLE_FOR_CONSULTATION(4014, "Doctor is not eligible for consultation", HttpStatus.CONFLICT),
-    INVALID_DOCTOR_SUPPORT_SCHEDULE(4015, "Doctor support schedule is invalid", HttpStatus.BAD_REQUEST);
+    INVALID_DOCTOR_SUPPORT_SCHEDULE(4015, "Doctor support schedule is invalid", HttpStatus.BAD_REQUEST),
+    CARE_SERVICE_PACKAGE_CODE_ALREADY_EXISTS(4016, "Care service package code already exists", HttpStatus.CONFLICT),
+    INVALID_CARE_SERVICE_PACKAGE_STATUS(4017, "Invalid care service package status transition", HttpStatus.CONFLICT);
 
     private final int code;
     private final String message;
