@@ -14,6 +14,7 @@ import fit.iuh.se.hschat.repository.ConsultationMessageRepository;
 import fit.iuh.se.hschat.repository.ConsultationParticipantRepository;
 import fit.iuh.se.hschat.repository.ConsultationSessionRepository;
 import fit.iuh.se.hschat.service.message.ConsultationMessageService;
+import fit.iuh.se.hschat.service.message.SupportHoursPolicy;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsshared.dto.response.PageResponse;
@@ -39,6 +40,7 @@ public class ConsultationMessageServiceImpl implements ConsultationMessageServic
     ConsultationSessionRepository sessionRepository;
     ConsultationParticipantRepository participantRepository;
     ConsultationMapper mapper;
+    SupportHoursPolicy supportHoursPolicy;
 
     @Override
     @Transactional
@@ -46,6 +48,7 @@ public class ConsultationMessageServiceImpl implements ConsultationMessageServic
         ConsultationSession session = getSessionForSending(sessionId);
         ConsultationParticipant participant = getActiveParticipant(sessionId, senderId);
         validateMessagePayload(request);
+        validateSupportHours(session, participant);
 
         if (request.getClientMessageId() != null) {
             return messageRepository
@@ -167,6 +170,11 @@ public class ConsultationMessageServiceImpl implements ConsultationMessageServic
     }
 
     private void ensureCanAccessSession(Long sessionId, Long userId) {
+        ConsultationSession session = sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_NOT_FOUND));
+        if (session.getStatus() != ConsultationStatus.ACTIVE && session.getStatus() != ConsultationStatus.COMPLETED)
+            throw new AppException(ErrorCode.CONSULTATION_NOT_ACTIVE);
+
         if (!participantRepository.existsBySessionIdAndUserIdAndActiveTrue(sessionId, userId))
             throw new AppException(ErrorCode.CONSULTATION_ACCESS_DENIED);
     }
@@ -185,6 +193,11 @@ public class ConsultationMessageServiceImpl implements ConsultationMessageServic
                 && isBlank(request.getAttachmentUrl())) {
             throw new AppException(ErrorCode.INVALID_PARAMETER, "Attachment URL is required");
         }
+    }
+
+    private void validateSupportHours(ConsultationSession session, ConsultationParticipant participant) {
+        if (!supportHoursPolicy.canSendNow(session, participant.getRole()))
+            throw new AppException(ErrorCode.CONSULTATION_NOT_ACTIVE, "Member can send messages only during the session support hours");
     }
 
     private String buildPreview(ConsultationMessage message) {

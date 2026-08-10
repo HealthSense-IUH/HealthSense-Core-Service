@@ -6,11 +6,13 @@ import fit.iuh.se.hschat.dto.response.ConsultationPaymentResponse;
 import fit.iuh.se.hschat.entity.ConsultationPayment;
 import fit.iuh.se.hschat.entity.ConsultationRequest;
 import fit.iuh.se.hschat.entity.ConsultationSession;
+import fit.iuh.se.hschat.entity.DoctorCareProfile;
 import fit.iuh.se.hschat.entity.enums.*;
 import fit.iuh.se.hschat.repository.ConsultationParticipantRepository;
 import fit.iuh.se.hschat.repository.ConsultationPaymentRepository;
 import fit.iuh.se.hschat.repository.ConsultationRequestRepository;
 import fit.iuh.se.hschat.repository.ConsultationSessionRepository;
+import fit.iuh.se.hschat.repository.DoctorCareProfileRepository;
 import fit.iuh.se.hschat.service.payment.PayOSPaymentGateway;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
@@ -43,6 +45,8 @@ class ConsultationPaymentServiceImplTest {
     @Mock
     ConsultationParticipantRepository participantRepository;
     @Mock
+    DoctorCareProfileRepository doctorCareProfileRepository;
+    @Mock
     PayOSPaymentGateway paymentGateway;
 
     ConsultationPaymentServiceImpl service;
@@ -54,6 +58,7 @@ class ConsultationPaymentServiceImplTest {
                 requestRepository,
                 sessionRepository,
                 participantRepository,
+                doctorCareProfileRepository,
                 paymentGateway
         );
         ReflectionTestUtils.setField(service, "returnUrl", "http://localhost:5173/payment/result");
@@ -106,6 +111,7 @@ class ConsultationPaymentServiceImplTest {
         when(paymentGateway.verifyWebhook(any(Webhook.class))).thenReturn(verifiedPayment(payment));
         when(paymentRepository.findByOrderCodeForUpdate(payment.getOrderCode())).thenReturn(Optional.of(payment));
         when(requestRepository.findByIdForUpdate(payment.getRequestId())).thenReturn(Optional.of(request));
+        when(doctorCareProfileRepository.findByDoctorId(request.getAssignedDoctorId())).thenReturn(Optional.of(doctorProfile()));
         when(sessionRepository.findByRequestId(request.getId())).thenReturn(Optional.empty());
         when(sessionRepository.saveAndFlush(any(ConsultationSession.class))).thenReturn(session);
 
@@ -115,6 +121,10 @@ class ConsultationPaymentServiceImplTest {
         assertEquals(ConsultationRequestStatus.FULFILLED, request.getStatus());
         assertEquals(session.getId(), request.getConsultationSessionId());
         verify(participantRepository, times(2)).save(any());
+        verify(sessionRepository).saveAndFlush(argThat(created ->
+                "{\"weekly\":[{\"dayOfWeek\":\"MONDAY\",\"start\":\"07:00\",\"end\":\"11:00\"}]}".equals(created.getSupportScheduleSnapshotJson())
+                        && "Asia/Ho_Chi_Minh".equals(created.getSupportTimezoneSnapshot())
+        ));
     }
 
     @Test
@@ -195,6 +205,7 @@ class ConsultationPaymentServiceImplTest {
         when(paymentGateway.verifyWebhook(any(Webhook.class))).thenReturn(verifiedPayment(payment));
         when(paymentRepository.findByOrderCodeForUpdate(payment.getOrderCode())).thenReturn(Optional.of(payment));
         when(requestRepository.findByIdForUpdate(payment.getRequestId())).thenReturn(Optional.of(request));
+        when(doctorCareProfileRepository.findByDoctorId(request.getAssignedDoctorId())).thenReturn(Optional.of(doctorProfile()));
         when(sessionRepository.findByRequestId(request.getId())).thenReturn(Optional.empty());
         when(sessionRepository.saveAndFlush(any(ConsultationSession.class))).thenThrow(new RuntimeException("db down"));
 
@@ -212,6 +223,7 @@ class ConsultationPaymentServiceImplTest {
         when(requestRepository.findByIdForUpdate(request.getId())).thenReturn(Optional.of(request));
         when(paymentRepository.findByRequestIdForUpdate(request.getId())).thenReturn(Optional.of(payment));
         when(paymentGateway.getPaymentStatus(payment.getOrderCode())).thenReturn("PAID");
+        when(doctorCareProfileRepository.findByDoctorId(request.getAssignedDoctorId())).thenReturn(Optional.of(doctorProfile()));
         when(sessionRepository.findByRequestId(request.getId())).thenReturn(Optional.empty());
         when(sessionRepository.saveAndFlush(any(ConsultationSession.class))).thenReturn(session);
 
@@ -251,6 +263,7 @@ class ConsultationPaymentServiceImplTest {
         when(paymentRepository.findByOrderCodeForUpdate(payment.getOrderCode())).thenReturn(Optional.of(payment));
         when(requestRepository.findByIdForUpdate(payment.getRequestId())).thenReturn(Optional.of(request));
         when(paymentGateway.getPaymentStatus(payment.getOrderCode())).thenReturn("PAID");
+        when(doctorCareProfileRepository.findByDoctorId(request.getAssignedDoctorId())).thenReturn(Optional.of(doctorProfile()));
         when(sessionRepository.findByRequestId(request.getId())).thenReturn(Optional.empty());
         when(sessionRepository.saveAndFlush(any(ConsultationSession.class))).thenReturn(session);
         when(requestRepository.findByStatusAndPaymentDeadlineBefore(eq(ConsultationRequestStatus.WAITING_PAYMENT), any()))
@@ -314,6 +327,14 @@ class ConsultationPaymentServiceImplTest {
                 .amount(100000L)
                 .currency("VND")
                 .paymentLinkId(payment.getPaymentLinkId())
+                .build();
+    }
+
+    private DoctorCareProfile doctorProfile() {
+        return DoctorCareProfile.builder()
+                .doctorId(40L)
+                .availabilityJson("{\"weekly\":[{\"dayOfWeek\":\"MONDAY\",\"start\":\"07:00\",\"end\":\"11:00\"}]}")
+                .timezone("Asia/Ho_Chi_Minh")
                 .build();
     }
 }

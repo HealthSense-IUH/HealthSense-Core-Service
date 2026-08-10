@@ -6,6 +6,7 @@ import fit.iuh.se.hshealthrecord.dto.response.HealthRecordResponse;
 import fit.iuh.se.hshealthrecord.dto.response.PresignedUrlResponse;
 import fit.iuh.se.hshealthrecord.entity.HealthRecord;
 import fit.iuh.se.hshealthrecord.entity.enums.RecordStatus;
+import fit.iuh.se.hshealthrecord.event.HealthRecordAnalyzedEvent;
 import fit.iuh.se.hshealthrecord.mapper.HealthRecordMapper;
 import fit.iuh.se.hshealthrecord.repository.HealthRecordRepository;
 import fit.iuh.se.hshealthrecord.dto.message.RecordProcessingMessage;
@@ -13,6 +14,7 @@ import fit.iuh.se.hshealthrecord.service.user.HealthRecordService;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsshared.dto.response.PageResponse;
 import fit.iuh.se.hsshared.service.s3.S3Service;
@@ -35,6 +37,7 @@ public class HealthRecordServiceImpl implements HealthRecordService {
     private final HealthRecordMapper mapper;
     private final S3Service s3Service;
     private final RabbitTemplate rabbitTemplate;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Value("${app.rabbitmq.exchange:health.record.exchange}")
     private String exchange;
@@ -171,6 +174,13 @@ public class HealthRecordServiceImpl implements HealthRecordService {
 
         record = repository.save(record);
         log.info("Record {} completed AI analysis with result: {}", record.getId(), record.getPredictionLabel());
+        eventPublisher.publishEvent(HealthRecordAnalyzedEvent.builder()
+                .recordId(record.getId())
+                .userId(record.getUserId())
+                .predictionLabel(record.getPredictionLabel())
+                .confidence(record.getConfidence())
+                .analyzedAt(record.getUpdatedAt())
+                .build());
 
         return mapper.toResponse(record);
     }
