@@ -44,6 +44,9 @@ public class CareServicePackage extends BaseEntity {
     @Column(name = "price_amount", nullable = false, precision = 14, scale = 2)
     BigDecimal priceAmount;
 
+    @Column(name = "currency", nullable = false, length = 3)
+    String currency;
+
     @Column(name = "duration_days", nullable = false)
     Integer durationDays;
 
