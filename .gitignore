@@ -45,3 +45,5 @@ id_ed25519
 **/application-local.properties
 .env
 .env.*
+
+*.sql
