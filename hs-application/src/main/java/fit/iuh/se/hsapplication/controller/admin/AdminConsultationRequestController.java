@@ -9,6 +9,7 @@ import fit.iuh.se.hschat.dto.response.ConsultationRequestResponse;
 import fit.iuh.se.hschat.dto.response.DoctorCandidateResponse;
 import fit.iuh.se.hschat.entity.enums.ConsultationRequestStatus;
 import fit.iuh.se.hschat.entity.enums.DoctorSpecialty;
+import fit.iuh.se.hschat.service.payment.ConsultationPaymentService;
 import fit.iuh.se.hschat.service.request.ConsultationRequestService;
 import fit.iuh.se.hsshared.dto.response.ApiResponse;
 import fit.iuh.se.hsshared.dto.response.PageResponse;
@@ -35,6 +36,7 @@ import java.time.Instant;
 public class AdminConsultationRequestController {
 
     ConsultationRequestService consultationRequestService;
+    ConsultationPaymentService consultationPaymentService;
 
     @GetMapping
     public ApiResponse<PageResponse<ConsultationRequestResponse>> getRequestsForAdmin(
@@ -119,7 +121,7 @@ public class AdminConsultationRequestController {
     @PostMapping("/expire-waiting-payment")
     public ApiResponse<Void> expireWaitingPaymentRequests(
             @AuthenticationPrincipal UserAuthentication currentUser) {
-        consultationRequestService.expireWaitingPaymentRequests(currentUser.getRole());
+        consultationPaymentService.expireOverduePayments();
         return new ApiResponse<>();
     }
 }
