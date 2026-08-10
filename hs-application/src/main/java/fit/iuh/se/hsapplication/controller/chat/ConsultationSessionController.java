@@ -1,7 +1,9 @@
 package fit.iuh.se.hsapplication.controller.chat;
 
 import fit.iuh.se.hsapplication.dto.auth.UserAuthentication;
+import fit.iuh.se.hschat.dto.response.ConsultationFinalSummaryResponse;
 import fit.iuh.se.hschat.dto.response.ConsultationSessionResponse;
+import fit.iuh.se.hschat.service.finalsummary.ConsultationFinalSummaryService;
 import fit.iuh.se.hschat.service.session.ConsultationSessionService;
 import fit.iuh.se.hsshared.dto.response.ApiResponse;
 import fit.iuh.se.hsshared.dto.response.PageResponse;
@@ -25,6 +27,7 @@ import org.springframework.web.bind.annotation.*;
 public class ConsultationSessionController {
 
     ConsultationSessionService consultationSessionService;
+    ConsultationFinalSummaryService finalSummaryService;
 
     @GetMapping
     public ApiResponse<PageResponse<ConsultationSessionResponse>> getMySessions(
@@ -43,5 +46,12 @@ public class ConsultationSessionController {
             @AuthenticationPrincipal UserAuthentication currentUser,
             @PathVariable Long sessionId) {
         return new ApiResponse<>(consultationSessionService.getSessionById(currentUser.getUserId(), sessionId));
+    }
+
+    @GetMapping("/{sessionId}/final-summary")
+    public ApiResponse<ConsultationFinalSummaryResponse> getFinalSummary(
+            @AuthenticationPrincipal UserAuthentication currentUser,
+            @PathVariable Long sessionId) {
+        return new ApiResponse<>(finalSummaryService.getForMember(currentUser.getUserId(), sessionId));
     }
 }

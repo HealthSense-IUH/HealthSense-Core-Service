@@ -4,7 +4,9 @@ import fit.iuh.se.hsapplication.dto.auth.UserAuthentication;
 import fit.iuh.se.hschat.dto.request.AdminCreateConsultationSessionRequest;
 import fit.iuh.se.hschat.dto.request.CloseConsultationRequest;
 import fit.iuh.se.hschat.dto.request.ExtendConsultationRequest;
+import fit.iuh.se.hschat.dto.response.ConsultationFinalSummaryResponse;
 import fit.iuh.se.hschat.dto.response.ConsultationSessionResponse;
+import fit.iuh.se.hschat.service.finalsummary.ConsultationFinalSummaryService;
 import fit.iuh.se.hschat.service.session.ConsultationSessionService;
 import fit.iuh.se.hsshared.dto.response.ApiResponse;
 import fit.iuh.se.hsshared.dto.response.PageResponse;
@@ -28,6 +30,7 @@ import org.springframework.web.bind.annotation.*;
 public class AdminConsultationSessionController {
 
     ConsultationSessionService consultationSessionService;
+    ConsultationFinalSummaryService finalSummaryService;
 
     @PostMapping
     public ApiResponse<ConsultationSessionResponse> createSessionByAdmin(
@@ -59,6 +62,13 @@ public class AdminConsultationSessionController {
             @PathVariable Long sessionId,
             @RequestBody @Valid CloseConsultationRequest request) {
         return new ApiResponse<>(consultationSessionService.closeSession(currentUser.getUserId(), currentUser.getRole(), sessionId, request));
+    }
+
+    @GetMapping("/{sessionId}/final-summary")
+    public ApiResponse<ConsultationFinalSummaryResponse> getFinalSummary(
+            @AuthenticationPrincipal UserAuthentication currentUser,
+            @PathVariable Long sessionId) {
+        return new ApiResponse<>(finalSummaryService.getForAdmin(currentUser.getRole(), sessionId));
     }
 
     @PostMapping("/expire-overdue")

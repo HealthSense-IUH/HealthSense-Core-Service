@@ -1,15 +1,19 @@
 package fit.iuh.se.hsapplication.controller.doctor;
 
 import fit.iuh.se.hsapplication.dto.auth.UserAuthentication;
+import fit.iuh.se.hschat.dto.request.UpsertConsultationFinalSummaryRequest;
+import fit.iuh.se.hschat.dto.response.ConsultationFinalSummaryResponse;
 import fit.iuh.se.hschat.dto.response.DoctorConsultationDetailResponse;
 import fit.iuh.se.hschat.dto.response.DoctorConsultationSessionResponse;
 import fit.iuh.se.hschat.dto.response.DoctorScopedHealthRecordResponse;
 import fit.iuh.se.hschat.service.activecare.DoctorActiveCareService;
+import fit.iuh.se.hschat.service.finalsummary.ConsultationFinalSummaryService;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsshared.dto.response.ApiResponse;
 import fit.iuh.se.hsshared.dto.response.PageResponse;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +33,7 @@ import org.springframework.web.bind.annotation.*;
 public class DoctorActiveCareController {
 
     DoctorActiveCareService doctorActiveCareService;
+    ConsultationFinalSummaryService finalSummaryService;
 
     @GetMapping
     public ApiResponse<PageResponse<DoctorConsultationSessionResponse>> getAssignedSessions(
@@ -75,6 +80,31 @@ public class DoctorActiveCareController {
             @PathVariable Long recordId) {
         validateDoctor(currentUser);
         return new ApiResponse<>(doctorActiveCareService.markAttentionReviewed(currentUser.getUserId(), sessionId, recordId));
+    }
+
+    @GetMapping("/{sessionId}/final-summary")
+    public ApiResponse<ConsultationFinalSummaryResponse> getFinalSummary(
+            @AuthenticationPrincipal UserAuthentication currentUser,
+            @PathVariable Long sessionId) {
+        validateDoctor(currentUser);
+        return new ApiResponse<>(finalSummaryService.getForDoctor(currentUser.getUserId(), sessionId));
+    }
+
+    @PutMapping("/{sessionId}/final-summary")
+    public ApiResponse<ConsultationFinalSummaryResponse> upsertFinalSummaryDraft(
+            @AuthenticationPrincipal UserAuthentication currentUser,
+            @PathVariable Long sessionId,
+            @Valid @RequestBody UpsertConsultationFinalSummaryRequest request) {
+        validateDoctor(currentUser);
+        return new ApiResponse<>(finalSummaryService.upsertDraft(currentUser.getUserId(), sessionId, request));
+    }
+
+    @PatchMapping("/{sessionId}/final-summary/finalize")
+    public ApiResponse<ConsultationFinalSummaryResponse> finalizeSummary(
+            @AuthenticationPrincipal UserAuthentication currentUser,
+            @PathVariable Long sessionId) {
+        validateDoctor(currentUser);
+        return new ApiResponse<>(finalSummaryService.finalizeSummary(currentUser.getUserId(), sessionId));
     }
 
     private void validateDoctor(UserAuthentication currentUser) {
