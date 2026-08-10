@@ -47,6 +47,9 @@ public class SecurityConfig {
         "/api/auth/forgot-password/reset",
         "/api/health-records/ai-callback",
         "/api/webhooks/payos",
+        "/api/webhooks/payos/**",
+        "/public/payments/webhook/payos",
+        "/public/payments/webhook/payos/**",
         "/ws/consultations/**",
     };
 
