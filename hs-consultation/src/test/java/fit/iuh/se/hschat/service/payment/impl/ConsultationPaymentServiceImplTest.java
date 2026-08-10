@@ -13,6 +13,7 @@ import fit.iuh.se.hschat.repository.ConsultationRequestRepository;
 import fit.iuh.se.hschat.repository.ConsultationSessionRepository;
 import fit.iuh.se.hschat.service.payment.PayOSPaymentGateway;
 import fit.iuh.se.hsshared.advice.entity.AppException;
+import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -154,6 +155,39 @@ class ConsultationPaymentServiceImplTest {
     }
 
     @Test
+    void handlePayOSWebhook_unknownNonHealthSenseOrderIsAcknowledgedForProviderValidation() {
+        VerifiedPayOSPayment providerValidationPayment = VerifiedPayOSPayment.builder()
+                .orderCode(123L)
+                .amount(3000L)
+                .currency("VND")
+                .paymentLinkId("sample_payment_link")
+                .build();
+
+        when(paymentGateway.verifyWebhook(any(Webhook.class))).thenReturn(providerValidationPayment);
+        when(paymentRepository.findByOrderCodeForUpdate(providerValidationPayment.getOrderCode())).thenReturn(Optional.empty());
+
+        assertDoesNotThrow(() -> service.handlePayOSWebhook(new Webhook()));
+        verify(requestRepository, never()).findByIdForUpdate(anyLong());
+        verify(sessionRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void handlePayOSWebhook_unknownHealthSenseOrderStillFails() {
+        VerifiedPayOSPayment missingHealthSensePayment = VerifiedPayOSPayment.builder()
+                .orderCode(1_786_350_551_550_783L)
+                .amount(2000L)
+                .currency("VND")
+                .paymentLinkId("plink_missing")
+                .build();
+
+        when(paymentGateway.verifyWebhook(any(Webhook.class))).thenReturn(missingHealthSensePayment);
+        when(paymentRepository.findByOrderCodeForUpdate(missingHealthSensePayment.getOrderCode())).thenReturn(Optional.empty());
+
+        AppException exception = assertThrows(AppException.class, () -> service.handlePayOSWebhook(new Webhook()));
+        assertEquals(ErrorCode.CONSULTATION_PAYMENT_NOT_FOUND, exception.getErrorCode());
+    }
+
+    @Test
     void handlePayOSWebhook_sessionCreationFailurePropagatesForTransactionalRollback() {
         ConsultationPayment payment = pendingPayment();
         ConsultationRequest request = waitingPaymentRequest();
@@ -167,6 +201,44 @@ class ConsultationPaymentServiceImplTest {
         assertThrows(RuntimeException.class, () -> service.handlePayOSWebhook(new Webhook()));
         assertEquals(ConsultationPaymentStatus.PENDING, payment.getStatus());
         assertEquals(ConsultationRequestStatus.WAITING_PAYMENT, request.getStatus());
+    }
+
+    @Test
+    void getPayment_reconcilesPaidProviderStatusAndActivatesSession() {
+        ConsultationPayment payment = pendingPayment();
+        ConsultationRequest request = waitingPaymentRequest();
+        ConsultationSession session = ConsultationSession.builder().id(900L).requestId(request.getId()).build();
+
+        when(requestRepository.findByIdForUpdate(request.getId())).thenReturn(Optional.of(request));
+        when(paymentRepository.findByRequestIdForUpdate(request.getId())).thenReturn(Optional.of(payment));
+        when(paymentGateway.getPaymentStatus(payment.getOrderCode())).thenReturn("PAID");
+        when(sessionRepository.findByRequestId(request.getId())).thenReturn(Optional.empty());
+        when(sessionRepository.saveAndFlush(any(ConsultationSession.class))).thenReturn(session);
+
+        ConsultationPaymentResponse response = service.getPayment(request.getMemberId(), request.getId());
+
+        assertEquals(ConsultationPaymentStatus.PAID, response.getStatus());
+        assertEquals(ConsultationPaymentStatus.PAID, payment.getStatus());
+        assertEquals(ConsultationRequestStatus.FULFILLED, request.getStatus());
+        assertEquals(session.getId(), request.getConsultationSessionId());
+        verify(participantRepository, times(2)).save(any());
+    }
+
+    @Test
+    void getPayment_keepsPendingWhenProviderStatusIsPending() {
+        ConsultationPayment payment = pendingPayment();
+        ConsultationRequest request = waitingPaymentRequest();
+
+        when(requestRepository.findByIdForUpdate(request.getId())).thenReturn(Optional.of(request));
+        when(paymentRepository.findByRequestIdForUpdate(request.getId())).thenReturn(Optional.of(payment));
+        when(paymentGateway.getPaymentStatus(payment.getOrderCode())).thenReturn("PENDING");
+
+        ConsultationPaymentResponse response = service.getPayment(request.getMemberId(), request.getId());
+
+        assertEquals(ConsultationPaymentStatus.PENDING, response.getStatus());
+        assertEquals(ConsultationRequestStatus.WAITING_PAYMENT, request.getStatus());
+        verify(sessionRepository, never()).saveAndFlush(any());
+        verify(participantRepository, never()).save(any());
     }
 
     @Test
