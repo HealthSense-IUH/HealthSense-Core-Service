@@ -27,7 +27,21 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.Optional;
-
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalAdjusters;
+import java.time.temporal.WeekFields;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import fit.iuh.se.hshealthrecord.dto.response.HealthStatItemResponse;
+import fit.iuh.se.hshealthrecord.dto.response.HealthStatisticsResponse;
+import fit.iuh.se.hshealthrecord.entity.enums.PredictionLabel;
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -185,4 +199,141 @@ public class HealthRecordServiceImpl implements HealthRecordService {
         return mapper.toResponse(record);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public HealthStatisticsResponse getHealthStatistics(Long userId, String period, String referenceDate, String timezone) {
+        ZoneId zoneId = (timezone != null && !timezone.isEmpty()) ? ZoneId.of(timezone) : ZoneId.of("UTC");
+        
+        // Parse reference date, default to now if not provided
+        ZonedDateTime refZoned;
+        try {
+            if (referenceDate != null && !referenceDate.isEmpty()) {
+                if (referenceDate.contains("T")) {
+                    refZoned = ZonedDateTime.parse(referenceDate).withZoneSameInstant(zoneId);
+                } else {
+                    refZoned = LocalDate.parse(referenceDate).atStartOfDay(zoneId);
+                }
+            } else {
+                refZoned = ZonedDateTime.now(zoneId);
+            }
+        } catch (Exception e) {
+            log.warn("Failed to parse referenceDate: {}, using current time", referenceDate);
+            refZoned = ZonedDateTime.now(zoneId);
+        }
+
+        ZonedDateTime startZoned;
+        ZonedDateTime endZoned;
+        int numOfItems = 0;
+        
+        // Determine time boundaries
+        switch (period.toUpperCase()) {
+            case "DAY":
+                startZoned = refZoned.truncatedTo(ChronoUnit.DAYS);
+                endZoned = startZoned.plusDays(1).minusNanos(1);
+                numOfItems = 24;
+                break;
+            case "WEEK":
+                startZoned = refZoned.with(TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY)).truncatedTo(ChronoUnit.DAYS);
+                endZoned = startZoned.plusDays(7).minusNanos(1);
+                numOfItems = 7;
+                break;
+            case "MONTH":
+                startZoned = refZoned.with(TemporalAdjusters.firstDayOfMonth()).truncatedTo(ChronoUnit.DAYS);
+                endZoned = refZoned.with(TemporalAdjusters.lastDayOfMonth()).plusDays(1).truncatedTo(ChronoUnit.DAYS).minusNanos(1);
+                numOfItems = startZoned.toLocalDate().lengthOfMonth();
+                break;
+            case "YEAR":
+            default:
+                startZoned = refZoned.with(TemporalAdjusters.firstDayOfYear()).truncatedTo(ChronoUnit.DAYS);
+                endZoned = refZoned.with(TemporalAdjusters.lastDayOfYear()).plusDays(1).truncatedTo(ChronoUnit.DAYS).minusNanos(1);
+                numOfItems = 12;
+                break;
+        }
+
+        Instant from = startZoned.toInstant();
+        Instant to = endZoned.toInstant();
+        
+        List<HealthRecord> records = repository.findByUserIdAndCreatedAtBetweenOrderByCreatedAtDesc(userId, from, to);
+        
+        // Filter only completed records
+        List<HealthRecord> completedRecords = records.stream()
+                .filter(r -> r.getStatus() == RecordStatus.COMPLETED)
+                .collect(Collectors.toList());
+
+        List<HealthStatItemResponse> chartData = new ArrayList<>();
+        
+        // Initialize chart data with empty values
+        for (int i = 1; i <= numOfItems; i++) {
+            String label = String.valueOf(i);
+            if (period.equalsIgnoreCase("DAY")) {
+                label = (i - 1) + "h"; // 0h to 23h
+            } else if (period.equalsIgnoreCase("WEEK")) {
+                String[] days = {"T2", "T3", "T4", "T5", "T6", "T7", "CN"};
+                label = days[i - 1];
+            } else if (period.equalsIgnoreCase("YEAR")) {
+                label = "T" + i; // T1 to T12
+            }
+            
+            chartData.add(HealthStatItemResponse.builder()
+                    .label(label)
+                    .normalCount(0)
+                    .afibRiskCount(0)
+                    .uncertainCount(0)
+                    .build());
+        }
+
+        int totalNormal = 0;
+        int totalAfibRisk = 0;
+        int totalUncertain = 0;
+
+        // Populate counts
+        for (HealthRecord record : completedRecords) {
+            if (record.getCreatedAt() == null || record.getPredictionLabel() == null) continue;
+            
+            ZonedDateTime recordZoned = record.getCreatedAt().atZone(zoneId);
+            int index = -1; // 0-based index in chartData list
+            
+            switch (period.toUpperCase()) {
+                case "DAY":
+                    index = recordZoned.getHour();
+                    break;
+                case "WEEK":
+                    // getDayOfWeek() returns 1 (Monday) to 7 (Sunday)
+                    index = recordZoned.getDayOfWeek().getValue() - 1;
+                    break;
+                case "MONTH":
+                    index = recordZoned.getDayOfMonth() - 1;
+                    break;
+                case "YEAR":
+                default:
+                    index = recordZoned.getMonthValue() - 1;
+                    break;
+            }
+            
+            if (index >= 0 && index < chartData.size()) {
+                HealthStatItemResponse item = chartData.get(index);
+                switch (record.getPredictionLabel()) {
+                    case NORMAL:
+                        item.setNormalCount(item.getNormalCount() + 1);
+                        totalNormal++;
+                        break;
+                    case AFIB:
+                        item.setAfibRiskCount(item.getAfibRiskCount() + 1);
+                        totalAfibRisk++;
+                        break;
+                    case UNCERTAIN:
+                        item.setUncertainCount(item.getUncertainCount() + 1);
+                        totalUncertain++;
+                        break;
+                }
+            }
+        }
+
+        return HealthStatisticsResponse.builder()
+                .chartData(chartData)
+                .totalNormal(totalNormal)
+                .totalAfibRisk(totalAfibRisk)
+                .totalUncertain(totalUncertain)
+                .build();
+    }
 }

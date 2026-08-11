@@ -17,7 +17,6 @@ import lombok.experimental.FieldDefaults;
 @Entity
 @Table(name = "health_records")
 public class HealthRecord extends BaseEntity {
-
     @Id
     @SnowflakeGenerated
     @Column(name = "id", nullable = false, updatable = false)
