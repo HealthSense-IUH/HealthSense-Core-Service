@@ -15,7 +15,6 @@ import java.io.Serializable;
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class RecordProcessingMessage implements Serializable {
-
     Long recordId;
     String s3Key;
     Long userId;

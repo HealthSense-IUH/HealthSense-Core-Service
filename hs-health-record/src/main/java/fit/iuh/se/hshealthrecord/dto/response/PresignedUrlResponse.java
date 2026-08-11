@@ -12,7 +12,6 @@ import tools.jackson.databind.ser.std.ToStringSerializer;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class PresignedUrlResponse {
-
     @JsonSerialize(using = ToStringSerializer.class)
     Long recordId;
     String uploadUrl;

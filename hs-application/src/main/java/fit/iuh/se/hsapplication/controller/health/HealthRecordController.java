@@ -4,6 +4,7 @@ import fit.iuh.se.hsapplication.dto.auth.UserAuthentication;
 import fit.iuh.se.hshealthrecord.dto.request.AiCallbackRequest;
 import fit.iuh.se.hshealthrecord.dto.request.PresignedUrlRequest;
 import fit.iuh.se.hshealthrecord.dto.response.HealthRecordResponse;
+import fit.iuh.se.hshealthrecord.dto.response.HealthStatisticsResponse;
 import fit.iuh.se.hshealthrecord.dto.response.PresignedUrlResponse;
 import fit.iuh.se.hshealthrecord.service.user.HealthRecordService;
 import fit.iuh.se.hsshared.dto.response.ApiResponse;
@@ -65,6 +66,15 @@ public class HealthRecordController {
             @RequestParam(name = "size", defaultValue = "10") int size) {
         Pageable pageable = PageRequest.of(Math.max(0, page - 1), size, Sort.by(Sort.Direction.DESC, "createdAt"));
         return new ApiResponse<>(healthRecordService.getMyRecords(currentUser.getUserId(), pageable));
+    }
+
+    @GetMapping("/statistics")
+    public ApiResponse<HealthStatisticsResponse> getHealthStatistics(
+            @AuthenticationPrincipal UserAuthentication currentUser,
+            @RequestParam(name = "period", defaultValue = "YEAR") String period,
+            @RequestParam(name = "referenceDate", required = false) String referenceDate,
+            @RequestParam(name = "timezone", defaultValue = "UTC") String timezone) {
+        return new ApiResponse<>(healthRecordService.getHealthStatistics(currentUser.getUserId(), period, referenceDate, timezone));
     }
 
     @PatchMapping("/ai-callback")

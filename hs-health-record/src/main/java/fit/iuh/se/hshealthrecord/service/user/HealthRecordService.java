@@ -27,4 +27,6 @@ public interface HealthRecordService {
     long countRecords(Long userId);
 
     HealthRecordResponse updateAiResult(AiCallbackRequest request);
+
+    fit.iuh.se.hshealthrecord.dto.response.HealthStatisticsResponse getHealthStatistics(Long userId, String period, String referenceDate, String timezone);
 }
