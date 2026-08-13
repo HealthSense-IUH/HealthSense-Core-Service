@@ -32,7 +32,7 @@ public interface HealthRecordRepository extends JpaRepository<HealthRecord, Long
             "CAST(SUM(CASE WHEN prediction_label = 'UNCERTAIN' THEN 1 ELSE 0 END) AS INTEGER) AS uncertainCount " +
             "FROM health_records " +
             "WHERE user_id = :userId AND status = 'COMPLETED' AND created_at BETWEEN :from AND :to " +
-            "GROUP BY EXTRACT(HOUR FROM (created_at AT TIME ZONE :timezone))", nativeQuery = true)
+            "GROUP BY 1", nativeQuery = true)
     List<HealthStatProjection> getStatsByDay(@Param("userId") Long userId,
                                              @Param("from") Instant from,
                                              @Param("to") Instant to,
@@ -44,7 +44,7 @@ public interface HealthRecordRepository extends JpaRepository<HealthRecord, Long
             "CAST(SUM(CASE WHEN prediction_label = 'UNCERTAIN' THEN 1 ELSE 0 END) AS INTEGER) AS uncertainCount " +
             "FROM health_records " +
             "WHERE user_id = :userId AND status = 'COMPLETED' AND created_at BETWEEN :from AND :to " +
-            "GROUP BY EXTRACT(ISODOW FROM (created_at AT TIME ZONE :timezone))", nativeQuery = true)
+            "GROUP BY 1", nativeQuery = true)
     List<HealthStatProjection> getStatsByWeek(@Param("userId") Long userId,
                                               @Param("from") Instant from,
                                               @Param("to") Instant to,
@@ -56,7 +56,7 @@ public interface HealthRecordRepository extends JpaRepository<HealthRecord, Long
             "CAST(SUM(CASE WHEN prediction_label = 'UNCERTAIN' THEN 1 ELSE 0 END) AS INTEGER) AS uncertainCount " +
             "FROM health_records " +
             "WHERE user_id = :userId AND status = 'COMPLETED' AND created_at BETWEEN :from AND :to " +
-            "GROUP BY EXTRACT(DAY FROM (created_at AT TIME ZONE :timezone))", nativeQuery = true)
+            "GROUP BY 1", nativeQuery = true)
     List<HealthStatProjection> getStatsByMonth(@Param("userId") Long userId,
                                                @Param("from") Instant from,
                                                @Param("to") Instant to,
@@ -68,7 +68,7 @@ public interface HealthRecordRepository extends JpaRepository<HealthRecord, Long
             "CAST(SUM(CASE WHEN prediction_label = 'UNCERTAIN' THEN 1 ELSE 0 END) AS INTEGER) AS uncertainCount " +
             "FROM health_records " +
             "WHERE user_id = :userId AND status = 'COMPLETED' AND created_at BETWEEN :from AND :to " +
-            "GROUP BY EXTRACT(MONTH FROM (created_at AT TIME ZONE :timezone))", nativeQuery = true)
+            "GROUP BY 1", nativeQuery = true)
     List<HealthStatProjection> getStatsByYear(@Param("userId") Long userId,
                                               @Param("from") Instant from,
                                               @Param("to") Instant to,
