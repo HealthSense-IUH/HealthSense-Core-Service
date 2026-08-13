@@ -253,13 +253,6 @@ public class HealthRecordServiceImpl implements HealthRecordService {
         Instant from = startZoned.toInstant();
         Instant to = endZoned.toInstant();
         
-        List<HealthRecord> records = repository.findByUserIdAndCreatedAtBetweenOrderByCreatedAtDesc(userId, from, to);
-        
-        // Filter only completed records
-        List<HealthRecord> completedRecords = records.stream()
-                .filter(r -> r.getStatus() == RecordStatus.COMPLETED)
-                .collect(Collectors.toList());
-
         List<HealthStatItemResponse> chartData = new ArrayList<>();
         
         // Initialize chart data with empty values
@@ -282,50 +275,66 @@ public class HealthRecordServiceImpl implements HealthRecordService {
                     .build());
         }
 
+        // Fetch aggregated data from PostgreSQL Native Queries
+        List<fit.iuh.se.hshealthrecord.repository.HealthStatProjection> aggregatedStats;
+        String pgTimezone = zoneId.getId(); // E.g., "Asia/Ho_Chi_Minh"
+        
+        switch (period.toUpperCase()) {
+            case "DAY":
+                aggregatedStats = repository.getStatsByDay(userId, from, to, pgTimezone);
+                break;
+            case "WEEK":
+                aggregatedStats = repository.getStatsByWeek(userId, from, to, pgTimezone);
+                break;
+            case "MONTH":
+                aggregatedStats = repository.getStatsByMonth(userId, from, to, pgTimezone);
+                break;
+            case "YEAR":
+            default:
+                aggregatedStats = repository.getStatsByYear(userId, from, to, pgTimezone);
+                break;
+        }
+
         int totalNormal = 0;
         int totalAfibRisk = 0;
         int totalUncertain = 0;
 
-        // Populate counts
-        for (HealthRecord record : completedRecords) {
-            if (record.getCreatedAt() == null || record.getPredictionLabel() == null) continue;
+        // Map projection data to chartData
+        for (fit.iuh.se.hshealthrecord.repository.HealthStatProjection stat : aggregatedStats) {
+            if (stat.getStatGroup() == null) continue;
             
-            ZonedDateTime recordZoned = record.getCreatedAt().atZone(zoneId);
+            int statGroup = stat.getStatGroup().intValue();
+            int normalCount = stat.getNormalCount() != null ? stat.getNormalCount() : 0;
+            int afibRiskCount = stat.getAfibRiskCount() != null ? stat.getAfibRiskCount() : 0;
+            int uncertainCount = stat.getUncertainCount() != null ? stat.getUncertainCount() : 0;
+            
             int index = -1; // 0-based index in chartData list
             
             switch (period.toUpperCase()) {
                 case "DAY":
-                    index = recordZoned.getHour();
+                    index = statGroup; // HOUR (0-23)
                     break;
                 case "WEEK":
-                    // getDayOfWeek() returns 1 (Monday) to 7 (Sunday)
-                    index = recordZoned.getDayOfWeek().getValue() - 1;
+                    index = statGroup - 1; // ISODOW (1-7) -> (0-6)
                     break;
                 case "MONTH":
-                    index = recordZoned.getDayOfMonth() - 1;
+                    index = statGroup - 1; // DAY (1-31) -> (0-30)
                     break;
                 case "YEAR":
                 default:
-                    index = recordZoned.getMonthValue() - 1;
+                    index = statGroup - 1; // MONTH (1-12) -> (0-11)
                     break;
             }
             
             if (index >= 0 && index < chartData.size()) {
                 HealthStatItemResponse item = chartData.get(index);
-                switch (record.getPredictionLabel()) {
-                    case NORMAL:
-                        item.setNormalCount(item.getNormalCount() + 1);
-                        totalNormal++;
-                        break;
-                    case AFIB:
-                        item.setAfibRiskCount(item.getAfibRiskCount() + 1);
-                        totalAfibRisk++;
-                        break;
-                    case UNCERTAIN:
-                        item.setUncertainCount(item.getUncertainCount() + 1);
-                        totalUncertain++;
-                        break;
-                }
+                item.setNormalCount(normalCount);
+                item.setAfibRiskCount(afibRiskCount);
+                item.setUncertainCount(uncertainCount);
+                
+                totalNormal += normalCount;
+                totalAfibRisk += afibRiskCount;
+                totalUncertain += uncertainCount;
             }
         }
 
