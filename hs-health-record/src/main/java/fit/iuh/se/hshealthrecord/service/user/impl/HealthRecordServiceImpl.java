@@ -31,17 +31,12 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
-import java.time.temporal.WeekFields;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 import fit.iuh.se.hshealthrecord.dto.response.HealthStatItemResponse;
 import fit.iuh.se.hshealthrecord.dto.response.HealthStatisticsResponse;
-import fit.iuh.se.hshealthrecord.entity.enums.PredictionLabel;
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -223,7 +218,7 @@ public class HealthRecordServiceImpl implements HealthRecordService {
 
         ZonedDateTime startZoned;
         ZonedDateTime endZoned;
-        int numOfItems = 0;
+        int numOfItems;
         
         // Determine time boundaries
         switch (period.toUpperCase()) {
@@ -278,22 +273,13 @@ public class HealthRecordServiceImpl implements HealthRecordService {
         // Fetch aggregated data from PostgreSQL Native Queries
         List<fit.iuh.se.hshealthrecord.repository.HealthStatProjection> aggregatedStats;
         String pgTimezone = zoneId.getId(); // E.g., "Asia/Ho_Chi_Minh"
-        
-        switch (period.toUpperCase()) {
-            case "DAY":
-                aggregatedStats = repository.getStatsByDay(userId, from, to, pgTimezone);
-                break;
-            case "WEEK":
-                aggregatedStats = repository.getStatsByWeek(userId, from, to, pgTimezone);
-                break;
-            case "MONTH":
-                aggregatedStats = repository.getStatsByMonth(userId, from, to, pgTimezone);
-                break;
-            case "YEAR":
-            default:
-                aggregatedStats = repository.getStatsByYear(userId, from, to, pgTimezone);
-                break;
-        }
+
+        aggregatedStats = switch (period.toUpperCase()) {
+            case "DAY" -> repository.getStatsByDay(userId, from, to, pgTimezone);
+            case "WEEK" -> repository.getStatsByWeek(userId, from, to, pgTimezone);
+            case "MONTH" -> repository.getStatsByMonth(userId, from, to, pgTimezone);
+            default -> repository.getStatsByYear(userId, from, to, pgTimezone);
+        };
 
         int totalNormal = 0;
         int totalAfibRisk = 0;
@@ -308,24 +294,13 @@ public class HealthRecordServiceImpl implements HealthRecordService {
             int afibRiskCount = stat.getAfibRiskCount() != null ? stat.getAfibRiskCount() : 0;
             int uncertainCount = stat.getUncertainCount() != null ? stat.getUncertainCount() : 0;
             
-            int index = -1; // 0-based index in chartData list
-            
-            switch (period.toUpperCase()) {
-                case "DAY":
-                    index = statGroup; // HOUR (0-23)
-                    break;
-                case "WEEK":
-                    index = statGroup - 1; // ISODOW (1-7) -> (0-6)
-                    break;
-                case "MONTH":
-                    index = statGroup - 1; // DAY (1-31) -> (0-30)
-                    break;
-                case "YEAR":
-                default:
-                    index = statGroup - 1; // MONTH (1-12) -> (0-11)
-                    break;
-            }
-            
+            int index = switch (period.toUpperCase()) {
+                case "DAY" -> statGroup; // HOUR (0-23)
+                case "WEEK" -> statGroup - 1; // ISODOW (1-7) -> (0-6)
+                case "MONTH" -> statGroup - 1; // DAY (1-31) -> (0-30)
+                default -> statGroup - 1; // MONTH (1-12) -> (0-11)
+            }; // 0-based index in chartData list
+
             if (index >= 0 && index < chartData.size()) {
                 HealthStatItemResponse item = chartData.get(index);
                 item.setNormalCount(normalCount);
