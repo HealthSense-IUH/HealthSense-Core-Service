@@ -31,17 +31,12 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
-import java.time.temporal.WeekFields;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 import fit.iuh.se.hshealthrecord.dto.response.HealthStatItemResponse;
 import fit.iuh.se.hshealthrecord.dto.response.HealthStatisticsResponse;
-import fit.iuh.se.hshealthrecord.entity.enums.PredictionLabel;
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -223,7 +218,7 @@ public class HealthRecordServiceImpl implements HealthRecordService {
 
         ZonedDateTime startZoned;
         ZonedDateTime endZoned;
-        int numOfItems = 0;
+        int numOfItems;
         
         // Determine time boundaries
         switch (period.toUpperCase()) {
@@ -253,13 +248,6 @@ public class HealthRecordServiceImpl implements HealthRecordService {
         Instant from = startZoned.toInstant();
         Instant to = endZoned.toInstant();
         
-        List<HealthRecord> records = repository.findByUserIdAndCreatedAtBetweenOrderByCreatedAtDesc(userId, from, to);
-        
-        // Filter only completed records
-        List<HealthRecord> completedRecords = records.stream()
-                .filter(r -> r.getStatus() == RecordStatus.COMPLETED)
-                .collect(Collectors.toList());
-
         List<HealthStatItemResponse> chartData = new ArrayList<>();
         
         // Initialize chart data with empty values
@@ -282,50 +270,46 @@ public class HealthRecordServiceImpl implements HealthRecordService {
                     .build());
         }
 
+        // Fetch aggregated data from PostgreSQL Native Queries
+        List<fit.iuh.se.hshealthrecord.repository.HealthStatProjection> aggregatedStats;
+        String pgTimezone = zoneId.getId(); // E.g., "Asia/Ho_Chi_Minh"
+
+        aggregatedStats = switch (period.toUpperCase()) {
+            case "DAY" -> repository.getStatsByDay(userId, from, to, pgTimezone);
+            case "WEEK" -> repository.getStatsByWeek(userId, from, to, pgTimezone);
+            case "MONTH" -> repository.getStatsByMonth(userId, from, to, pgTimezone);
+            default -> repository.getStatsByYear(userId, from, to, pgTimezone);
+        };
+
         int totalNormal = 0;
         int totalAfibRisk = 0;
         int totalUncertain = 0;
 
-        // Populate counts
-        for (HealthRecord record : completedRecords) {
-            if (record.getCreatedAt() == null || record.getPredictionLabel() == null) continue;
+        // Map projection data to chartData
+        for (fit.iuh.se.hshealthrecord.repository.HealthStatProjection stat : aggregatedStats) {
+            if (stat.getStatGroup() == null) continue;
             
-            ZonedDateTime recordZoned = record.getCreatedAt().atZone(zoneId);
-            int index = -1; // 0-based index in chartData list
+            int statGroup = stat.getStatGroup().intValue();
+            int normalCount = stat.getNormalCount() != null ? stat.getNormalCount() : 0;
+            int afibRiskCount = stat.getAfibRiskCount() != null ? stat.getAfibRiskCount() : 0;
+            int uncertainCount = stat.getUncertainCount() != null ? stat.getUncertainCount() : 0;
             
-            switch (period.toUpperCase()) {
-                case "DAY":
-                    index = recordZoned.getHour();
-                    break;
-                case "WEEK":
-                    // getDayOfWeek() returns 1 (Monday) to 7 (Sunday)
-                    index = recordZoned.getDayOfWeek().getValue() - 1;
-                    break;
-                case "MONTH":
-                    index = recordZoned.getDayOfMonth() - 1;
-                    break;
-                case "YEAR":
-                default:
-                    index = recordZoned.getMonthValue() - 1;
-                    break;
-            }
-            
+            int index = switch (period.toUpperCase()) {
+                case "DAY" -> statGroup; // HOUR (0-23)
+                case "WEEK" -> statGroup - 1; // ISODOW (1-7) -> (0-6)
+                case "MONTH" -> statGroup - 1; // DAY (1-31) -> (0-30)
+                default -> statGroup - 1; // MONTH (1-12) -> (0-11)
+            }; // 0-based index in chartData list
+
             if (index >= 0 && index < chartData.size()) {
                 HealthStatItemResponse item = chartData.get(index);
-                switch (record.getPredictionLabel()) {
-                    case NORMAL:
-                        item.setNormalCount(item.getNormalCount() + 1);
-                        totalNormal++;
-                        break;
-                    case AFIB:
-                        item.setAfibRiskCount(item.getAfibRiskCount() + 1);
-                        totalAfibRisk++;
-                        break;
-                    case UNCERTAIN:
-                        item.setUncertainCount(item.getUncertainCount() + 1);
-                        totalUncertain++;
-                        break;
-                }
+                item.setNormalCount(normalCount);
+                item.setAfibRiskCount(afibRiskCount);
+                item.setUncertainCount(uncertainCount);
+                
+                totalNormal += normalCount;
+                totalAfibRisk += afibRiskCount;
+                totalUncertain += uncertainCount;
             }
         }
 
