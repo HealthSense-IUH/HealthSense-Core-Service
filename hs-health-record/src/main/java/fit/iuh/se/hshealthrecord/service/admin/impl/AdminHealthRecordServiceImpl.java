@@ -6,6 +6,7 @@ import fit.iuh.se.hshealthrecord.entity.HealthRecord;
 import fit.iuh.se.hshealthrecord.entity.enums.PredictionLabel;
 import fit.iuh.se.hshealthrecord.entity.enums.RecordStatus;
 import fit.iuh.se.hshealthrecord.mapper.HealthRecordMapper;
+import fit.iuh.se.hshealthrecord.repository.DailyHealthStatisticRepository;
 import fit.iuh.se.hshealthrecord.repository.HealthRecordRepository;
 import fit.iuh.se.hshealthrecord.service.admin.AdminHealthRecordService;
 import fit.iuh.se.hsshared.advice.entity.AppException;
@@ -38,6 +39,7 @@ public class AdminHealthRecordServiceImpl implements AdminHealthRecordService {
     HealthRecordRepository repository;
     HealthRecordMapper mapper;
     UserAccountRepository userAccountRepository;
+    DailyHealthStatisticRepository dailyHealthStatisticRepository;
 
     @Override
     @Transactional
@@ -156,5 +158,10 @@ public class AdminHealthRecordServiceImpl implements AdminHealthRecordService {
             return null;
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    @Override
+    public Object getSystemStatistics(Instant fromDate, Instant toDate) {
+        return dailyHealthStatisticRepository.getSystemWideStats(fromDate, toDate);
     }
 }

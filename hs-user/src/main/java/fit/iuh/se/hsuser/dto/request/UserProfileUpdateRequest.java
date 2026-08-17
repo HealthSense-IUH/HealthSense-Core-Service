@@ -28,6 +28,9 @@ public class UserProfileUpdateRequest {
     @Size(max = 500, message = "Address must not exceed 500 characters")
     String address;
 
+    @Size(max = 50, message = "Timezone must not exceed 50 characters")
+    String timezone;
+
     @Size(max = 500, message = "Avatar URL must not exceed 500 characters")
     String avatarUrl;
 }

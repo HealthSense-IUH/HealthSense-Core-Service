@@ -133,6 +133,8 @@ public class UserServiceImpl implements UserService {
             profile.setGender(request.getGender().trim());
         if (request.getAddress() != null)
             profile.setAddress(request.getAddress().trim());
+        if (request.getTimezone() != null)
+            profile.setTimezone(request.getTimezone().trim());
         if (request.getAvatarUrl() != null && !request.getAvatarUrl().trim().isEmpty()) {
             String newAvatarUrl = request.getAvatarUrl().trim();
             String newKey = s3Service.extractObjectKeyFromUrl(newAvatarUrl);
