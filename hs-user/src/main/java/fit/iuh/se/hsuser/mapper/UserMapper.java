@@ -14,5 +14,6 @@ public interface UserMapper {
     @Mapping(target = "gender", source = "profile.gender")
     @Mapping(target = "avatarUrl", source = "profile.avatarUrl")
     @Mapping(target = "address", source = "profile.address")
+    @Mapping(target = "timezone", source = "profile.timezone")
     UserResponse toUserResponse(UserAccount user);
 }

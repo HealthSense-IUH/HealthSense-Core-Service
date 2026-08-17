@@ -65,4 +65,13 @@ public class AdminHealthRecordController {
     public ApiResponse<HealthRecordResponse> getRecord(@PathVariable Long id) {
         return new ApiResponse<>(adminHealthRecordService.getRecord(id));
     }
+
+    @GetMapping("/statistics")
+    public ApiResponse<Object> getSystemStatistics(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant fromDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant toDate
+    ) {
+        return new ApiResponse<>(adminHealthRecordService.getSystemStatistics(fromDate, toDate));
+
+    }
 }

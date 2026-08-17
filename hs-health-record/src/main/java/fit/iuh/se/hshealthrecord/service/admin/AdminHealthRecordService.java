@@ -24,4 +24,6 @@ public interface AdminHealthRecordService {
     );
 
     HealthRecordResponse getRecord(Long id);
+
+    Object getSystemStatistics(Instant fromDate, Instant toDate);
 }

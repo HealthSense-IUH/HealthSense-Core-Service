@@ -43,4 +43,7 @@ public class UserProfile extends BaseEntity {
 
     @Column(name = "address", length = 500)
     String address;
+
+    @Column(name = "timezone", length = 50)
+    String timezone;
 }

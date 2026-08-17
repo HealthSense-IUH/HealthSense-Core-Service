@@ -26,6 +26,7 @@ public class UserResponse {
     String gender;
     String avatarUrl;
     String address;
+    String timezone;
     Instant createdAt;
     Instant updatedAt;
 }
