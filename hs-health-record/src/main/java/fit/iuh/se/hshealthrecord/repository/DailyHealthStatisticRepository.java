@@ -13,7 +13,8 @@ import java.util.List;
 public interface DailyHealthStatisticRepository extends JpaRepository<DailyHealthStatistic, Long> {
 
     @Query("SELECT v.statDate as statDate, SUM(v.totalRecords) as totalRecords, " +
-            "SUM(v.totalNormal) as totalNormal, SUM(v.totalAfib) as totalAfib, SUM(v.totalUncertain) as totalUncertain " +
+            "SUM(v.totalNormal) as totalNormal, SUM(v.totalAfib) as totalAfib, SUM(v.totalUncertain) as totalUncertain, " +
+            "SUM(v.totalAfibSuspected) as totalAfibSuspected " +
             "FROM DailyHealthStatistic v " +
             "WHERE v.statDate >= :from AND v.statDate <= :to " +
             "GROUP BY v.statDate ORDER BY v.statDate ASC")

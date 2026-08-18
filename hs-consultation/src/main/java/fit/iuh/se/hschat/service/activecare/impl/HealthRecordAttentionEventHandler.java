@@ -36,7 +36,7 @@ public class HealthRecordAttentionEventHandler {
     @EventListener
     @Transactional
     public void onHealthRecordAnalyzed(HealthRecordAnalyzedEvent event) {
-        if (event.getPredictionLabel() != PredictionLabel.AFIB)
+        if (event.getPredictionLabel() != PredictionLabel.AFIB && event.getPredictionLabel() != PredictionLabel.AFIB_SUSPECTED)
             return;
 
         HealthRecord record = healthRecordRepository.findByIdAndUserId(event.getRecordId(), event.getUserId())

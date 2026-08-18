@@ -82,4 +82,10 @@ public class HealthRecordController {
             @Valid @RequestBody AiCallbackRequest request) {
         return new ApiResponse<>(healthRecordService.updateAiResult(request));
     }
+
+    @PatchMapping("/ai-callback/fail")
+    public ApiResponse<HealthRecordResponse> markAiFailed(
+            @Valid @RequestBody fit.iuh.se.hshealthrecord.dto.request.AiCallbackFailedRequest request) {
+        return new ApiResponse<>(healthRecordService.markAsFailed(request));
+    }
 }

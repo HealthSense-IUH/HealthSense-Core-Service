@@ -37,4 +37,7 @@ public class DailyHealthStatistic {
 
     @Column(name = "total_uncertain")
     private Integer totalUncertain;
+
+    @Column(name = "total_afib_suspected")
+    private Integer totalAfibSuspected;
 }

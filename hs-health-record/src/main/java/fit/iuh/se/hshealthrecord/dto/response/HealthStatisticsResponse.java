@@ -15,4 +15,5 @@ public class HealthStatisticsResponse {
     int totalNormal;
     int totalAfibRisk;
     int totalUncertain;
+    int totalAfibSuspected;
 }

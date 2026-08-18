@@ -5,4 +5,5 @@ public interface HealthStatProjection {
     Integer getNormalCount();
     Integer getAfibRiskCount();
     Integer getUncertainCount();
+    Integer getAfibSuspectedCount();
 }

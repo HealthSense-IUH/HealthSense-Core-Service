@@ -28,5 +28,7 @@ public interface HealthRecordService {
 
     HealthRecordResponse updateAiResult(AiCallbackRequest request);
 
+    HealthRecordResponse markAsFailed(fit.iuh.se.hshealthrecord.dto.request.AiCallbackFailedRequest request);
+
     fit.iuh.se.hshealthrecord.dto.response.HealthStatisticsResponse getHealthStatistics(Long userId, String period, String referenceDate, String timezone);
 }
