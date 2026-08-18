@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.Resource;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
@@ -22,7 +23,7 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 
-@Configuration
+@Configuration(proxyBeanMethods = false)
 public class JwtConfig {
 
     @Value("${security.jwt.key-id}")
@@ -30,8 +31,10 @@ public class JwtConfig {
 
     @Bean
     public RSAPrivateKey jwtPrivateKey(
-            @Value("${security.jwt.private-key-location}") Resource privateKeyResource) throws Exception {
-        String pem = privateKeyResource.getContentAsString(StandardCharsets.UTF_8);
+            @Value("${security.jwt.private-key-location}") Resource privateKeyResource,
+            ResourceLoader resourceLoader) throws Exception {
+        Resource resource = privateKeyResource.exists() ? privateKeyResource : resourceLoader.getResource("classpath:keys/private.pem");
+        String pem = resource.getContentAsString(StandardCharsets.UTF_8);
         byte[] keyBytes = parsePem(pem);
         return (RSAPrivateKey) KeyFactory.getInstance("RSA")
                 .generatePrivate(new PKCS8EncodedKeySpec(keyBytes));
@@ -39,8 +42,10 @@ public class JwtConfig {
 
     @Bean
     public RSAPublicKey jwtPublicKey(
-            @Value("${security.jwt.public-key-location}") Resource publicKeyResource) throws Exception {
-        String pem = publicKeyResource.getContentAsString(StandardCharsets.UTF_8);
+            @Value("${security.jwt.public-key-location}") Resource publicKeyResource,
+            ResourceLoader resourceLoader) throws Exception {
+        Resource resource = publicKeyResource.exists() ? publicKeyResource : resourceLoader.getResource("classpath:keys/public.pem");
+        String pem = resource.getContentAsString(StandardCharsets.UTF_8);
         byte[] keyBytes = parsePem(pem);
         return (RSAPublicKey) KeyFactory.getInstance("RSA")
                 .generatePublic(new X509EncodedKeySpec(keyBytes));
