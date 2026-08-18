@@ -28,12 +28,12 @@ import java.util.Base64;
 @Configuration(proxyBeanMethods = false)
 public class JwtConfig {
 
-    @Value("${security.jwt.key-id}")
+    @Value("${security.jwt.key-id:healthsense-auth-key}")
     private String keyId;
 
     @Bean
     public RSAPrivateKey jwtPrivateKey(
-            @Value("${security.jwt.private-key-location}") Resource privateKeyResource,
+            @Value("${security.jwt.private-key-location:classpath:keys/private.pem}") Resource privateKeyResource,
             ResourceLoader resourceLoader) throws Exception {
         log.info("[JwtConfig] Loading Private Key. Primary location description: '{}', exists: {}",
                 privateKeyResource.getDescription(), privateKeyResource.exists());
@@ -67,7 +67,7 @@ public class JwtConfig {
 
     @Bean
     public RSAPublicKey jwtPublicKey(
-            @Value("${security.jwt.public-key-location}") Resource publicKeyResource,
+            @Value("${security.jwt.public-key-location:classpath:keys/public.pem}") Resource publicKeyResource,
             ResourceLoader resourceLoader) throws Exception {
         log.info("[JwtConfig] Loading Public Key. Primary location description: '{}', exists: {}",
                 publicKeyResource.getDescription(), publicKeyResource.exists());
