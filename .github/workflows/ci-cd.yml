@@ -26,7 +26,7 @@ jobs:
         run: chmod +x mvnw
 
       - name: Build with Maven
-        run: ./mvnw clean compile -DskipTests
+        run: ./mvnw clean package -DskipTests
 
   publish-jib:
     name: Build & Push Image (Google Jib)
@@ -50,7 +50,7 @@ jobs:
 
       - name: Build and Push Docker Image with Jib
         run: |
-          ./mvnw clean compile jib:build \
+          ./mvnw clean package jib:build \
             -pl hs-application -am \
             -DskipTests \
             -Djib.to.image=docker.io/${{ secrets.DOCKERHUB_USERNAME }}/healthsense-core-service:latest \
