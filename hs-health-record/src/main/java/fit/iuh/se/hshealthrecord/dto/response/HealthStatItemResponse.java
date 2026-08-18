@@ -13,4 +13,5 @@ public class HealthStatItemResponse {
     int normalCount;
     int afibRiskCount;
     int uncertainCount;
+    int afibSuspectedCount;
 }

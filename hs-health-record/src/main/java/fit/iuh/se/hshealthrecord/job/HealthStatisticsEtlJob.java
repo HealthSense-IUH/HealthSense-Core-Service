@@ -29,14 +29,15 @@ public class HealthStatisticsEtlJob {
         log.info("[ETL] Bắt đầu tiến trình cập nhật Thống kê nhịp tim (Incremental Update)...");
         
         String sql = """
-            INSERT INTO health_statistics_daily (user_id, stat_date, total_records, total_normal, total_afib, total_uncertain)
+            INSERT INTO health_statistics_daily (user_id, stat_date, total_records, total_normal, total_afib, total_uncertain, total_afib_suspected)
             SELECT
                 hr.user_id,
                 DATE_TRUNC('day', hr.created_at AT TIME ZONE 'UTC' AT TIME ZONE COALESCE(up.timezone, 'Asia/Ho_Chi_Minh')) AS stat_date,
                 COUNT(*) AS total_records,
                 CAST(SUM(CASE WHEN hr.prediction_label = 'NORMAL' THEN 1 ELSE 0 END) AS INTEGER) AS total_normal,
                 CAST(SUM(CASE WHEN hr.prediction_label = 'AFIB' THEN 1 ELSE 0 END) AS INTEGER) AS total_afib,
-                CAST(SUM(CASE WHEN hr.prediction_label = 'UNCERTAIN' THEN 1 ELSE 0 END) AS INTEGER) AS total_uncertain
+                CAST(SUM(CASE WHEN hr.prediction_label = 'UNCERTAIN' THEN 1 ELSE 0 END) AS INTEGER) AS total_uncertain,
+                CAST(SUM(CASE WHEN hr.prediction_label = 'AFIB_SUSPECTED' THEN 1 ELSE 0 END) AS INTEGER) AS total_afib_suspected
             FROM health_records hr
             LEFT JOIN user_profiles up ON hr.user_id = up.user_id
             WHERE hr.status = 'COMPLETED'
@@ -47,7 +48,8 @@ public class HealthStatisticsEtlJob {
                 total_records = EXCLUDED.total_records,
                 total_normal = EXCLUDED.total_normal,
                 total_afib = EXCLUDED.total_afib,
-                total_uncertain = EXCLUDED.total_uncertain;
+                total_uncertain = EXCLUDED.total_uncertain,
+                total_afib_suspected = EXCLUDED.total_afib_suspected;
         """;
 
         int rowsAffected = jdbcTemplate.update(sql);

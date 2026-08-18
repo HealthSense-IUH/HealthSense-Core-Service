@@ -283,6 +283,7 @@ public class HealthRecordServiceImpl implements HealthRecordService {
                     .normalCount(0)
                     .afibRiskCount(0)
                     .uncertainCount(0)
+                    .afibSuspectedCount(0)
                     .build());
         }
 
@@ -300,6 +301,7 @@ public class HealthRecordServiceImpl implements HealthRecordService {
         int totalNormal = 0;
         int totalAfibRisk = 0;
         int totalUncertain = 0;
+        int totalAfibSuspected = 0;
 
         // Map projection data to chartData
         for (fit.iuh.se.hshealthrecord.repository.HealthStatProjection stat : aggregatedStats) {
@@ -309,6 +311,7 @@ public class HealthRecordServiceImpl implements HealthRecordService {
             int normalCount = stat.getNormalCount() != null ? stat.getNormalCount() : 0;
             int afibRiskCount = stat.getAfibRiskCount() != null ? stat.getAfibRiskCount() : 0;
             int uncertainCount = stat.getUncertainCount() != null ? stat.getUncertainCount() : 0;
+            int afibSuspectedCount = stat.getAfibSuspectedCount() != null ? stat.getAfibSuspectedCount() : 0;
             
             int index = switch (period.toUpperCase()) {
                 case "DAY" -> statGroup; // HOUR (0-23)
@@ -322,10 +325,12 @@ public class HealthRecordServiceImpl implements HealthRecordService {
                 item.setNormalCount(normalCount);
                 item.setAfibRiskCount(afibRiskCount);
                 item.setUncertainCount(uncertainCount);
+                item.setAfibSuspectedCount(afibSuspectedCount);
                 
                 totalNormal += normalCount;
                 totalAfibRisk += afibRiskCount;
                 totalUncertain += uncertainCount;
+                totalAfibSuspected += afibSuspectedCount;
             }
         }
 
@@ -334,6 +339,7 @@ public class HealthRecordServiceImpl implements HealthRecordService {
                 .totalNormal(totalNormal)
                 .totalAfibRisk(totalAfibRisk)
                 .totalUncertain(totalUncertain)
+                .totalAfibSuspected(totalAfibSuspected)
                 .build();
     }
 }
