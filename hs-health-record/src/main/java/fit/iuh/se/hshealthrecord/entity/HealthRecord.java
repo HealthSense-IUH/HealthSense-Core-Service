@@ -47,4 +47,7 @@ public class HealthRecord extends BaseEntity {
 
     @Column(name = "hrv_features_json", columnDefinition = "TEXT")
     String hrvFeaturesJson;
+
+    @Column(name = "error_message", columnDefinition = "TEXT")
+    String errorMessage;
 }

@@ -195,6 +195,22 @@ public class HealthRecordServiceImpl implements HealthRecordService {
     }
 
     @Override
+    @Transactional
+    public HealthRecordResponse markAsFailed(fit.iuh.se.hshealthrecord.dto.request.AiCallbackFailedRequest request) {
+        log.info("Marking AI processing as failed for record {}", request.getRecordId());
+        HealthRecord record = repository.findById(request.getRecordId())
+                .orElseThrow(() -> new AppException(ErrorCode.HEALTH_RECORD_NOT_FOUND));
+
+        record.setStatus(RecordStatus.FAILED);
+        record.setErrorMessage(request.getErrorReason());
+
+        record = repository.save(record);
+        log.info("Record {} failed AI analysis with reason: {}", record.getId(), record.getErrorMessage());
+
+        return mapper.toResponse(record);
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public HealthStatisticsResponse getHealthStatistics(Long userId, String period, String referenceDate, String timezone) {
         ZoneId zoneId = (timezone != null && !timezone.isEmpty()) ? ZoneId.of(timezone) : ZoneId.of("UTC");
