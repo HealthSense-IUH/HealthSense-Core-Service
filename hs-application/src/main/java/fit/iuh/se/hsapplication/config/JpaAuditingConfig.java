@@ -9,7 +9,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.Optional;
 
-@Configuration
+@Configuration(proxyBeanMethods = false)
 @EnableJpaAuditing
 public class JpaAuditingConfig {
 
