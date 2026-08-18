@@ -1,4 +1,4 @@
-package fit.iuh.se.hsauth.config;
+package fit.iuh.se.hsapplication.config.security;
 
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
