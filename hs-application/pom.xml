@@ -139,9 +139,17 @@
                 <version>3.5.2</version>
                 <configuration>
                     <skip>false</skip>
+                    <from>
+                        <image>eclipse-temurin:21-jre-alpine</image>
+                    </from>
                     <to>
-                        <image>healthsense-core-service</image>
+                        <image>healthsense-core-service:latest</image>
                     </to>
+                    <container>
+                        <ports>
+                            <port>8080</port>
+                        </ports>
+                    </container>
                 </configuration>
             </plugin>
 
