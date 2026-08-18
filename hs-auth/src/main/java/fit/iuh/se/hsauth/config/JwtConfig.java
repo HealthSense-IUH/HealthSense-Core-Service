@@ -5,6 +5,7 @@ import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -23,6 +24,7 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 
+@Slf4j
 @Configuration(proxyBeanMethods = false)
 public class JwtConfig {
 
@@ -33,26 +35,73 @@ public class JwtConfig {
     public RSAPrivateKey jwtPrivateKey(
             @Value("${security.jwt.private-key-location}") Resource privateKeyResource,
             ResourceLoader resourceLoader) throws Exception {
-        Resource resource = privateKeyResource.exists() ? privateKeyResource : resourceLoader.getResource("classpath:keys/private.pem");
-        String pem = resource.getContentAsString(StandardCharsets.UTF_8);
+        log.info("[JwtConfig] Loading Private Key. Primary location description: '{}', exists: {}",
+                privateKeyResource.getDescription(), privateKeyResource.exists());
+
+        if (privateKeyResource.exists()) {
+            try {
+                String pem = privateKeyResource.getContentAsString(StandardCharsets.UTF_8);
+                byte[] keyBytes = parsePem(pem);
+                RSAPrivateKey key = (RSAPrivateKey) KeyFactory.getInstance("RSA")
+                        .generatePrivate(new PKCS8EncodedKeySpec(keyBytes));
+                log.info("[JwtConfig] Successfully loaded RSAPrivateKey from primary location: {}", privateKeyResource.getDescription());
+                return key;
+            } catch (Exception e) {
+                log.error("[JwtConfig] Failed to load/parse RSAPrivateKey from primary location ({}): {}. Falling back to classpath:keys/private.pem",
+                        privateKeyResource.getDescription(), e.getMessage(), e);
+            }
+        } else {
+            log.warn("[JwtConfig] Primary Private Key resource ({}) does not exist. Falling back to classpath:keys/private.pem",
+                    privateKeyResource.getDescription());
+        }
+
+        Resource fallbackResource = resourceLoader.getResource("classpath:keys/private.pem");
+        log.info("[JwtConfig] Loading fallback Private Key from classpath:keys/private.pem. Exists: {}", fallbackResource.exists());
+        String pem = fallbackResource.getContentAsString(StandardCharsets.UTF_8);
         byte[] keyBytes = parsePem(pem);
-        return (RSAPrivateKey) KeyFactory.getInstance("RSA")
+        RSAPrivateKey key = (RSAPrivateKey) KeyFactory.getInstance("RSA")
                 .generatePrivate(new PKCS8EncodedKeySpec(keyBytes));
+        log.info("[JwtConfig] Successfully loaded RSAPrivateKey from fallback classpath:keys/private.pem");
+        return key;
     }
 
     @Bean
     public RSAPublicKey jwtPublicKey(
             @Value("${security.jwt.public-key-location}") Resource publicKeyResource,
             ResourceLoader resourceLoader) throws Exception {
-        Resource resource = publicKeyResource.exists() ? publicKeyResource : resourceLoader.getResource("classpath:keys/public.pem");
-        String pem = resource.getContentAsString(StandardCharsets.UTF_8);
+        log.info("[JwtConfig] Loading Public Key. Primary location description: '{}', exists: {}",
+                publicKeyResource.getDescription(), publicKeyResource.exists());
+
+        if (publicKeyResource.exists()) {
+            try {
+                String pem = publicKeyResource.getContentAsString(StandardCharsets.UTF_8);
+                byte[] keyBytes = parsePem(pem);
+                RSAPublicKey key = (RSAPublicKey) KeyFactory.getInstance("RSA")
+                        .generatePublic(new X509EncodedKeySpec(keyBytes));
+                log.info("[JwtConfig] Successfully loaded RSAPublicKey from primary location: {}", publicKeyResource.getDescription());
+                return key;
+            } catch (Exception e) {
+                log.error("[JwtConfig] Failed to load/parse RSAPublicKey from primary location ({}): {}. Falling back to classpath:keys/public.pem",
+                        publicKeyResource.getDescription(), e.getMessage(), e);
+            }
+        } else {
+            log.warn("[JwtConfig] Primary Public Key resource ({}) does not exist. Falling back to classpath:keys/public.pem",
+                    publicKeyResource.getDescription());
+        }
+
+        Resource fallbackResource = resourceLoader.getResource("classpath:keys/public.pem");
+        log.info("[JwtConfig] Loading fallback Public Key from classpath:keys/public.pem. Exists: {}", fallbackResource.exists());
+        String pem = fallbackResource.getContentAsString(StandardCharsets.UTF_8);
         byte[] keyBytes = parsePem(pem);
-        return (RSAPublicKey) KeyFactory.getInstance("RSA")
+        RSAPublicKey key = (RSAPublicKey) KeyFactory.getInstance("RSA")
                 .generatePublic(new X509EncodedKeySpec(keyBytes));
+        log.info("[JwtConfig] Successfully loaded RSAPublicKey from fallback classpath:keys/public.pem");
+        return key;
     }
 
     @Bean
     public JwtEncoder jwtEncoder(RSAPublicKey publicKey, RSAPrivateKey privateKey) {
+        log.info("[JwtConfig] Registering JwtEncoder bean with keyId: {}", keyId);
         RSAKey rsaKey = new RSAKey.Builder(publicKey)
                 .privateKey(privateKey)
                 .keyID(keyId)
@@ -63,16 +112,23 @@ public class JwtConfig {
 
     @Bean
     public JwtDecoder jwtDecoder(RSAPublicKey publicKey) {
-        return NimbusJwtDecoder.withPublicKey(publicKey).build();
+        log.info("[JwtConfig] Registering JwtDecoder bean with RSAPublicKey...");
+        JwtDecoder decoder = NimbusJwtDecoder.withPublicKey(publicKey).build();
+        log.info("[JwtConfig] Successfully created and registered JwtDecoder bean!");
+        return decoder;
     }
 
     private byte[] parsePem(String pem) {
+        if (pem == null) {
+            throw new IllegalArgumentException("PEM string cannot be null");
+        }
         String normalized = pem
+                .replace("\uFEFF", "")
                 .replace("-----BEGIN PRIVATE KEY-----", "")
                 .replace("-----END PRIVATE KEY-----", "")
                 .replace("-----BEGIN PUBLIC KEY-----", "")
                 .replace("-----END PUBLIC KEY-----", "")
-                .replaceAll("\\s", "");
+                .replaceAll("[\\r\\n\\s\"]", "");
         return Base64.getDecoder().decode(normalized);
     }
 }
