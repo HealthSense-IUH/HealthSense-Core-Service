@@ -18,11 +18,14 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import org.springframework.context.annotation.Import;
+
 import java.util.List;
 import java.util.stream.Stream;
 
 @Configuration(proxyBeanMethods = false)
 @EnableWebSecurity
+@Import(fit.iuh.se.hsauth.config.JwtConfig.class)
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class SecurityConfig {
