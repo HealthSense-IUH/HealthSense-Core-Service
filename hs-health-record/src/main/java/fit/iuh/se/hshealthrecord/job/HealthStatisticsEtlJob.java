@@ -42,7 +42,7 @@ public class HealthStatisticsEtlJob {
             LEFT JOIN user_profiles up ON hr.user_id = up.user_id
             WHERE hr.status = 'COMPLETED'
               -- Rolling window: Chỉ quét record tạo trong hôm nay và hôm qua
-              -- AND hr.created_at >= (CURRENT_DATE - INTERVAL '1 day')
+              AND hr.created_at >= (CURRENT_DATE - INTERVAL '1 day')
             GROUP BY 1, 2
             ON CONFLICT (user_id, stat_date) DO UPDATE SET
                 total_records = EXCLUDED.total_records,
