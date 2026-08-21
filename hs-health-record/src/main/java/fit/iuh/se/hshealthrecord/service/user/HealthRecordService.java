@@ -31,4 +31,8 @@ public interface HealthRecordService {
     HealthRecordResponse markAsFailed(fit.iuh.se.hshealthrecord.dto.request.AiCallbackFailedRequest request);
 
     fit.iuh.se.hshealthrecord.dto.response.HealthStatisticsResponse getHealthStatistics(Long userId, String period, String referenceDate, String timezone);
+
+    java.util.List<String> getAvailableHistoryDates(Long userId, String timezone);
+
+    java.util.List<HealthRecordResponse> getRecordsByDate(Long userId, String date, String timezone);
 }

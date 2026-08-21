@@ -342,4 +342,43 @@ public class HealthRecordServiceImpl implements HealthRecordService {
                 .totalAfibSuspected(totalAfibSuspected)
                 .build();
     }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public List<String> getAvailableHistoryDates(Long userId, String timezone) {
+        String pgTimezone = (timezone != null && !timezone.isEmpty()) ? timezone : "UTC";
+        List<java.sql.Date> dates = repository.findDistinctDatesByUserId(userId, pgTimezone);
+        
+        List<String> result = new ArrayList<>();
+        for (java.sql.Date d : dates) {
+            if (d != null) {
+                result.add(d.toString());
+            }
+        }
+        return result;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<HealthRecordResponse> getRecordsByDate(Long userId, String date, String timezone) {
+        ZoneId zoneId = (timezone != null && !timezone.isEmpty()) ? ZoneId.of(timezone) : ZoneId.of("UTC");
+        
+        LocalDate localDate;
+        try {
+            localDate = LocalDate.parse(date);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Invalid date format. Expected YYYY-MM-DD");
+        }
+        
+        Instant startOfDay = localDate.atStartOfDay(zoneId).toInstant();
+        Instant endOfDay = localDate.plusDays(1).atStartOfDay(zoneId).minusNanos(1).toInstant();
+        
+        List<HealthRecord> records = repository.findByUserIdAndCreatedAtBetweenOrderByCreatedAtDesc(userId, startOfDay, endOfDay);
+        
+        List<HealthRecordResponse> responses = new ArrayList<>();
+        for (HealthRecord record : records) {
+            responses.add(mapper.toResponse(record));
+        }
+        return responses;
+    }
 }

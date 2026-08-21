@@ -88,4 +88,19 @@ public class HealthRecordController {
             @Valid @RequestBody fit.iuh.se.hshealthrecord.dto.request.AiCallbackFailedRequest request) {
         return new ApiResponse<>(healthRecordService.markAsFailed(request));
     }
+
+    @GetMapping("/history/available-dates")
+    public ApiResponse<java.util.List<String>> getAvailableHistoryDates(
+            @AuthenticationPrincipal UserAuthentication currentUser,
+            @RequestParam(name = "timezone", defaultValue = "UTC") String timezone) {
+        return new ApiResponse<>(healthRecordService.getAvailableHistoryDates(currentUser.getUserId(), timezone));
+    }
+
+    @GetMapping("/history/by-date")
+    public ApiResponse<java.util.List<HealthRecordResponse>> getRecordsByDate(
+            @AuthenticationPrincipal UserAuthentication currentUser,
+            @RequestParam(name = "date") String date,
+            @RequestParam(name = "timezone", defaultValue = "UTC") String timezone) {
+        return new ApiResponse<>(healthRecordService.getRecordsByDate(currentUser.getUserId(), date, timezone));
+    }
 }
