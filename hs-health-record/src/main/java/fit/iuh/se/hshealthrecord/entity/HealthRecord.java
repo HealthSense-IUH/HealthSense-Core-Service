@@ -15,7 +15,10 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Builder
 @Entity
-@Table(name = "health_records")
+@Table(name = "health_records", indexes = {
+    @Index(name = "idx_health_record_user", columnList = "user_id"),
+    @Index(name = "idx_health_record_user_status_date", columnList = "user_id, status, created_at")
+})
 public class HealthRecord extends BaseEntity {
     @Id
     @SnowflakeGenerated

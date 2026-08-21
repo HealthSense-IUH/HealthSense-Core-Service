@@ -47,6 +47,8 @@ public class HealthRecordServiceImpl implements HealthRecordService {
     private final S3Service s3Service;
     private final RabbitTemplate rabbitTemplate;
     private final ApplicationEventPublisher eventPublisher;
+    private final org.springframework.data.redis.core.StringRedisTemplate redisTemplate;
+    private final tools.jackson.databind.ObjectMapper objectMapper;
 
     @Value("${app.rabbitmq.exchange:health.record.exchange}")
     private String exchange;
@@ -180,8 +182,14 @@ public class HealthRecordServiceImpl implements HealthRecordService {
         record.setConfidence(request.getConfidence());
         record.setHrvFeaturesJson(request.getHrvFeaturesJson());
         record.setStatus(RecordStatus.COMPLETED);
-
         record = repository.save(record);
+        
+        try {
+            redisTemplate.delete("history:dates:" + record.getUserId());
+        } catch (Exception e) {
+            log.warn("Lỗi xoá cache lịch sử ngày: {}", e.getMessage());
+        }
+
         log.info("Record {} completed AI analysis with result: {}", record.getId(), record.getPredictionLabel());
         eventPublisher.publishEvent(HealthRecordAnalyzedEvent.builder()
                 .recordId(record.getId())
@@ -347,14 +355,29 @@ public class HealthRecordServiceImpl implements HealthRecordService {
     @Transactional(readOnly = true)
     public List<String> getAvailableHistoryDates(Long userId, String timezone) {
         String pgTimezone = (timezone != null && !timezone.isEmpty()) ? timezone : "UTC";
-        List<String> dates = repository.findDistinctDatesByUserId(userId, pgTimezone);
+        String cacheKey = "history:dates:" + userId;
         
+        try {
+            String cachedData = redisTemplate.opsForValue().get(cacheKey);
+            if (cachedData != null) {
+                return objectMapper.readValue(cachedData, new tools.jackson.core.type.TypeReference<List<String>>(){});
+            }
+        } catch (Exception e) {
+            log.warn("Lỗi đọc cache lịch sử ngày: {}", e.getMessage());
+        }
+
+        List<String> dates = repository.findDistinctDatesByUserId(userId, pgTimezone);
         List<String> result = new ArrayList<>();
         for (String d : dates) {
-            if (d != null) {
-                result.add(d);
-            }
+            if (d != null) result.add(d);
         }
+
+        try {
+            redisTemplate.opsForValue().set(cacheKey, objectMapper.writeValueAsString(result), java.time.Duration.ofDays(7));
+        } catch (Exception e) {
+            log.warn("Lỗi lưu cache lịch sử ngày: {}", e.getMessage());
+        }
+
         return result;
     }
 
@@ -370,6 +393,21 @@ public class HealthRecordServiceImpl implements HealthRecordService {
             throw new IllegalArgumentException("Invalid date format. Expected YYYY-MM-DD");
         }
         
+        LocalDate today = LocalDate.now(zoneId);
+        boolean isPastDate = localDate.isBefore(today);
+        String cacheKey = "history:daily:" + userId + ":" + date;
+        
+        if (isPastDate) {
+            try {
+                String cachedData = redisTemplate.opsForValue().get(cacheKey);
+                if (cachedData != null) {
+                    return objectMapper.readValue(cachedData, new tools.jackson.core.type.TypeReference<List<HealthRecordResponse>>(){});
+                }
+            } catch (Exception e) {
+                log.warn("Lỗi đọc cache lịch sử chi tiết: {}", e.getMessage());
+            }
+        }
+
         Instant startOfDay = localDate.atStartOfDay(zoneId).toInstant();
         Instant endOfDay = localDate.plusDays(1).atStartOfDay(zoneId).minusNanos(1).toInstant();
         
@@ -379,6 +417,15 @@ public class HealthRecordServiceImpl implements HealthRecordService {
         for (HealthRecord record : records) {
             responses.add(mapper.toResponse(record));
         }
+
+        if (isPastDate && !responses.isEmpty()) {
+            try {
+                redisTemplate.opsForValue().set(cacheKey, objectMapper.writeValueAsString(responses), java.time.Duration.ofDays(30));
+            } catch (Exception e) {
+                log.warn("Lỗi lưu cache lịch sử chi tiết: {}", e.getMessage());
+            }
+        }
+
         return responses;
     }
 }
