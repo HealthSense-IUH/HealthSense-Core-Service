@@ -295,6 +295,20 @@ public class HealthRecordServiceImpl implements HealthRecordService {
                     .build());
         }
 
+        boolean isPastPeriod = endZoned.isBefore(ZonedDateTime.now(zoneId));
+        String cacheKey = String.format("stats:%d:%s:%s", userId, period.toUpperCase(), startZoned.toLocalDate().toString());
+
+        if (isPastPeriod) {
+            try {
+                String cachedData = redisTemplate.opsForValue().get(cacheKey);
+                if (cachedData != null) {
+                    return objectMapper.readValue(cachedData, HealthStatisticsResponse.class);
+                }
+            } catch (Exception e) {
+                log.warn("Lỗi đọc cache thống kê: {}", e.getMessage());
+            }
+        }
+
         // Fetch aggregated data from PostgreSQL Native Queries
         List<fit.iuh.se.hshealthrecord.repository.HealthStatProjection> aggregatedStats;
         String pgTimezone = zoneId.getId(); // E.g., "Asia/Ho_Chi_Minh"
@@ -342,13 +356,23 @@ public class HealthRecordServiceImpl implements HealthRecordService {
             }
         }
 
-        return HealthStatisticsResponse.builder()
+        HealthStatisticsResponse response = HealthStatisticsResponse.builder()
                 .chartData(chartData)
                 .totalNormal(totalNormal)
                 .totalAfibRisk(totalAfibRisk)
                 .totalUncertain(totalUncertain)
                 .totalAfibSuspected(totalAfibSuspected)
                 .build();
+
+        if (isPastPeriod) {
+            try {
+                redisTemplate.opsForValue().set(cacheKey, objectMapper.writeValueAsString(response), java.time.Duration.ofDays(30));
+            } catch (Exception e) {
+                log.warn("Lỗi lưu cache thống kê: {}", e.getMessage());
+            }
+        }
+
+        return response;
     }
     
     @Override
