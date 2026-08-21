@@ -347,12 +347,12 @@ public class HealthRecordServiceImpl implements HealthRecordService {
     @Transactional(readOnly = true)
     public List<String> getAvailableHistoryDates(Long userId, String timezone) {
         String pgTimezone = (timezone != null && !timezone.isEmpty()) ? timezone : "UTC";
-        List<java.sql.Date> dates = repository.findDistinctDatesByUserId(userId, pgTimezone);
+        List<String> dates = repository.findDistinctDatesByUserId(userId, pgTimezone);
         
         List<String> result = new ArrayList<>();
-        for (java.sql.Date d : dates) {
+        for (String d : dates) {
             if (d != null) {
-                result.add(d.toString());
+                result.add(d);
             }
         }
         return result;

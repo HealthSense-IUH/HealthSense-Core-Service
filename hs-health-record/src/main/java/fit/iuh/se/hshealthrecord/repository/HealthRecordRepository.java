@@ -26,10 +26,10 @@ public interface HealthRecordRepository extends JpaRepository<HealthRecord, Long
 
     long countByUserId(Long userId);
 
-    @Query(value = "SELECT DISTINCT CAST(created_at AT TIME ZONE :timezone AS DATE) " +
+    @Query(value = "SELECT DISTINCT CAST(CAST(created_at AT TIME ZONE :timezone AS DATE) AS VARCHAR) " +
             "FROM health_records WHERE user_id = :userId AND status = 'COMPLETED' " +
             "ORDER BY 1 DESC", nativeQuery = true)
-    List<java.sql.Date> findDistinctDatesByUserId(@Param("userId") Long userId, @Param("timezone") String timezone);
+    List<String> findDistinctDatesByUserId(@Param("userId") Long userId, @Param("timezone") String timezone);
 
     @Query(value = "SELECT EXTRACT(HOUR FROM (created_at AT TIME ZONE :timezone)) AS statGroup, " +
             "CAST(SUM(CASE WHEN prediction_label = 'NORMAL' THEN 1 ELSE 0 END) AS INTEGER) AS normalCount, " +
