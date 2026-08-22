@@ -1,0 +1,19 @@
+package fit.iuh.se.hsuser.dto.request;
+
+import jakarta.validation.constraints.NotBlank;
+import lombok.*;
+import lombok.experimental.FieldDefaults;
+
+@AllArgsConstructor
+@NoArgsConstructor
+@Getter
+@Setter
+@Builder
+@FieldDefaults(level = AccessLevel.PRIVATE)
+public class AvatarPresignedUrlRequest {
+
+    @NotBlank(message = "Tên file ảnh không được để trống")
+    String fileName;
+
+    String contentType;
+}
