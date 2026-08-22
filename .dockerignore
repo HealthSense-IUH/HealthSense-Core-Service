@@ -1,0 +1,19 @@
+**/.git
+**/.gitignore
+**/.idea
+**/.vscode
+**/target/
+**/build/
+HELP.md
+
+# Security keys & credentials
+**/*.key
+**/private_key*
+**/id_rsa
+**/id_ed25519
+**/.env
+**/.env.*
+
+# Ignore dev & local configuration properties in Docker image
+**/application-dev.properties
+**/application-local.properties
