@@ -58,4 +58,11 @@ public class UserController {
             @Valid @RequestBody AvatarPresignedUrlRequest request) {
         return new ApiResponse<>(userService.generateAvatarPresignedUrl(currentUser.getUserId(), request));
     }
+
+    @PostMapping("/me/identity-card/presigned-url")
+    public ApiResponse<fit.iuh.se.hsuser.dto.response.IdentityCardPresignedUrlResponse> generateIdentityCardPresignedUrl(
+            @AuthenticationPrincipal UserAuthentication currentUser,
+            @Valid @RequestBody fit.iuh.se.hsuser.dto.request.IdentityCardPresignedUrlRequest request) {
+        return new ApiResponse<>(userService.generateIdentityCardPresignedUrl(currentUser.getUserId(), request));
+    }
 }

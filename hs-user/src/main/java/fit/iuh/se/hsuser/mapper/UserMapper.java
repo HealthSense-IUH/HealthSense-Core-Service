@@ -15,5 +15,14 @@ public interface UserMapper {
     @Mapping(target = "avatarUrl", source = "profile.avatarUrl")
     @Mapping(target = "address", source = "profile.address")
     @Mapping(target = "timezone", source = "profile.timezone")
+    @Mapping(target = "citizenId", source = "profile.citizenId")
+    @Mapping(target = "bankAccount", source = "profile.bankAccount")
+    @Mapping(target = "healthInsuranceNumber", source = "profile.healthInsuranceNumber")
+    @Mapping(target = "healthData", source = "profile.healthData")
+    @Mapping(target = "biometricData", source = "profile.biometricData")
+    @Mapping(target = "identityCardFrontUrl", source = "profile.identityCardFrontUrl")
+    @Mapping(target = "identityCardBackUrl", source = "profile.identityCardBackUrl")
+    @Mapping(target = "identityCardFrontRotate", source = "profile.identityCardFrontRotate")
+    @Mapping(target = "identityCardBackRotate", source = "profile.identityCardBackRotate")
     UserResponse toUserResponse(UserAccount user);
 }

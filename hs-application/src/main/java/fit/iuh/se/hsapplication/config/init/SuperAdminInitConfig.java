@@ -2,7 +2,6 @@ package fit.iuh.se.hsapplication.config.init;
 
 import fit.iuh.se.hsuser.entity.UserAccount;
 import fit.iuh.se.hsuser.entity.UserProfile;
-import fit.iuh.se.hsuser.entity.UserSensitiveData;
 import fit.iuh.se.hsuser.entity.enums.AccountStatus;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
 import fit.iuh.se.hsuser.repository.UserAccountRepository;
@@ -67,12 +66,7 @@ public class SuperAdminInitConfig implements ApplicationRunner {
                 .displayName(fullName.trim())
                 .build();
 
-        UserSensitiveData sensitiveData = UserSensitiveData.builder()
-                .user(superAdmin)
-                .build();
-
         superAdmin.setProfile(profile);
-        superAdmin.setSensitiveData(sensitiveData);
         userAccountRepository.save(superAdmin);
 
         log.info("Bootstrapped initial SUPER_ADMIN account with email {}", normalizedEmail);

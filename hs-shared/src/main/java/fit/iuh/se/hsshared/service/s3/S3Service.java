@@ -22,6 +22,8 @@ public class S3Service {
 
     public static final String FOLDER_TMP_AVATARS = "tmp/avatars/";
     public static final String FOLDER_AVATARS = "avatars/";
+    public static final String FOLDER_TMP_DOCUMENTS = "tmp/documents/";
+    public static final String FOLDER_DOCUMENTS = "documents/";
     public static final String FOLDER_RECORDS = "records/";
 
     private final S3Presigner s3Presigner;
@@ -108,6 +110,10 @@ public class S3Service {
         if (idxTmpAvatars != -1) return url.substring(idxTmpAvatars);
         int idxAvatars = url.indexOf(FOLDER_AVATARS);
         if (idxAvatars != -1) return url.substring(idxAvatars);
+        int idxTmpDocs = url.indexOf(FOLDER_TMP_DOCUMENTS);
+        if (idxTmpDocs != -1) return url.substring(idxTmpDocs);
+        int idxDocs = url.indexOf(FOLDER_DOCUMENTS);
+        if (idxDocs != -1) return url.substring(idxDocs);
         int idxRecords = url.indexOf(FOLDER_RECORDS);
         if (idxRecords != -1) return url.substring(idxRecords);
         int idxTmp = url.indexOf("tmp/");

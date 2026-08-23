@@ -20,7 +20,6 @@ import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsuser.entity.UserAccount;
 import fit.iuh.se.hsuser.entity.UserProfile;
-import fit.iuh.se.hsuser.entity.UserSensitiveData;
 import fit.iuh.se.hsuser.entity.enums.AccountStatus;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
 import fit.iuh.se.hsuser.repository.UserAccountRepository;
@@ -87,12 +86,7 @@ public class AuthServiceImpl implements AuthService {
                 .displayName(request.getFullName().trim())
                 .build();
 
-        UserSensitiveData sensitiveData = UserSensitiveData.builder()
-                .user(user)
-                .build();
-
         user.setProfile(profile);
-        user.setSensitiveData(sensitiveData);
 
         return authUserMapper.toUserSession(userAccountRepository.save(user));
     }

@@ -25,12 +25,12 @@ import java.util.Base64;
 @Configuration(proxyBeanMethods = false)
 public class JwtConfig {
 
-    @Value("${security.jwt.key-id}")
+    @Value("${security.jwt.key-id:healthsense-auth-dev-key}")
     private String keyId;
 
     @Bean
     public RSAPrivateKey jwtPrivateKey(
-            @Value("${security.jwt.private-key-location}") Resource privateKeyResource) throws Exception {
+            @Value("${security.jwt.private-key-location:classpath:keys/private-dev.pem}") Resource privateKeyResource) throws Exception {
         String pem = privateKeyResource.getContentAsString(StandardCharsets.UTF_8);
         byte[] keyBytes = parsePem(pem);
         return (RSAPrivateKey) KeyFactory.getInstance("RSA")
@@ -39,7 +39,7 @@ public class JwtConfig {
 
     @Bean
     public RSAPublicKey jwtPublicKey(
-            @Value("${security.jwt.public-key-location}") Resource publicKeyResource) throws Exception {
+            @Value("${security.jwt.public-key-location:classpath:keys/public-dev.pem}") Resource publicKeyResource) throws Exception {
         String pem = publicKeyResource.getContentAsString(StandardCharsets.UTF_8);
         byte[] keyBytes = parsePem(pem);
         return (RSAPublicKey) KeyFactory.getInstance("RSA")
