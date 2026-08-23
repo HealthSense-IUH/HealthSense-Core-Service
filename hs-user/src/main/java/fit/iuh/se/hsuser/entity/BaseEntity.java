@@ -22,7 +22,7 @@ import java.time.Instant;
 @Setter
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class BaseEntity {
+public abstract class BaseEntity {
 
     @CreatedDate
     @Column(name = "created_at", updatable = false)
