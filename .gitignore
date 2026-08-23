@@ -50,4 +50,6 @@ id_ed25519
 
 *.sql
 
-docs
+docs/
+.m2repo/
+.m2/
