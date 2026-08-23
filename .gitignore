@@ -49,3 +49,5 @@ id_ed25519
 .env.*
 
 *.sql
+
+docs
