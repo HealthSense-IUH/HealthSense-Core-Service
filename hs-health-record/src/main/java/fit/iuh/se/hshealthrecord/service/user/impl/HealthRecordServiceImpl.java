@@ -152,6 +152,26 @@ public class HealthRecordServiceImpl implements HealthRecordService {
 
     @Override
     @Transactional(readOnly = true)
+    public PresignedUrlResponse getRecordDownloadUrl(Long userId, Long recordId) {
+        log.info("Generating download URL for record {} by user {}", recordId, userId);
+        HealthRecord record = repository.findByIdAndUserId(recordId, userId)
+                .orElseThrow(() -> new AppException(ErrorCode.HEALTH_RECORD_NOT_FOUND));
+
+        if (record.getS3FileKey() == null || record.getS3FileKey().isBlank()) {
+            throw new RuntimeException("Bản ghi không có file đính kèm");
+        }
+
+        String downloadUrl = s3Service.generatePresignedDownloadUrl(record.getS3FileKey());
+
+        return PresignedUrlResponse.builder()
+                .recordId(record.getId())
+                .uploadUrl(downloadUrl) // Using uploadUrl field for download URL temporarily or ideally add a downloadUrl field to PresignedUrlResponse
+                .s3Key(record.getS3FileKey())
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public PageResponse<HealthRecordResponse> getMyRecords(Long userId, Pageable pageable) {
         Page<HealthRecordResponse> page = repository.findByUserIdOrderByCreatedAtDesc(userId, pageable)
                 .map(mapper::toResponse);

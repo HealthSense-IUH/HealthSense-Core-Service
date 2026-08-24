@@ -20,6 +20,8 @@ public interface HealthRecordService {
 
     HealthRecordResponse getRecordById(Long userId, Long recordId);
 
+    PresignedUrlResponse getRecordDownloadUrl(Long userId, Long recordId);
+
     PageResponse<HealthRecordResponse> getMyRecords(Long userId, Pageable pageable);
 
     Optional<HealthRecordResponse> getLatestRecord(Long userId);

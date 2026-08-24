@@ -59,6 +59,13 @@ public class HealthRecordController {
         return new ApiResponse<>(healthRecordService.getRecordById(currentUser.getUserId(), id));
     }
 
+    @GetMapping("/{id}/download-url")
+    public ApiResponse<PresignedUrlResponse> getRecordDownloadUrl(
+            @AuthenticationPrincipal UserAuthentication currentUser,
+            @PathVariable Long id) {
+        return new ApiResponse<>(healthRecordService.getRecordDownloadUrl(currentUser.getUserId(), id));
+    }
+
     @GetMapping("/my-records")
     public ApiResponse<PageResponse<HealthRecordResponse>> getMyRecords(
             @AuthenticationPrincipal UserAuthentication currentUser,
