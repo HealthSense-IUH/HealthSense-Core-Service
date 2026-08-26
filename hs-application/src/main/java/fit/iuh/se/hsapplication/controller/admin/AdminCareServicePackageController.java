@@ -20,6 +20,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @Validated
 @RestController
 @RequestMapping("/api/admin/care-service-packages")
@@ -48,6 +50,16 @@ public class AdminCareServicePackageController {
             @AuthenticationPrincipal UserAuthentication currentUser,
             @PathVariable Long packageId) {
         return new ApiResponse<>(careServicePackageService.getPackageForAdmin(currentUser.getRole(), packageId));
+    }
+
+    @GetMapping("/{packageId}/versions")
+    public ApiResponse<List<CareServicePackageResponse>> getPackageVersions(
+            @AuthenticationPrincipal UserAuthentication currentUser,
+            @PathVariable Long packageId) {
+        return new ApiResponse<>(careServicePackageService.getPackageVersionsForAdmin(
+                currentUser.getRole(),
+                packageId
+        ));
     }
 
     @PostMapping
