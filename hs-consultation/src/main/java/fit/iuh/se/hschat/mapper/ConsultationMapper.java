@@ -26,8 +26,12 @@ public interface ConsultationMapper {
     @Mapping(target = "unreadCount", ignore = true)
     ConsultationSessionResponse toSessionResponse(ConsultationSession session);
 
+    @Mapping(target = "selectedHealthRecords", ignore = true)
+    @Mapping(target = "moreInfoHistory", ignore = true)
     ConsultationRequestResponse toRequestResponse(ConsultationRequest request);
 
+    @Mapping(target = "version", source = "versionNumber")
+    @Mapping(target = "detailedDescription", source = "description")
     CareServicePackageResponse toCareServicePackageResponse(CareServicePackage careServicePackage);
 
     default DoctorCareProfileResponse toDoctorCareProfileResponse(DoctorCareProfile doctorCareProfile) {
