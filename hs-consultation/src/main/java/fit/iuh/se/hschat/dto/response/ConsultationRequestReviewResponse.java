@@ -6,6 +6,7 @@ import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -18,6 +19,15 @@ public class ConsultationRequestReviewResponse {
     Long id;
     ConsultationRequestStatus status;
     String reason;
+    String reasonForCare;
+    String currentConcern;
+    String careGoal;
+    String memberNote;
+    String relevantSelfReportedContext;
+    List<Long> selectedHealthRecordIds;
+    List<HealthRecordSummaryResponse> selectedHealthRecords;
+    Instant intakeFrozenAt;
+    List<ConsultationMoreInfoCycleResponse> moreInfoHistory;
     Long packageId;
     BigDecimal packagePriceSnapshot;
     Integer packageDurationDaysSnapshot;

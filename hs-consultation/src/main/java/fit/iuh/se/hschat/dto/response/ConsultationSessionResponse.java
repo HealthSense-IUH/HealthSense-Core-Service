@@ -28,6 +28,7 @@ public class ConsultationSessionResponse {
     String supportScheduleSnapshotJson;
     String supportTimezoneSnapshot;
     Long packageId;
+    Integer packageVersion;
     BigDecimal packagePriceSnapshot;
     Integer packageDurationDaysSnapshot;
     Instant completedAt;

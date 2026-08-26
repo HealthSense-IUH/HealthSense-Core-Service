@@ -15,4 +15,7 @@ public class RequestMoreConsultationInfoRequest {
     @NotBlank(message = "Lý do yêu cầu bổ sung thông tin không được để trống")
     @Size(max = 500, message = "Lý do yêu cầu bổ sung thông tin không được vượt quá 500 ký tự")
     String reason;
+
+    @Size(max = 120, message = "Nhóm thông tin yêu cầu không được vượt quá 120 ký tự")
+    String requestedItemsCategory;
 }
