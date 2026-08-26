@@ -74,6 +74,9 @@ public class ConsultationSession extends BaseEntity {
     @Column(name = "package_id")
     Long packageId;
 
+    @Column(name = "package_version")
+    Integer packageVersion;
+
     @Column(name = "package_price_snapshot", precision = 14, scale = 2)
     BigDecimal packagePriceSnapshot;
 

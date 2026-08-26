@@ -9,6 +9,8 @@ import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -47,6 +49,9 @@ public class ConsultationRequest extends BaseEntity {
     @Column(name = "package_id")
     Long packageId;
 
+    @Column(name = "package_version")
+    Integer packageVersion;
+
     @Column(name = "package_price_snapshot", precision = 14, scale = 2)
     BigDecimal packagePriceSnapshot;
 
@@ -55,6 +60,34 @@ public class ConsultationRequest extends BaseEntity {
 
     @Column(name = "reason", nullable = false, length = 1000)
     String reason;
+
+    @Column(name = "reason_for_care", length = 1000)
+    String reasonForCare;
+
+    @Column(name = "current_concern", length = 2000)
+    String currentConcern;
+
+    @Column(name = "care_goal", length = 1000)
+    String careGoal;
+
+    @Column(name = "member_note", length = 1000)
+    String memberNote;
+
+    @Column(name = "relevant_self_reported_context", length = 4000)
+    String relevantSelfReportedContext;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(
+            name = "consultation_request_health_records",
+            joinColumns = @JoinColumn(name = "request_id")
+    )
+    @Column(name = "health_record_id", nullable = false)
+    @OrderColumn(name = "selection_order")
+    @Builder.Default
+    List<Long> selectedHealthRecordIds = new ArrayList<>();
+
+    @Column(name = "intake_frozen_at")
+    Instant intakeFrozenAt;
 
     @Column(name = "preferred_doctor_id")
     Long preferredDoctorId;
