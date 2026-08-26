@@ -79,6 +79,11 @@ public class ConsultationPaymentServiceImpl implements ConsultationPaymentServic
         }
 
         validateRequestReadyForPayment(request);
+        if (request.getStatus() == ConsultationRequestStatus.WAITING_ACCEPTANCE) {
+            // Temporary Inc 2 bridge; Inc 4 will replace this with Agreement acceptance.
+            request.setStatus(ConsultationRequestStatus.WAITING_PAYMENT);
+            requestRepository.save(request);
+        }
         ConsultationPayment payment = createPendingPayment(request);
         try {
             PayOSPaymentLink paymentLink = paymentGateway.createPaymentLink(
@@ -153,7 +158,13 @@ public class ConsultationPaymentServiceImpl implements ConsultationPaymentServic
         paymentRepository.findByStatusInAndExpiresAtBefore(EXPIRABLE_PAYMENT_STATUSES, now)
                 .forEach(payment -> reconcileOrExpire(payment, now));
 
-        requestRepository.findByStatusAndPaymentDeadlineBefore(ConsultationRequestStatus.WAITING_PAYMENT, now)
+        requestRepository.findByStatusInAndPaymentDeadlineBefore(
+                        List.of(
+                                ConsultationRequestStatus.WAITING_ACCEPTANCE,
+                                ConsultationRequestStatus.WAITING_PAYMENT
+                        ),
+                        now
+                )
                 .forEach(request -> paymentRepository.findByRequestIdForUpdate(request.getId())
                         .ifPresentOrElse(
                                 payment -> reconcileOrExpire(payment, now),
@@ -219,7 +230,8 @@ public class ConsultationPaymentServiceImpl implements ConsultationPaymentServic
             return;
         }
 
-        if (request.getStatus() != ConsultationRequestStatus.WAITING_PAYMENT)
+        if (request.getStatus() != ConsultationRequestStatus.WAITING_PAYMENT
+                && request.getStatus() != ConsultationRequestStatus.WAITING_ACCEPTANCE)
             throw new AppException(ErrorCode.INVALID_CONSULTATION_STATUS);
 
         ConsultationSession session = sessionRepository.findByRequestId(request.getId())
@@ -249,6 +261,7 @@ public class ConsultationPaymentServiceImpl implements ConsultationPaymentServic
                 .supportScheduleSnapshotJson(doctorProfile.getAvailabilityJson())
                 .supportTimezoneSnapshot(doctorProfile.getTimezone())
                 .packageId(request.getPackageId())
+                .packageVersion(request.getPackageVersion())
                 .packagePriceSnapshot(request.getPackagePriceSnapshot())
                 .packageDurationDaysSnapshot(request.getPackageDurationDaysSnapshot())
                 .healthRecordId(request.getHealthRecordId())
@@ -274,7 +287,8 @@ public class ConsultationPaymentServiceImpl implements ConsultationPaymentServic
     }
 
     private void validateRequestReadyForPayment(ConsultationRequest request) {
-        if (request.getStatus() != ConsultationRequestStatus.WAITING_PAYMENT)
+        if (request.getStatus() != ConsultationRequestStatus.WAITING_PAYMENT
+                && request.getStatus() != ConsultationRequestStatus.WAITING_ACCEPTANCE)
             throw new AppException(ErrorCode.INVALID_CONSULTATION_STATUS);
         if (request.getAssignedDoctorId() == null || request.getPaymentDeadline() == null)
             throw new AppException(ErrorCode.INVALID_CONSULTATION_STATUS);
@@ -341,7 +355,8 @@ public class ConsultationPaymentServiceImpl implements ConsultationPaymentServic
     }
 
     private void expireRequest(ConsultationRequest request, Instant now) {
-        if (request.getStatus() != ConsultationRequestStatus.WAITING_PAYMENT)
+        if (request.getStatus() != ConsultationRequestStatus.WAITING_PAYMENT
+                && request.getStatus() != ConsultationRequestStatus.WAITING_ACCEPTANCE)
             return;
         request.setStatus(ConsultationRequestStatus.EXPIRED);
         request.setExpiredAt(now);

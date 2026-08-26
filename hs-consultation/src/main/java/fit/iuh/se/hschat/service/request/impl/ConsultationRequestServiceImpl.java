@@ -3,11 +3,13 @@ package fit.iuh.se.hschat.service.request.impl;
 import fit.iuh.se.hschat.dto.request.*;
 import fit.iuh.se.hschat.dto.response.*;
 import fit.iuh.se.hschat.entity.CareServicePackage;
+import fit.iuh.se.hschat.entity.ConsultationMoreInfoCycle;
 import fit.iuh.se.hschat.entity.ConsultationRequest;
 import fit.iuh.se.hschat.entity.DoctorCareProfile;
 import fit.iuh.se.hschat.entity.enums.*;
 import fit.iuh.se.hschat.mapper.ConsultationMapper;
 import fit.iuh.se.hschat.repository.CareServicePackageRepository;
+import fit.iuh.se.hschat.repository.ConsultationMoreInfoCycleRepository;
 import fit.iuh.se.hschat.repository.ConsultationRequestRepository;
 import fit.iuh.se.hschat.repository.ConsultationSessionRepository;
 import fit.iuh.se.hschat.repository.DoctorCareProfileRepository;
@@ -52,6 +54,11 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
     static final List<ConsultationRequestStatus> UNRESOLVED_REQUEST_STATUSES = List.of(
             ConsultationRequestStatus.PENDING_REVIEW,
             ConsultationRequestStatus.NEED_MORE_INFO,
+            ConsultationRequestStatus.WAITING_ACCEPTANCE,
+            ConsultationRequestStatus.WAITING_PAYMENT
+    );
+    static final List<ConsultationRequestStatus> ACTIVE_RESERVATION_STATUSES = List.of(
+            ConsultationRequestStatus.WAITING_ACCEPTANCE,
             ConsultationRequestStatus.WAITING_PAYMENT
     );
     static final List<ConsultationStatus> MEMBER_BUSY_SESSION_STATUSES = List.of(
@@ -60,6 +67,7 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
     );
 
     ConsultationRequestRepository requestRepository;
+    ConsultationMoreInfoCycleRepository moreInfoCycleRepository;
     ConsultationSessionRepository sessionRepository;
     HealthRecordRepository healthRecordRepository;
     UserAccountRepository userAccountRepository;
@@ -77,7 +85,7 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
     public ConsultationRequestResponse createRequest(Long memberId, CreateConsultationRequest request) {
         log.info("Creating consultation request for member {}", memberId);
 
-        UserAccount member = userAccountRepository.findById(memberId)
+        UserAccount member = userAccountRepository.findByIdForUpdate(memberId)
                 .orElseThrow(() -> new AppException(ErrorCode.MEMBER_NOT_FOUND));
         if (member.getRole() != UserRole.MEMBER)
             throw new AppException(ErrorCode.MEMBER_NOT_FOUND);
@@ -89,20 +97,31 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
             throw new AppException(ErrorCode.MEMBER_ALREADY_HAS_PENDING_CONSULTATION_REQUEST);
 
         CareServicePackage carePackage = findActivePackage(request.getPackageId());
-        validateHealthRecordOwner(request.getHealthRecordId(), memberId);
+        List<Long> selectedHealthRecordIds = normalizeHealthRecordIds(
+                request.getSelectedHealthRecordIds(),
+                request.getHealthRecordId()
+        );
+        validateHealthRecordOwners(selectedHealthRecordIds, memberId);
 
         ConsultationRequest consultationRequest = ConsultationRequest.builder()
                 .memberId(memberId)
-                .healthRecordId(request.getHealthRecordId())
+                .healthRecordId(selectedHealthRecordIds.isEmpty() ? null : selectedHealthRecordIds.getFirst())
                 .packageId(carePackage.getId())
+                .packageVersion(carePackage.getVersionNumber())
                 .packagePriceSnapshot(carePackage.getPriceAmount())
                 .packageDurationDaysSnapshot(carePackage.getDurationDays())
-                .reason(request.getReason())
+                .reason(request.getReasonForCare())
+                .reasonForCare(request.getReasonForCare())
+                .currentConcern(request.getCurrentConcern())
+                .careGoal(request.getCareGoal())
+                .memberNote(request.getMemberNote())
+                .relevantSelfReportedContext(request.getRelevantSelfReportedContext())
+                .selectedHealthRecordIds(selectedHealthRecordIds)
                 .preferredDoctorId(request.getPreferredDoctorId())
                 .status(ConsultationRequestStatus.PENDING_REVIEW)
                 .build();
 
-        return mapper.toRequestResponse(requestRepository.save(consultationRequest));
+        return toRequestResponse(requestRepository.save(consultationRequest));
     }
 
     @Override
@@ -111,7 +130,7 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
         validateConsultationManager(actorRole);
         log.info("Reserving doctor for consultation request {} by actor {} with role {}", requestId, actorId, actorRole);
 
-        ConsultationRequest consultationRequest = requestRepository.findById(requestId)
+        ConsultationRequest consultationRequest = requestRepository.findByIdForUpdate(requestId)
                 .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_REQUEST_NOT_FOUND));
 
         if (consultationRequest.getStatus() != ConsultationRequestStatus.PENDING_REVIEW)
@@ -128,15 +147,16 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
             throw new AppException(ErrorCode.DOCTOR_CAPACITY_EXCEEDED);
 
         Instant now = Instant.now();
-        consultationRequest.setStatus(ConsultationRequestStatus.WAITING_PAYMENT);
+        consultationRequest.setStatus(ConsultationRequestStatus.WAITING_ACCEPTANCE);
         consultationRequest.setAssignedDoctorId(request.getDoctorId());
         consultationRequest.setDoctorReservedAt(now);
         consultationRequest.setPaymentDeadline(now.plus(paymentDeadlineMinutes, ChronoUnit.MINUTES));
         consultationRequest.setReviewedByAdminId(actorId);
         consultationRequest.setReviewedAt(now);
         consultationRequest.setMoreInfoReason(null);
+        consultationRequest.setIntakeFrozenAt(now);
 
-        return mapper.toRequestResponse(requestRepository.save(consultationRequest));
+        return toRequestResponse(requestRepository.save(consultationRequest));
     }
 
     @Override
@@ -156,14 +176,14 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
         consultationRequest.setReviewedAt(now);
         consultationRequest.setRejectionReason(request.getRejectionReason());
 
-        return mapper.toRequestResponse(requestRepository.save(consultationRequest));
+        return toRequestResponse(requestRepository.save(consultationRequest));
     }
 
     @Override
     @Transactional
     public ConsultationRequestResponse requestMoreInfo(Long actorId, UserRole actorRole, Long requestId, RequestMoreConsultationInfoRequest request) {
         validateConsultationManager(actorRole);
-        ConsultationRequest consultationRequest = requestRepository.findById(requestId)
+        ConsultationRequest consultationRequest = requestRepository.findByIdForUpdate(requestId)
                 .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_REQUEST_NOT_FOUND));
 
         if (consultationRequest.getStatus() != ConsultationRequestStatus.PENDING_REVIEW)
@@ -175,13 +195,21 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
         consultationRequest.setReviewedByAdminId(actorId);
         consultationRequest.setReviewedAt(now);
 
-        return mapper.toRequestResponse(requestRepository.save(consultationRequest));
+        moreInfoCycleRepository.save(ConsultationMoreInfoCycle.builder()
+                .requestId(requestId)
+                .requestedItemsCategory(request.getRequestedItemsCategory())
+                .coordinatorMessage(request.getReason())
+                .requestedBy(actorId)
+                .requestedAt(now)
+                .build());
+
+        return toRequestResponse(requestRepository.save(consultationRequest));
     }
 
     @Override
     @Transactional
     public ConsultationRequestResponse submitMoreInfo(Long memberId, Long requestId, SubmitConsultationMoreInfoRequest request) {
-        ConsultationRequest consultationRequest = requestRepository.findById(requestId)
+        ConsultationRequest consultationRequest = requestRepository.findByIdForUpdate(requestId)
                 .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_REQUEST_NOT_FOUND));
 
         if (!consultationRequest.getMemberId().equals(memberId))
@@ -189,15 +217,33 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
 
         if (consultationRequest.getStatus() != ConsultationRequestStatus.NEED_MORE_INFO)
             throw new AppException(ErrorCode.INVALID_CONSULTATION_STATUS);
+        if (consultationRequest.getIntakeFrozenAt() != null)
+            throw new AppException(ErrorCode.INVALID_CONSULTATION_STATUS);
 
-        validateHealthRecordOwner(request.getHealthRecordId(), memberId);
-        if (request.getHealthRecordId() != null)
-            consultationRequest.setHealthRecordId(request.getHealthRecordId());
-        consultationRequest.setMemberAdditionalNote(request.getAdditionalNote());
+        List<Long> responseRecordIds = normalizeHealthRecordIds(
+                request.getSelectedHealthRecordIds(),
+                request.getHealthRecordId()
+        );
+        validateHealthRecordOwners(responseRecordIds, memberId);
+        appendDistinct(consultationRequest.getSelectedHealthRecordIds(), responseRecordIds);
+        if (consultationRequest.getHealthRecordId() == null && !responseRecordIds.isEmpty())
+            consultationRequest.setHealthRecordId(responseRecordIds.getFirst());
+
+        String responseNote = firstNonBlank(request.getResponseNote(), request.getAdditionalNote());
+        ConsultationMoreInfoCycle cycle = moreInfoCycleRepository
+                .findFirstByRequestIdAndRespondedAtIsNullOrderByRequestedAtDesc(requestId)
+                .orElseThrow(() -> new AppException(ErrorCode.INVALID_CONSULTATION_STATUS));
+        Instant now = Instant.now();
+        cycle.setMemberResponse(responseNote);
+        cycle.setResponseHealthRecordIds(responseRecordIds);
+        cycle.setRespondedAt(now);
+        moreInfoCycleRepository.save(cycle);
+
+        consultationRequest.setMemberAdditionalNote(responseNote);
         consultationRequest.setMoreInfoReason(null);
         consultationRequest.setStatus(ConsultationRequestStatus.PENDING_REVIEW);
 
-        return mapper.toRequestResponse(requestRepository.save(consultationRequest));
+        return toRequestResponse(requestRepository.save(consultationRequest));
     }
 
     @Override
@@ -211,13 +257,14 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
 
         if (consultationRequest.getStatus() != ConsultationRequestStatus.PENDING_REVIEW
                 && consultationRequest.getStatus() != ConsultationRequestStatus.NEED_MORE_INFO
+                && consultationRequest.getStatus() != ConsultationRequestStatus.WAITING_ACCEPTANCE
                 && consultationRequest.getStatus() != ConsultationRequestStatus.WAITING_PAYMENT)
             throw new AppException(ErrorCode.INVALID_CONSULTATION_STATUS);
 
         consultationRequest.setStatus(ConsultationRequestStatus.CANCELLED);
         consultationRequest.setCancelledAt(Instant.now());
 
-        return mapper.toRequestResponse(requestRepository.save(consultationRequest));
+        return toRequestResponse(requestRepository.save(consultationRequest));
     }
 
     @Override
@@ -228,14 +275,14 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
         if (!consultationRequest.getMemberId().equals(memberId))
             throw new AppException(ErrorCode.CONSULTATION_ACCESS_DENIED);
 
-        return mapper.toRequestResponse(consultationRequest);
+        return toRequestResponse(consultationRequest);
     }
 
     @Override
     public PageResponse<ConsultationRequestResponse> getMyRequests(Long memberId, Pageable pageable) {
         Page<ConsultationRequestResponse> page = requestRepository
                 .findByMemberIdOrderByCreatedAtDesc(memberId, pageable)
-                .map(mapper::toRequestResponse);
+                .map(this::toRequestResponse);
         return new PageResponse<>(page);
     }
 
@@ -253,7 +300,7 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
         validateConsultationManager(actorRole);
         Page<ConsultationRequestResponse> page = requestRepository
                 .findAll(buildRequestFilter(status, memberId, preferredDoctorId, assignedDoctorId, fromDate, toDate), pageable)
-                .map(mapper::toRequestResponse);
+                .map(this::toRequestResponse);
         return new PageResponse<>(page);
     }
 
@@ -308,7 +355,7 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
     public void expireWaitingPaymentRequests(UserRole actorRole) {
         validateConsultationManager(actorRole);
         Instant now = Instant.now();
-        requestRepository.findByStatusAndPaymentDeadlineBefore(ConsultationRequestStatus.WAITING_PAYMENT, now)
+        requestRepository.findByStatusInAndPaymentDeadlineBefore(ACTIVE_RESERVATION_STATUSES, now)
                 .forEach(request -> {
                     request.setStatus(ConsultationRequestStatus.EXPIRED);
                     request.setExpiredAt(now);
@@ -357,9 +404,9 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
                 doctorId,
                 MEMBER_BUSY_SESSION_STATUSES
         );
-        long activeReservations = requestRepository.countByAssignedDoctorIdAndStatusAndPaymentDeadlineAfter(
+        long activeReservations = requestRepository.countByAssignedDoctorIdAndStatusInAndPaymentDeadlineAfter(
                 doctorId,
-                ConsultationRequestStatus.WAITING_PAYMENT,
+                ACTIVE_RESERVATION_STATUSES,
                 now
         );
         return scheduledOrActiveSessions + activeReservations;
@@ -415,6 +462,15 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
                 .id(request.getId())
                 .status(request.getStatus())
                 .reason(request.getReason())
+                .reasonForCare(request.getReasonForCare())
+                .currentConcern(request.getCurrentConcern())
+                .careGoal(request.getCareGoal())
+                .memberNote(request.getMemberNote())
+                .relevantSelfReportedContext(request.getRelevantSelfReportedContext())
+                .selectedHealthRecordIds(request.getSelectedHealthRecordIds())
+                .selectedHealthRecords(healthRecordSummaries(request.getSelectedHealthRecordIds(), request.getMemberId()))
+                .intakeFrozenAt(request.getIntakeFrozenAt())
+                .moreInfoHistory(moreInfoHistory(request.getId(), request.getMemberId()))
                 .packageId(request.getPackageId())
                 .packagePriceSnapshot(request.getPackagePriceSnapshot())
                 .packageDurationDaysSnapshot(request.getPackageDurationDaysSnapshot())
@@ -456,6 +512,40 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
                 .orElse(null);
     }
 
+    private List<HealthRecordSummaryResponse> healthRecordSummaries(List<Long> healthRecordIds, Long memberId) {
+        if (healthRecordIds == null || healthRecordIds.isEmpty())
+            return List.of();
+        return healthRecordIds.stream()
+                .map(id -> healthRecordSummary(id, memberId))
+                .filter(Objects::nonNull)
+                .toList();
+    }
+
+    private List<ConsultationMoreInfoCycleResponse> moreInfoHistory(Long requestId, Long memberId) {
+        if (requestId == null)
+            return List.of();
+        return moreInfoCycleRepository.findByRequestIdOrderByRequestedAtAsc(requestId).stream()
+                .map(cycle -> ConsultationMoreInfoCycleResponse.builder()
+                        .id(cycle.getId())
+                        .requestedItemsCategory(cycle.getRequestedItemsCategory())
+                        .coordinatorMessage(cycle.getCoordinatorMessage())
+                        .requestedBy(cycle.getRequestedBy())
+                        .requestedAt(cycle.getRequestedAt())
+                        .memberResponse(cycle.getMemberResponse())
+                        .responseHealthRecordIds(cycle.getResponseHealthRecordIds())
+                        .responseHealthRecords(healthRecordSummaries(cycle.getResponseHealthRecordIds(), memberId))
+                        .respondedAt(cycle.getRespondedAt())
+                        .build())
+                .toList();
+    }
+
+    private ConsultationRequestResponse toRequestResponse(ConsultationRequest request) {
+        ConsultationRequestResponse response = mapper.toRequestResponse(request);
+        response.setSelectedHealthRecords(healthRecordSummaries(request.getSelectedHealthRecordIds(), request.getMemberId()));
+        response.setMoreInfoHistory(moreInfoHistory(request.getId(), request.getMemberId()));
+        return response;
+    }
+
     private HealthRecordSummaryResponse toHealthRecordSummary(HealthRecord record) {
         return HealthRecordSummaryResponse.builder()
                 .recordId(record.getId())
@@ -493,12 +583,30 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
         };
     }
 
-    private void validateHealthRecordOwner(Long healthRecordId, Long memberId) {
-        if (healthRecordId == null)
-            return;
+    private void validateHealthRecordOwners(List<Long> healthRecordIds, Long memberId) {
+        healthRecordIds.forEach(id -> healthRecordRepository.findByIdAndUserId(id, memberId)
+                .orElseThrow(() -> new AppException(ErrorCode.HEALTH_RECORD_NOT_FOUND)));
+    }
 
-        healthRecordRepository.findByIdAndUserId(healthRecordId, memberId)
-                .orElseThrow(() -> new AppException(ErrorCode.HEALTH_RECORD_NOT_FOUND));
+    private List<Long> normalizeHealthRecordIds(List<Long> selectedIds, Long legacyId) {
+        LinkedHashSet<Long> normalized = new LinkedHashSet<>();
+        if (selectedIds != null)
+            selectedIds.stream().filter(Objects::nonNull).forEach(normalized::add);
+        if (legacyId != null)
+            normalized.add(legacyId);
+        return new ArrayList<>(normalized);
+    }
+
+    private void appendDistinct(List<Long> target, List<Long> additions) {
+        additions.forEach(id -> {
+            if (!target.contains(id))
+                target.add(id);
+        });
+    }
+
+    private String firstNonBlank(String preferred, String fallback) {
+        String normalized = trimToNull(preferred);
+        return normalized == null ? trimToNull(fallback) : normalized;
     }
 
     private String trimToNull(String value) {

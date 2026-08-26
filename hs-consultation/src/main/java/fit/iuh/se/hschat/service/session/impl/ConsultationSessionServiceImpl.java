@@ -107,6 +107,7 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
                 .supportScheduleSnapshotJson(doctorProfile.getAvailabilityJson())
                 .supportTimezoneSnapshot(doctorProfile.getTimezone())
                 .packageId(carePackage == null ? null : carePackage.getId())
+                .packageVersion(carePackage == null ? null : carePackage.getVersionNumber())
                 .packagePriceSnapshot(carePackage == null ? null : carePackage.getPriceAmount())
                 .packageDurationDaysSnapshot(carePackage == null ? null : carePackage.getDurationDays())
                 .healthRecordId(request.getHealthRecordId())
