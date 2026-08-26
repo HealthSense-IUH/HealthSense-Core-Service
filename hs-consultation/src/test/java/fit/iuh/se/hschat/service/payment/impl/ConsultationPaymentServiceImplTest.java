@@ -103,6 +103,28 @@ class ConsultationPaymentServiceImplTest {
     }
 
     @Test
+    void createPaymentTemporarilyBridgesWaitingAcceptanceToWaitingPayment() {
+        ConsultationRequest request = waitingPaymentRequest();
+        request.setStatus(ConsultationRequestStatus.WAITING_ACCEPTANCE);
+        when(requestRepository.findByIdForUpdate(request.getId())).thenReturn(Optional.of(request));
+        when(paymentRepository.findByRequestIdForUpdate(request.getId())).thenReturn(Optional.empty());
+        when(paymentRepository.existsByOrderCode(anyLong())).thenReturn(false);
+        when(paymentRepository.saveAndFlush(any(ConsultationPayment.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(paymentGateway.createPaymentLink(anyLong(), anyLong(), anyString(), anyString(), anyString(), any()))
+                .thenReturn(PayOSPaymentLink.builder()
+                        .paymentLinkId("plink_bridge")
+                        .checkoutUrl("https://pay.payos.vn/web/bridge")
+                        .status("PENDING")
+                        .build());
+
+        service.createPayment(request.getMemberId(), request.getId());
+
+        assertEquals(ConsultationRequestStatus.WAITING_PAYMENT, request.getStatus());
+        verify(requestRepository).save(request);
+    }
+
+    @Test
     void handlePayOSWebhook_paidActivatesRequestAndSessionOnce() {
         ConsultationPayment payment = pendingPayment();
         ConsultationRequest request = waitingPaymentRequest();
@@ -124,6 +146,7 @@ class ConsultationPaymentServiceImplTest {
         verify(sessionRepository).saveAndFlush(argThat(created ->
                 "{\"weekly\":[{\"dayOfWeek\":\"MONDAY\",\"start\":\"07:00\",\"end\":\"11:00\"}]}".equals(created.getSupportScheduleSnapshotJson())
                         && "Asia/Ho_Chi_Minh".equals(created.getSupportTimezoneSnapshot())
+                        && Integer.valueOf(3).equals(created.getPackageVersion())
         ));
     }
 
@@ -266,7 +289,7 @@ class ConsultationPaymentServiceImplTest {
         when(doctorCareProfileRepository.findByDoctorId(request.getAssignedDoctorId())).thenReturn(Optional.of(doctorProfile()));
         when(sessionRepository.findByRequestId(request.getId())).thenReturn(Optional.empty());
         when(sessionRepository.saveAndFlush(any(ConsultationSession.class))).thenReturn(session);
-        when(requestRepository.findByStatusAndPaymentDeadlineBefore(eq(ConsultationRequestStatus.WAITING_PAYMENT), any()))
+        when(requestRepository.findByStatusInAndPaymentDeadlineBefore(anyCollection(), any()))
                 .thenReturn(java.util.List.of());
 
         service.expireOverduePayments();
@@ -296,6 +319,7 @@ class ConsultationPaymentServiceImplTest {
                 .memberId(10L)
                 .healthRecordId(20L)
                 .packageId(30L)
+                .packageVersion(3)
                 .packagePriceSnapshot(new BigDecimal("100000"))
                 .packageDurationDaysSnapshot(7)
                 .reason("Need care")
