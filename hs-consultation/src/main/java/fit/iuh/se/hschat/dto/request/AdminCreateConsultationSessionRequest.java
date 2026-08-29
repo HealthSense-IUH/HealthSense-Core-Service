@@ -2,6 +2,7 @@ package fit.iuh.se.hschat.dto.request;
 
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -34,4 +35,7 @@ public class AdminCreateConsultationSessionRequest {
     Instant supportEndsAt;
 
     String initialSystemMessage;
+
+    @NotBlank(message = "Exceptional override reason is required")
+    String overrideReason;
 }

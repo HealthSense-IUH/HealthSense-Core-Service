@@ -2,6 +2,7 @@ package fit.iuh.se.hschat.dto.response;
 
 import fit.iuh.se.hschat.entity.enums.ConsultationPaymentProvider;
 import fit.iuh.se.hschat.entity.enums.ConsultationPaymentStatus;
+import fit.iuh.se.hschat.entity.enums.ConsultationPaymentPurpose;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -18,6 +19,10 @@ public class ConsultationPaymentResponse {
 
     Long id;
     Long requestId;
+    Long renewalId;
+    ConsultationPaymentPurpose paymentPurpose;
+    Long agreementId;
+    Integer attemptNumber;
     Long memberId;
     ConsultationPaymentProvider provider;
     Long orderCode;

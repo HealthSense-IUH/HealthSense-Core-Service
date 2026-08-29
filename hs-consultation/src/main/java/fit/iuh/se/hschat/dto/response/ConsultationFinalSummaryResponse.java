@@ -1,10 +1,13 @@
 package fit.iuh.se.hschat.dto.response;
 
 import fit.iuh.se.hschat.entity.enums.ConsultationFinalSummaryStatus;
+import fit.iuh.se.hschat.entity.enums.FinalSummaryClosureStatus;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.time.Instant;
+import java.util.List;
+import java.util.Set;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -25,4 +28,8 @@ public class ConsultationFinalSummaryResponse {
     Instant finalizedAt;
     Instant createdAt;
     Instant updatedAt;
+    FinalSummaryClosureStatus closureStatus;
+    Instant summaryDueAt;
+    Set<Long> referencedHealthRecordIds;
+    List<FinalSummaryAddendumResponse> addenda;
 }
