@@ -8,6 +8,8 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.time.Instant;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -32,10 +34,15 @@ public class ConsultationFinalSummary extends BaseEntity {
     @Column(name = "id", nullable = false, updatable = false)
     Long id;
 
+    @Version
+    @Column(name = "version", nullable = false)
+    @Builder.Default
+    Long version = 0L;
+
     @Column(name = "session_id", nullable = false)
     Long sessionId;
 
-    @Column(name = "summary", nullable = false, columnDefinition = "TEXT")
+    @Column(name = "summary", columnDefinition = "TEXT")
     String summary;
 
     @Column(name = "observations", columnDefinition = "TEXT")
@@ -56,4 +63,13 @@ public class ConsultationFinalSummary extends BaseEntity {
 
     @Column(name = "finalized_at")
     Instant finalizedAt;
+
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(
+            name = "consultation_final_summary_health_records",
+            joinColumns = @JoinColumn(name = "summary_id")
+    )
+    @Column(name = "health_record_id", nullable = false)
+    @Builder.Default
+    Set<Long> referencedHealthRecordIds = new LinkedHashSet<>();
 }

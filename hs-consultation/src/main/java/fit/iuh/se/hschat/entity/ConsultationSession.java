@@ -3,6 +3,7 @@ package fit.iuh.se.hschat.entity;
 import fit.iuh.se.hschat.entity.enums.ConsultationSourceType;
 import fit.iuh.se.hschat.entity.enums.ConsultationCompletionReason;
 import fit.iuh.se.hschat.entity.enums.ConsultationStatus;
+import fit.iuh.se.hschat.entity.enums.FinalSummaryClosureStatus;
 import fit.iuh.se.hsshared.generator.SnowflakeGenerated;
 import fit.iuh.se.hsuser.entity.BaseEntity;
 import jakarta.persistence.*;
@@ -48,6 +49,13 @@ public class ConsultationSession extends BaseEntity {
     @Column(name = "created_by_admin_id")
     Long createdByAdminId;
 
+    @Column(name = "exceptional_override", nullable = false)
+    @Builder.Default
+    Boolean exceptionalOverride = false;
+
+    @Column(name = "override_reason", length = 1000)
+    String overrideReason;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "source_type", nullable = false, length = 40)
     ConsultationSourceType sourceType;
@@ -58,6 +66,9 @@ public class ConsultationSession extends BaseEntity {
 
     @Column(name = "started_at")
     Instant startedAt;
+
+    @Column(name = "activated_at")
+    Instant activatedAt;
 
     @Column(name = "ends_at", nullable = false)
     Instant endsAt;
@@ -85,6 +96,19 @@ public class ConsultationSession extends BaseEntity {
 
     @Column(name = "completed_at")
     Instant completedAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "summary_closure_status", length = 40)
+    FinalSummaryClosureStatus summaryClosureStatus;
+
+    @Column(name = "summary_due_at")
+    Instant summaryDueAt;
+
+    @Column(name = "summary_escalated_at")
+    Instant summaryEscalatedAt;
+
+    @Column(name = "summary_escalation_reason", length = 1000)
+    String summaryEscalationReason;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "completion_reason", length = 40)
