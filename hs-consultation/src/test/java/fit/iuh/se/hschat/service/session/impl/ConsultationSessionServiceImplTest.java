@@ -1,10 +1,14 @@
 package fit.iuh.se.hschat.service.session.impl;
 
 import fit.iuh.se.hschat.dto.request.AdminCreateConsultationSessionRequest;
+import fit.iuh.se.hschat.dto.request.CloseConsultationRequest;
+import fit.iuh.se.hschat.dto.request.RequestSessionTerminationRequest;
 import fit.iuh.se.hschat.entity.DoctorCareProfile;
 import fit.iuh.se.hschat.entity.ConsultationSession;
 import fit.iuh.se.hschat.entity.enums.ConsultationCompletionReason;
 import fit.iuh.se.hschat.entity.enums.ConsultationStatus;
+import fit.iuh.se.hschat.entity.enums.CareOperationalReviewReason;
+import fit.iuh.se.hschat.entity.enums.CareTerminationReason;
 import fit.iuh.se.hschat.entity.enums.DoctorSpecialty;
 import fit.iuh.se.hschat.mapper.ConsultationMapper;
 import fit.iuh.se.hschat.repository.CareServicePackageRepository;
@@ -17,6 +21,7 @@ import fit.iuh.se.hschat.service.doctor.SupportScheduleValidator;
 import fit.iuh.se.hschat.service.authorization.EpisodeHealthRecordAuthorizationService;
 import fit.iuh.se.hschat.service.reservation.DoctorReservationService;
 import fit.iuh.se.hschat.service.finalsummary.FinalSummaryClosureService;
+import fit.iuh.se.hschat.service.renewal.ConsultationRenewalService;
 import fit.iuh.se.hshealthrecord.repository.HealthRecordRepository;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsuser.entity.UserAccount;
@@ -66,6 +71,8 @@ class ConsultationSessionServiceImplTest {
     @Mock
     FinalSummaryClosureService finalSummaryClosureService;
     @Mock
+    ConsultationRenewalService renewalService;
+    @Mock
     ConsultationMapper mapper;
 
     ConsultationSessionServiceImpl service;
@@ -85,6 +92,7 @@ class ConsultationSessionServiceImplTest {
                 reservationService,
                 authorizationService,
                 finalSummaryClosureService,
+                renewalService,
                 mapper
         );
         ReflectionTestUtils.setField(service, "defaultDoctorMaxActiveSessions", 5);
@@ -182,6 +190,7 @@ class ConsultationSessionServiceImplTest {
         request.setDoctorId(2L);
         request.setEndsAt(Instant.now().plusSeconds(3600));
         request.setOverrideReason("Administrative recovery");
+        request.setServiceScope("One-on-one administrative care");
 
         assertThrows(AppException.class, () -> service.createSessionByAdmin(9L, UserRole.ADMIN, request));
         verify(sessionRepository, never()).save(any());
@@ -205,6 +214,7 @@ class ConsultationSessionServiceImplTest {
         request.setStartedAt(Instant.now().minusSeconds(60));
         request.setEndsAt(Instant.now().plusSeconds(3600));
         request.setOverrideReason("Compensating care approved by Admin");
+        request.setServiceScope("One-on-one remote care recovery");
 
         service.createSessionByAdmin(9L, UserRole.ADMIN, request);
 
@@ -233,6 +243,116 @@ class ConsultationSessionServiceImplTest {
 
         assertThrows(AppException.class,
                 () -> service.createSessionByAdmin(9L, UserRole.ADMIN, request));
+        verify(sessionRepository, never()).save(any());
+    }
+
+    @Test
+    void adminOverrideRequiresExplicitServiceScope() {
+        AdminCreateConsultationSessionRequest request = new AdminCreateConsultationSessionRequest();
+        request.setOverrideReason("Recovery");
+
+        assertThrows(AppException.class,
+                () -> service.createSessionByAdmin(9L, UserRole.ADMIN, request));
+        verify(sessionRepository, never()).save(any());
+    }
+
+    @Test
+    void activeTerminationPreservesEpisodeAndCreatesSummaryClosureObligation() {
+        ConsultationSession session = ConsultationSession.builder().id(1L).memberId(1L).doctorId(2L)
+                .status(ConsultationStatus.ACTIVE).activatedAt(Instant.now().minusSeconds(3600))
+                .endsAt(Instant.now().plusSeconds(3600)).build();
+        when(sessionRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(session));
+        when(sessionRepository.save(session)).thenReturn(session);
+        when(mapper.toSessionResponse(session)).thenReturn(fit.iuh.se.hschat.dto.response.ConsultationSessionResponse.builder().build());
+        CloseConsultationRequest request = new CloseConsultationRequest();
+        request.setCloseReason("Member requested early closure");
+        request.setTerminationReason(CareTerminationReason.MEMBER_REQUESTED);
+        request.setMeaningfulCareOccurred(true);
+
+        service.closeSession(9L, UserRole.CARE_COORDINATOR, 1L, request);
+
+        assertEquals(ConsultationStatus.CANCELLED, session.getStatus());
+        assertTrue(session.getMeaningfulCareOccurred());
+        assertEquals(9L, session.getTerminationDecidedBy());
+        verify(finalSummaryClosureService).onSessionCompleted(eq(session), any());
+        verify(renewalService).cancelUnresolvedForClosedSession(eq(1L), anyString(), any());
+        verify(participantRepository, never()).delete(any());
+    }
+
+    @Test
+    void doctorTerminationRequestFlagsReviewButDoesNotCloseOrDecideRefund() {
+        ConsultationSession session = ConsultationSession.builder().id(1L).memberId(1L).doctorId(2L)
+                .status(ConsultationStatus.ACTIVE).activatedAt(Instant.now()).endsAt(Instant.now().plusSeconds(3600)).build();
+        when(sessionRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(session));
+        when(sessionRepository.save(session)).thenReturn(session);
+        when(mapper.toSessionResponse(session)).thenReturn(fit.iuh.se.hschat.dto.response.ConsultationSessionResponse.builder().build());
+        RequestSessionTerminationRequest request = new RequestSessionTerminationRequest();
+        request.setReason(CareTerminationReason.DOCTOR_UNAVAILABLE);
+        request.setDetails("Cannot safely continue care");
+
+        service.requestTermination(2L, UserRole.DOCTOR, 1L, request);
+
+        assertEquals(ConsultationStatus.ACTIVE, session.getStatus());
+        assertTrue(session.getOperationalReviewRequired());
+        assertEquals(CareOperationalReviewReason.DOCTOR_TERMINATION_REQUESTED,
+                session.getOperationalReviewReason());
+        assertNull(session.getTerminationDecidedBy());
+    }
+
+    @Test
+    void disabledDoctorFlagsOperationalReviewWithoutCancellingOrReassigning() {
+        ConsultationSession session = ConsultationSession.builder().id(1L).memberId(1L).doctorId(2L)
+                .status(ConsultationStatus.ACTIVE).activatedAt(Instant.now()).endsAt(Instant.now().plusSeconds(3600)).build();
+        when(sessionRepository.findByStatusOrderByCreatedAtDesc(eq(ConsultationStatus.ACTIVE), any()))
+                .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(session)));
+        when(sessionRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(session));
+        when(userAccountRepository.findById(2L)).thenReturn(Optional.of(
+                UserAccount.builder().id(2L).role(UserRole.DOCTOR).status(AccountStatus.INACTIVE).build()));
+
+        service.flagDisabledActiveParticipantsForReview(UserRole.SUPER_ADMIN);
+
+        assertEquals(ConsultationStatus.ACTIVE, session.getStatus());
+        assertEquals(2L, session.getDoctorId());
+        assertEquals(CareOperationalReviewReason.DOCTOR_ACCOUNT_DISABLED,
+                session.getOperationalReviewReason());
+    }
+
+    @Test
+    void disabledMemberPreservesActiveEpisodeAndFlagsOperationalReview() {
+        ConsultationSession session = ConsultationSession.builder().id(1L).memberId(1L).doctorId(2L)
+                .status(ConsultationStatus.ACTIVE).activatedAt(Instant.now()).endsAt(Instant.now().plusSeconds(3600)).build();
+        when(sessionRepository.findByStatusOrderByCreatedAtDesc(eq(ConsultationStatus.ACTIVE), any()))
+                .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(session)));
+        when(sessionRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(session));
+        when(userAccountRepository.findById(2L)).thenReturn(Optional.of(
+                UserAccount.builder().id(2L).role(UserRole.DOCTOR).status(AccountStatus.ACTIVE).build()));
+        when(userAccountRepository.findById(1L)).thenReturn(Optional.of(
+                UserAccount.builder().id(1L).role(UserRole.MEMBER).status(AccountStatus.INACTIVE).build()));
+
+        service.flagDisabledActiveParticipantsForReview(UserRole.ADMIN);
+
+        assertEquals(ConsultationStatus.ACTIVE, session.getStatus());
+        assertEquals(1L, session.getMemberId());
+        assertEquals(CareOperationalReviewReason.MEMBER_ACCOUNT_DISABLED,
+                session.getOperationalReviewReason());
+        verify(participantRepository, never()).delete(any());
+    }
+
+    @Test
+    void doctorNoLongerAcceptingOneOnOneCareDoesNotCancelExistingActiveSession() {
+        ConsultationSession session = ConsultationSession.builder().id(1L).memberId(1L).doctorId(2L)
+                .status(ConsultationStatus.ACTIVE).activatedAt(Instant.now()).endsAt(Instant.now().plusSeconds(3600)).build();
+        when(sessionRepository.findByStatusOrderByCreatedAtDesc(eq(ConsultationStatus.ACTIVE), any()))
+                .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(session)));
+        when(sessionRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(session));
+        when(userAccountRepository.findById(2L)).thenReturn(Optional.of(user(2L, UserRole.DOCTOR)));
+        when(userAccountRepository.findById(1L)).thenReturn(Optional.of(user(1L, UserRole.MEMBER)));
+
+        service.flagDisabledActiveParticipantsForReview(UserRole.ADMIN);
+
+        assertEquals(ConsultationStatus.ACTIVE, session.getStatus());
+        assertFalse(Boolean.TRUE.equals(session.getOperationalReviewRequired()));
+        verify(doctorCareProfileRepository, never()).findByDoctorId(anyLong());
         verify(sessionRepository, never()).save(any());
     }
 

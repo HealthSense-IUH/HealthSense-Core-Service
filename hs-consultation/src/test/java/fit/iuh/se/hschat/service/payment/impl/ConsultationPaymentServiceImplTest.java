@@ -19,6 +19,7 @@ import fit.iuh.se.hschat.service.payment.PayOSPaymentGateway;
 import fit.iuh.se.hschat.service.reservation.DoctorReservationService;
 import fit.iuh.se.hschat.service.reservation.DoctorReservationInvalidException;
 import fit.iuh.se.hschat.service.renewal.ConsultationRenewalService;
+import fit.iuh.se.hschat.service.refund.RefundReviewCaseService;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import org.junit.jupiter.api.BeforeEach;
@@ -66,6 +67,8 @@ class ConsultationPaymentServiceImplTest {
     EpisodeHealthRecordAuthorizationService authorizationService;
     @Mock
     ConsultationRenewalService renewalService;
+    @Mock
+    RefundReviewCaseService refundReviewCaseService;
 
     ConsultationPaymentServiceImpl service;
 
@@ -80,12 +83,15 @@ class ConsultationPaymentServiceImplTest {
                 reservationService,
                 agreementService,
                 authorizationService,
-                renewalService
+                renewalService,
+                refundReviewCaseService
         );
         lenient().when(reservationService.revalidateBeforePayment(any())).thenReturn(true);
         lenient().when(reservationService.revalidateBeforeActivation(any())).thenReturn(true);
         lenient().when(agreementService.requireAcceptedForUpdate(any()))
                 .thenAnswer(invocation -> acceptedAgreement(invocation.getArgument(0)));
+        lenient().when(paymentRepository.findByOrderCode(anyLong()))
+                .thenAnswer(invocation -> paymentRepository.findByOrderCodeForUpdate(invocation.getArgument(0)));
         ReflectionTestUtils.setField(service, "returnUrl", "http://localhost:5173/payment/result");
         ReflectionTestUtils.setField(service, "cancelUrl", "http://localhost:5173/payment/cancel");
     }
@@ -321,6 +327,7 @@ class ConsultationPaymentServiceImplTest {
         assertEquals(ConsultationPaymentStatus.REQUIRES_REVIEW, payment.getStatus());
         assertEquals(ConsultationRequestStatus.EXPIRED, request.getStatus());
         verify(sessionRepository, never()).saveAndFlush(any());
+        verify(refundReviewCaseService).ensureReviewRequired(payment);
     }
 
     @Test
@@ -337,6 +344,7 @@ class ConsultationPaymentServiceImplTest {
         assertEquals(ConsultationPaymentStatus.REQUIRES_REVIEW, payment.getStatus());
         assertEquals(ConsultationRequestStatus.CANCELLED, request.getStatus());
         verify(sessionRepository, never()).saveAndFlush(any());
+        verify(refundReviewCaseService).ensureReviewRequired(payment);
     }
 
     @Test
@@ -462,6 +470,7 @@ class ConsultationPaymentServiceImplTest {
         ConsultationRequest request = waitingPaymentRequest();
 
         when(paymentRepository.findByStatusInAndExpiresAtBefore(anyCollection(), any())).thenReturn(java.util.List.of(payment));
+        when(requestRepository.findByIdForUpdate(request.getId())).thenReturn(Optional.of(request));
         when(paymentRepository.findByOrderCodeForUpdate(payment.getOrderCode())).thenReturn(Optional.of(payment));
         when(paymentGateway.getPaymentStatus(payment.getOrderCode())).thenReturn("PAID");
         when(requestRepository.findByStatusInAndPaymentDeadlineBefore(anyCollection(), any()))

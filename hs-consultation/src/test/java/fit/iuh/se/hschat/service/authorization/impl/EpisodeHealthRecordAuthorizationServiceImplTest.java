@@ -7,6 +7,9 @@ import fit.iuh.se.hschat.repository.ConsultationSessionRepository;
 import fit.iuh.se.hschat.repository.EpisodeHealthRecordAuthorizationRepository;
 import fit.iuh.se.hshealthrecord.entity.HealthRecord;
 import fit.iuh.se.hshealthrecord.repository.HealthRecordRepository;
+import fit.iuh.se.hsuser.repository.UserAccountRepository;
+import fit.iuh.se.hsuser.entity.UserAccount;
+import fit.iuh.se.hsuser.entity.enums.AccountStatus;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,14 +31,18 @@ class EpisodeHealthRecordAuthorizationServiceImplTest {
     @Mock EpisodeHealthRecordAuthorizationRepository authorizationRepository;
     @Mock ConsultationSessionRepository sessionRepository;
     @Mock HealthRecordRepository healthRecordRepository;
+    @Mock UserAccountRepository userAccountRepository;
 
     EpisodeHealthRecordAuthorizationServiceImpl service;
 
     @BeforeEach
     void setUp() {
         service = new EpisodeHealthRecordAuthorizationServiceImpl(
-                authorizationRepository, sessionRepository, healthRecordRepository);
+                authorizationRepository, sessionRepository, healthRecordRepository, userAccountRepository);
         lenient().when(authorizationRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        lenient().when(userAccountRepository.findById(anyLong())).thenAnswer(invocation ->
+                java.util.Optional.of(UserAccount.builder()
+                        .id(invocation.getArgument(0)).status(AccountStatus.ACTIVE).build()));
     }
 
     @Test

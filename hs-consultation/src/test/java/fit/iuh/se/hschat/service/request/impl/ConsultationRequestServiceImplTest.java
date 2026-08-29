@@ -25,6 +25,7 @@ import fit.iuh.se.hschat.repository.ConsultationSessionRepository;
 import fit.iuh.se.hschat.repository.DoctorCareProfileRepository;
 import fit.iuh.se.hschat.service.reservation.DoctorReservationService;
 import fit.iuh.se.hschat.service.agreement.CareServiceAgreementService;
+import fit.iuh.se.hschat.service.payment.PaymentCancellationService;
 import fit.iuh.se.hshealthrecord.repository.HealthRecordRepository;
 import fit.iuh.se.hshealthrecord.entity.HealthRecord;
 import fit.iuh.se.hsshared.advice.entity.AppException;
@@ -35,6 +36,8 @@ import fit.iuh.se.hsuser.entity.enums.UserRole;
 import fit.iuh.se.hsuser.repository.UserAccountRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
@@ -81,6 +84,8 @@ class ConsultationRequestServiceImplTest {
     @Mock
     CareServiceAgreementService agreementService;
     @Mock
+    PaymentCancellationService paymentCancellationService;
+    @Mock
     ConsultationMapper mapper;
 
     ConsultationRequestServiceImpl service;
@@ -97,6 +102,7 @@ class ConsultationRequestServiceImplTest {
                 doctorCareProfileRepository,
                 reservationService,
                 agreementService,
+                paymentCancellationService,
                 mapper
         );
         ReflectionTestUtils.setField(service, "paymentDeadlineMinutes", 30L);
@@ -242,10 +248,12 @@ class ConsultationRequestServiceImplTest {
         }
     }
 
-    @Test
-    void cancellationBeforeActivationReleasesReservation() {
+    @ParameterizedTest
+    @EnumSource(value = ConsultationRequestStatus.class, names = {
+            "PENDING_REVIEW", "NEED_MORE_INFO", "WAITING_ACCEPTANCE", "WAITING_PAYMENT"})
+    void cancellationBeforeActivationReleasesReservation(ConsultationRequestStatus initialStatus) {
         ConsultationRequest request = ConsultationRequest.builder()
-                .id(100L).memberId(1L).status(ConsultationRequestStatus.WAITING_PAYMENT).build();
+                .id(100L).memberId(1L).status(initialStatus).build();
         when(requestRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(request));
         when(requestRepository.save(request)).thenReturn(request);
         when(mapper.toRequestResponse(request)).thenReturn(ConsultationRequestResponse.builder().build());
@@ -253,7 +261,23 @@ class ConsultationRequestServiceImplTest {
         service.cancelMyRequest(1L, 100L);
 
         verify(reservationService).release(request, DoctorReservationReleaseReason.MEMBER_CANCELLED);
+        verify(agreementService).invalidateCurrent(100L, "Member cancelled before care activation");
+        verify(paymentCancellationService).prepareRequestCancellation(100L);
+        verify(paymentCancellationService).cancelProviderLinksAfterCommit(100L);
         assertEquals(ConsultationRequestStatus.CANCELLED, request.getStatus());
+    }
+
+    @Test
+    void activatedRequestCannotBeCancelledAndMustUseSessionTermination() {
+        ConsultationRequest request = ConsultationRequest.builder()
+                .id(100L).memberId(1L).status(ConsultationRequestStatus.FULFILLED).build();
+        when(requestRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(request));
+
+        assertThrows(AppException.class, () -> service.cancelMyRequest(1L, 100L));
+
+        verify(reservationService, never()).release(any(), any());
+        verify(agreementService, never()).invalidateCurrent(anyLong(), anyString());
+        verify(paymentCancellationService, never()).prepareRequestCancellation(anyLong());
     }
 
     @Test

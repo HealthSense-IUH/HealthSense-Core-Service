@@ -15,6 +15,7 @@ import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsshared.service.s3.S3Service;
 import fit.iuh.se.hsuser.repository.UserAccountRepository;
+import fit.iuh.se.hsuser.entity.UserAccount;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -50,6 +51,8 @@ class DoctorActiveCareServiceImplTest {
                 healthRecordRepository, authorizationService, userAccountRepository,
                 consultationMapper, healthRecordMapper, s3Service
         );
+        lenient().when(userAccountRepository.findById(2L)).thenReturn(Optional.of(
+                UserAccount.builder().id(2L).status(fit.iuh.se.hsuser.entity.enums.AccountStatus.ACTIVE).build()));
     }
 
     @Test
