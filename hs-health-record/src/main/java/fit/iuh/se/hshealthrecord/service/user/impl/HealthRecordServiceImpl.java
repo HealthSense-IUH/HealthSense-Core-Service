@@ -7,6 +7,7 @@ import fit.iuh.se.hshealthrecord.dto.response.PresignedUrlResponse;
 import fit.iuh.se.hshealthrecord.entity.HealthRecord;
 import fit.iuh.se.hshealthrecord.entity.enums.RecordStatus;
 import fit.iuh.se.hshealthrecord.event.HealthRecordAnalyzedEvent;
+import fit.iuh.se.hshealthrecord.event.HealthRecordAvailableForCareEvent;
 import fit.iuh.se.hshealthrecord.mapper.HealthRecordMapper;
 import fit.iuh.se.hshealthrecord.repository.HealthRecordRepository;
 import fit.iuh.se.hshealthrecord.dto.message.RecordProcessingMessage;
@@ -100,6 +101,7 @@ public class HealthRecordServiceImpl implements HealthRecordService {
                 .build();
         rabbitTemplate.convertAndSend(exchange, routingKey, message);
         log.info("Sent RecordProcessingMessage to exchange '{}' with routingKey '{}': {}", exchange, routingKey, message);
+        publishAvailableForCare(record);
         
         return mapper.toResponse(record);
     }
@@ -138,6 +140,7 @@ public class HealthRecordServiceImpl implements HealthRecordService {
                 .build();
         rabbitTemplate.convertAndSend(exchange, routingKey, message);
         log.info("Sent RecordProcessingMessage to exchange '{}' with routingKey '{}': {}", exchange, routingKey, message);
+        publishAvailableForCare(record);
 
         return mapper.toResponse(record);
     }
@@ -216,6 +219,14 @@ public class HealthRecordServiceImpl implements HealthRecordService {
         log.info("Record {} failed AI analysis with reason: {}", record.getId(), record.getErrorMessage());
 
         return mapper.toResponse(record);
+    }
+
+    private void publishAvailableForCare(HealthRecord record) {
+        eventPublisher.publishEvent(HealthRecordAvailableForCareEvent.builder()
+                .recordId(record.getId())
+                .memberId(record.getUserId())
+                .availableAt(Instant.now())
+                .build());
     }
 
     @Override
