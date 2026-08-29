@@ -84,4 +84,11 @@ public class AdminConsultationSessionController {
         consultationSessionService.activateScheduledSessions(currentUser.getRole());
         return new ApiResponse<>();
     }
+
+    @PostMapping("/flag-disabled-participants")
+    public ApiResponse<Void> flagDisabledParticipants(
+            @AuthenticationPrincipal UserAuthentication currentUser) {
+        consultationSessionService.flagDisabledActiveParticipantsForReview(currentUser.getRole());
+        return new ApiResponse<>();
+    }
 }

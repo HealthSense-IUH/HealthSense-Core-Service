@@ -4,6 +4,7 @@ import fit.iuh.se.hsapplication.dto.auth.UserAuthentication;
 import fit.iuh.se.hschat.dto.response.ConsultationFinalSummaryResponse;
 import fit.iuh.se.hschat.dto.response.ConsultationSessionResponse;
 import fit.iuh.se.hschat.dto.response.EpisodeHealthRecordAuthorizationResponse;
+import fit.iuh.se.hschat.dto.request.RequestSessionTerminationRequest;
 import fit.iuh.se.hschat.service.authorization.EpisodeHealthRecordAuthorizationService;
 import fit.iuh.se.hschat.service.finalsummary.ConsultationFinalSummaryService;
 import fit.iuh.se.hschat.service.session.ConsultationSessionService;
@@ -65,5 +66,14 @@ public class ConsultationSessionController {
             @PathVariable Long recordId) {
         return new ApiResponse<>(authorizationService.shareDuringActiveCare(
                 currentUser.getUserId(), sessionId, recordId));
+    }
+
+    @PostMapping("/{sessionId}/termination-request")
+    public ApiResponse<ConsultationSessionResponse> requestTermination(
+            @AuthenticationPrincipal UserAuthentication currentUser,
+            @PathVariable Long sessionId,
+            @jakarta.validation.Valid @RequestBody RequestSessionTerminationRequest request) {
+        return new ApiResponse<>(consultationSessionService.requestTermination(
+                currentUser.getUserId(), currentUser.getRole(), sessionId, request));
     }
 }
