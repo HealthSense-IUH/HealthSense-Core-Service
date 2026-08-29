@@ -3,6 +3,7 @@ package fit.iuh.se.hschat.entity;
 import fit.iuh.se.hschat.entity.enums.ConsultationPaymentProvider;
 import fit.iuh.se.hschat.entity.enums.ConsultationPaymentPurpose;
 import fit.iuh.se.hschat.entity.enums.ConsultationPaymentStatus;
+import fit.iuh.se.hschat.entity.enums.PaymentProviderCancellationStatus;
 import fit.iuh.se.hsshared.generator.SnowflakeGenerated;
 import fit.iuh.se.hsuser.entity.BaseEntity;
 import jakarta.persistence.*;
@@ -95,4 +96,21 @@ public class ConsultationPayment extends BaseEntity {
 
     @Column(name = "cancelled_at")
     Instant cancelledAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "provider_cancellation_status", nullable = false, length = 30)
+    @Builder.Default
+    PaymentProviderCancellationStatus providerCancellationStatus = PaymentProviderCancellationStatus.NOT_REQUESTED;
+
+    @Column(name = "provider_cancellation_requested_at")
+    Instant providerCancellationRequestedAt;
+
+    @Column(name = "provider_cancellation_completed_at")
+    Instant providerCancellationCompletedAt;
+
+    @Column(name = "provider_cancellation_last_attempt_at")
+    Instant providerCancellationLastAttemptAt;
+
+    @Column(name = "provider_cancellation_error", length = 1000)
+    String providerCancellationError;
 }
