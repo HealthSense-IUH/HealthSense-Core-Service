@@ -21,6 +21,7 @@ import fit.iuh.se.hschat.service.authorization.EpisodeHealthRecordAuthorizationS
 import fit.iuh.se.hschat.service.reservation.DoctorReservationInvalidException;
 import fit.iuh.se.hschat.service.reservation.DoctorReservationService;
 import fit.iuh.se.hschat.service.renewal.ConsultationRenewalService;
+import fit.iuh.se.hschat.service.refund.RefundReviewCaseService;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import lombok.AccessLevel;
@@ -61,6 +62,7 @@ public class ConsultationPaymentServiceImpl implements ConsultationPaymentServic
     CareServiceAgreementService agreementService;
     EpisodeHealthRecordAuthorizationService authorizationService;
     ConsultationRenewalService renewalService;
+    RefundReviewCaseService refundReviewCaseService;
 
     @NonFinal
     @Value("${app.payment.return-url:http://localhost:5173/payment/result}")
@@ -193,17 +195,31 @@ public class ConsultationPaymentServiceImpl implements ConsultationPaymentServic
         log.info("payOS webhook verified, orderCode={}", verifiedPayment.getOrderCode());
 
         log.info("Looking up consultation payment orderCode={}", verifiedPayment.getOrderCode());
-        ConsultationPayment payment = paymentRepository.findByOrderCodeForUpdate(verifiedPayment.getOrderCode())
+        ConsultationPayment discoveredPayment = paymentRepository.findByOrderCode(verifiedPayment.getOrderCode())
                 .orElse(null);
-        if (payment == null) {
+        if (discoveredPayment == null) {
             handleUnknownVerifiedWebhook(verifiedPayment);
             return;
         }
-        if (!validateVerifiedPayment(payment, verifiedPayment)) {
-            markRequiresReview(payment, Instant.now());
+        if (discoveredPayment.getStatus() == ConsultationPaymentStatus.PAID
+                || discoveredPayment.getStatus() == ConsultationPaymentStatus.REQUIRES_REVIEW)
+            return;
+        if (!validateVerifiedPayment(discoveredPayment, verifiedPayment)) {
+            ConsultationPayment invalidPayment = paymentRepository
+                    .findByOrderCodeForUpdate(verifiedPayment.getOrderCode())
+                    .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_PAYMENT_NOT_FOUND));
+            markRequiresReview(invalidPayment, Instant.now());
             return;
         }
-
+        ConsultationRequest request = null;
+        if (discoveredPayment.getPaymentPurpose() == ConsultationPaymentPurpose.INITIAL_CARE) {
+            request = requestRepository.findByIdForUpdate(discoveredPayment.getRequestId())
+                    .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_REQUEST_NOT_FOUND));
+        } else {
+            renewalService.lockSessionForPayment(discoveredPayment.getRenewalId());
+        }
+        ConsultationPayment payment = paymentRepository.findByOrderCodeForUpdate(verifiedPayment.getOrderCode())
+                .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_PAYMENT_NOT_FOUND));
         if (payment.getStatus() == ConsultationPaymentStatus.PAID)
             return;
         if (payment.getStatus() == ConsultationPaymentStatus.REQUIRES_REVIEW)
@@ -214,8 +230,6 @@ public class ConsultationPaymentServiceImpl implements ConsultationPaymentServic
             renewalService.applyVerifiedPayment(payment, now);
             return;
         }
-        ConsultationRequest request = requestRepository.findByIdForUpdate(payment.getRequestId())
-                .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_REQUEST_NOT_FOUND));
         activatePaidPayment(payment, request, now);
     }
 
@@ -281,8 +295,17 @@ public class ConsultationPaymentServiceImpl implements ConsultationPaymentServic
     }
 
     private void reconcileOrExpire(ConsultationPayment payment, Instant now) {
+        ConsultationRequest request = null;
+        if (payment.getPaymentPurpose() == ConsultationPaymentPurpose.INITIAL_CARE) {
+            request = requestRepository.findByIdForUpdate(payment.getRequestId())
+                    .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_REQUEST_NOT_FOUND));
+        } else {
+            renewalService.lockSessionForPayment(payment.getRenewalId());
+        }
         ConsultationPayment lockedPayment = paymentRepository.findByOrderCodeForUpdate(payment.getOrderCode())
                 .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_PAYMENT_NOT_FOUND));
+        if (!EXPIRABLE_PAYMENT_STATUSES.contains(lockedPayment.getStatus()))
+            return;
 
         String providerStatus = safeProviderStatus(lockedPayment);
         if ("PAID".equalsIgnoreCase(providerStatus)) {
@@ -298,8 +321,6 @@ public class ConsultationPaymentServiceImpl implements ConsultationPaymentServic
             renewalService.expireForPayment(lockedPayment, now);
             return;
         }
-        ConsultationRequest request = requestRepository.findByIdForUpdate(lockedPayment.getRequestId())
-                .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_REQUEST_NOT_FOUND));
         if (request.getStatus() == ConsultationRequestStatus.WAITING_PAYMENT)
             expireRequest(request, now);
     }
@@ -515,6 +536,11 @@ public class ConsultationPaymentServiceImpl implements ConsultationPaymentServic
                 .paidAt(payment.getPaidAt())
                 .expiredAt(payment.getExpiredAt())
                 .cancelledAt(payment.getCancelledAt())
+                .providerCancellationStatus(payment.getProviderCancellationStatus())
+                .providerCancellationRequestedAt(payment.getProviderCancellationRequestedAt())
+                .providerCancellationCompletedAt(payment.getProviderCancellationCompletedAt())
+                .providerCancellationLastAttemptAt(payment.getProviderCancellationLastAttemptAt())
+                .providerCancellationError(payment.getProviderCancellationError())
                 .createdAt(payment.getCreatedAt())
                 .updatedAt(payment.getUpdatedAt())
                 .build();
@@ -525,6 +551,7 @@ public class ConsultationPaymentServiceImpl implements ConsultationPaymentServic
         if (payment.getPaidAt() == null)
             payment.setPaidAt(now);
         paymentRepository.save(payment);
+        refundReviewCaseService.ensureReviewRequired(payment);
         if (payment.getPaymentPurpose() == ConsultationPaymentPurpose.RENEWAL)
             renewalService.markRequiresReview(payment);
     }

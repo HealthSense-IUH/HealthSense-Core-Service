@@ -363,6 +363,29 @@ public class ConsultationRenewalServiceImpl implements ConsultationRenewalServic
                         }));
     }
 
+    @Override
+    @Transactional
+    public void cancelUnresolvedForClosedSession(Long sessionId, String reason, Instant now) {
+        renewalRepository.findBySessionIdOrderByCreatedAtAsc(sessionId).stream()
+                .filter(renewal -> UNRESOLVED.contains(renewal.getStatus()))
+                .forEach(renewal -> renewalRepository.findByIdForUpdate(renewal.getId()).ifPresent(locked -> {
+                    if (!UNRESOLVED.contains(locked.getStatus())) return;
+                    locked.setStatus(ConsultationRenewalStatus.CANCELLED);
+                    locked.setRejectionReason(reason);
+                    renewalRepository.save(locked);
+                    agreementService.invalidateRenewal(locked.getId(), reason);
+                }));
+    }
+
+    @Override
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.MANDATORY)
+    public void lockSessionForPayment(Long renewalId) {
+        ConsultationRenewal renewal = renewalRepository.findById(renewalId)
+                .orElseThrow(() -> new AppException(ErrorCode.ENTITY_NOT_FOUND, "Renewal not found"));
+        sessionRepository.findByIdForUpdate(renewal.getSessionId())
+                .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_NOT_FOUND));
+    }
+
     private DoctorCareProfile validateFutureCapacity(
             ConsultationRenewal renewal,
             ConsultationSession session,

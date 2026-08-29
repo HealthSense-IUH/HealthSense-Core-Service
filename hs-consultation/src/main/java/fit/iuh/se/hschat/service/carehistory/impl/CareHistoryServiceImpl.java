@@ -41,7 +41,7 @@ public class CareHistoryServiceImpl implements CareHistoryService {
     @Transactional(readOnly = true)
     public PageResponse<CareHistoryEpisodeResponse> getMemberHistory(Long memberId, Pageable pageable) {
         Page<CareHistoryEpisodeResponse> page = sessionRepository
-                .findByMemberIdOrderByStartedAtDesc(memberId, pageable)
+                .findByMemberIdAndActivatedAtIsNotNullOrderByStartedAtDesc(memberId, pageable)
                 .map(this::toMemberEpisode);
         return new PageResponse<>(page);
     }
@@ -53,6 +53,9 @@ public class CareHistoryServiceImpl implements CareHistoryService {
                 .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_NOT_FOUND));
         if (!session.getMemberId().equals(memberId))
             throw new AppException(ErrorCode.CONSULTATION_ACCESS_DENIED);
+        if (session.getActivatedAt() == null)
+            throw new AppException(ErrorCode.CONSULTATION_NOT_ACTIVE,
+                    "Care history exists only for an activated episode");
         return toMemberEpisode(session);
     }
 

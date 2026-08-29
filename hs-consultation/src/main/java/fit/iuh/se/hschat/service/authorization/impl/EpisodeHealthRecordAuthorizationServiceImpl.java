@@ -10,6 +10,8 @@ import fit.iuh.se.hschat.service.authorization.EpisodeHealthRecordAuthorizationS
 import fit.iuh.se.hshealthrecord.repository.HealthRecordRepository;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
+import fit.iuh.se.hsuser.entity.enums.AccountStatus;
+import fit.iuh.se.hsuser.repository.UserAccountRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -30,6 +32,7 @@ public class EpisodeHealthRecordAuthorizationServiceImpl
     EpisodeHealthRecordAuthorizationRepository authorizationRepository;
     ConsultationSessionRepository sessionRepository;
     HealthRecordRepository healthRecordRepository;
+    UserAccountRepository userAccountRepository;
 
     @Override
     @Transactional
@@ -73,6 +76,9 @@ public class EpisodeHealthRecordAuthorizationServiceImpl
                 .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_NOT_FOUND));
         if (!session.getMemberId().equals(memberId))
             throw new AppException(ErrorCode.CONSULTATION_ACCESS_DENIED);
+        if (userAccountRepository.findById(memberId)
+                .filter(account -> account.getStatus() == AccountStatus.ACTIVE).isEmpty())
+            throw new AppException(ErrorCode.ACCOUNT_DISABLED);
         requireActiveSession(session);
         return toResponse(authorize(
                 session,

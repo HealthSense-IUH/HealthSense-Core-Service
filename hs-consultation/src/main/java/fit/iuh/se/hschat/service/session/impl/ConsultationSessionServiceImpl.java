@@ -3,12 +3,15 @@ package fit.iuh.se.hschat.service.session.impl;
 import fit.iuh.se.hschat.dto.request.AdminCreateConsultationSessionRequest;
 import fit.iuh.se.hschat.dto.request.CloseConsultationRequest;
 import fit.iuh.se.hschat.dto.request.ExtendConsultationRequest;
+import fit.iuh.se.hschat.dto.request.RequestSessionTerminationRequest;
 import fit.iuh.se.hschat.dto.response.ConsultationSessionResponse;
 import fit.iuh.se.hschat.entity.CareServicePackage;
 import fit.iuh.se.hschat.entity.ConsultationParticipant;
 import fit.iuh.se.hschat.entity.ConsultationSession;
 import fit.iuh.se.hschat.entity.DoctorCareProfile;
 import fit.iuh.se.hschat.entity.enums.CareServicePackageStatus;
+import fit.iuh.se.hschat.entity.enums.CareOperationalReviewReason;
+import fit.iuh.se.hschat.entity.enums.CareTerminationReason;
 import fit.iuh.se.hschat.entity.enums.ConsultationCompletionReason;
 import fit.iuh.se.hschat.entity.enums.ConsultationParticipantRole;
 import fit.iuh.se.hschat.entity.enums.ConsultationSourceType;
@@ -25,6 +28,7 @@ import fit.iuh.se.hschat.service.authorization.EpisodeHealthRecordAuthorizationS
 import fit.iuh.se.hschat.service.reservation.DoctorReservationService;
 import fit.iuh.se.hschat.service.finalsummary.FinalSummaryClosureService;
 import fit.iuh.se.hschat.service.session.ConsultationSessionService;
+import fit.iuh.se.hschat.service.renewal.ConsultationRenewalService;
 import fit.iuh.se.hshealthrecord.repository.HealthRecordRepository;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
@@ -70,6 +74,7 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
     DoctorReservationService reservationService;
     EpisodeHealthRecordAuthorizationService authorizationService;
     FinalSummaryClosureService finalSummaryClosureService;
+    ConsultationRenewalService renewalService;
     ConsultationMapper mapper;
 
     @NonFinal
@@ -84,6 +89,8 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
                     "Only Admin or Super Admin may use exceptional care activation override");
         if (request.getOverrideReason() == null || request.getOverrideReason().isBlank())
             throw new AppException(ErrorCode.INVALID_PARAMETER, "Exceptional override reason is required");
+        if (request.getServiceScope() == null || request.getServiceScope().isBlank())
+            throw new AppException(ErrorCode.INVALID_PARAMETER, "Exceptional override service scope is required");
         log.info("Creating consultation session by actor {} with role {} for member {} and doctor {}",
                 actorId, actorRole, request.getMemberId(), request.getDoctorId());
 
@@ -110,6 +117,7 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
                 .createdByAdminId(actorId)
                 .exceptionalOverride(true)
                 .overrideReason(request.getOverrideReason().trim())
+                .overrideServiceScope(request.getServiceScope().trim())
                 .sourceType(ConsultationSourceType.ADMIN_CREATED)
                 .status(status)
                 .startedAt(startedAt)
@@ -195,7 +203,7 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
     @Transactional
     public ConsultationSessionResponse closeSession(Long actorId, UserRole actorRole, Long sessionId, CloseConsultationRequest request) {
         validateConsultationManager(actorRole);
-        ConsultationSession session = sessionRepository.findById(sessionId)
+        ConsultationSession session = sessionRepository.findByIdForUpdate(sessionId)
                 .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_NOT_FOUND));
 
         if (session.getStatus() != ConsultationStatus.ACTIVE
@@ -203,14 +211,80 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
             throw new AppException(ErrorCode.INVALID_CONSULTATION_STATUS);
 
         Instant now = Instant.now();
+        boolean meaningfulCare = session.getActivatedAt() != null
+                && !Boolean.FALSE.equals(request.getMeaningfulCareOccurred());
         session.setStatus(ConsultationStatus.CANCELLED);
         session.setClosedAt(now);
         session.setCompletedAt(now);
         session.setCompletionReason(ConsultationCompletionReason.ADMINISTRATIVE_CANCELLATION);
         session.setCloseReason(request.getCloseReason());
+        session.setTerminationReason(request.getTerminationReason() == null
+                ? CareTerminationReason.ADMINISTRATIVE_CLOSURE : request.getTerminationReason());
+        session.setTerminationDecidedBy(actorId);
+        session.setTerminationDecidedByRole(actorRole);
+        session.setTerminationDecidedAt(now);
+        session.setMeaningfulCareOccurred(meaningfulCare);
+        session.setOperationalReviewRequired(false);
+        session.setOperationalReviewReason(null);
+        session.setOperationalReviewFlaggedAt(null);
 
         session = sessionRepository.save(session);
+        renewalService.cancelUnresolvedForClosedSession(sessionId,
+                "Renewal cancelled because the active care episode was closed", now);
+        if (meaningfulCare)
+            finalSummaryClosureService.onSessionCompleted(session, now);
         return mapper.toSessionResponse(session);
+    }
+
+    @Override
+    @Transactional
+    public ConsultationSessionResponse requestTermination(
+            Long actorId, UserRole actorRole, Long sessionId, RequestSessionTerminationRequest request) {
+        if (actorRole != UserRole.MEMBER && actorRole != UserRole.DOCTOR)
+            throw new AppException(ErrorCode.ACCESS_DENIED,
+                    "Only the assigned Member or Doctor may request care termination");
+        ConsultationSession session = sessionRepository.findByIdForUpdate(sessionId)
+                .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_NOT_FOUND));
+        boolean assigned = actorRole == UserRole.MEMBER
+                ? session.getMemberId().equals(actorId) : session.getDoctorId().equals(actorId);
+        if (!assigned) throw new AppException(ErrorCode.CONSULTATION_ACCESS_DENIED);
+        if (session.getStatus() != ConsultationStatus.ACTIVE)
+            throw new AppException(ErrorCode.INVALID_CONSULTATION_STATUS);
+
+        session.setTerminationReason(request.getReason());
+        session.setTerminationRequestedBy(actorId);
+        session.setTerminationRequestedByRole(actorRole);
+        session.setTerminationRequestedAt(Instant.now());
+        session.setCloseReason(request.getDetails().trim());
+        session.setOperationalReviewRequired(true);
+        session.setOperationalReviewReason(actorRole == UserRole.DOCTOR
+                ? CareOperationalReviewReason.DOCTOR_TERMINATION_REQUESTED
+                : CareOperationalReviewReason.MEMBER_TERMINATION_REQUESTED);
+        session.setOperationalReviewFlaggedAt(Instant.now());
+        return mapper.toSessionResponse(sessionRepository.save(session));
+    }
+
+    @Override
+    @Transactional
+    public void flagDisabledActiveParticipantsForReview(UserRole actorRole) {
+        validateConsultationManager(actorRole);
+        sessionRepository.findByStatusOrderByCreatedAtDesc(ConsultationStatus.ACTIVE, Pageable.unpaged())
+                .forEach(candidate -> sessionRepository.findByIdForUpdate(candidate.getId()).ifPresent(session -> {
+                    if (session.getStatus() != ConsultationStatus.ACTIVE) return;
+                    AccountStatus doctorStatus = userAccountRepository.findById(session.getDoctorId())
+                            .map(UserAccount::getStatus).orElse(AccountStatus.INACTIVE);
+                    AccountStatus memberStatus = userAccountRepository.findById(session.getMemberId())
+                            .map(UserAccount::getStatus).orElse(AccountStatus.INACTIVE);
+                    CareOperationalReviewReason reason = doctorStatus != AccountStatus.ACTIVE
+                            ? CareOperationalReviewReason.DOCTOR_ACCOUNT_DISABLED
+                            : memberStatus != AccountStatus.ACTIVE
+                            ? CareOperationalReviewReason.MEMBER_ACCOUNT_DISABLED : null;
+                    if (reason == null) return;
+                    session.setOperationalReviewRequired(true);
+                    session.setOperationalReviewReason(reason);
+                    session.setOperationalReviewFlaggedAt(Instant.now());
+                    sessionRepository.save(session);
+                }));
     }
 
     @Override

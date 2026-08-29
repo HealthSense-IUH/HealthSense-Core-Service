@@ -18,6 +18,8 @@ import fit.iuh.se.hschat.service.message.SupportHoursPolicy;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsshared.dto.response.PageResponse;
+import fit.iuh.se.hsuser.entity.enums.AccountStatus;
+import fit.iuh.se.hsuser.repository.UserAccountRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -41,12 +43,14 @@ public class ConsultationMessageServiceImpl implements ConsultationMessageServic
     ConsultationParticipantRepository participantRepository;
     ConsultationMapper mapper;
     SupportHoursPolicy supportHoursPolicy;
+    UserAccountRepository userAccountRepository;
 
     @Override
     @Transactional
     public ConsultationMessageResponse sendMessage(Long senderId, Long sessionId, SendConsultationMessageRequest request) {
         ConsultationSession session = getSessionForSending(sessionId);
         ConsultationParticipant participant = getActiveParticipant(sessionId, senderId);
+        requireActiveAccount(senderId);
         validateMessagePayload(request);
         validateSupportHours(session, participant);
 
@@ -196,6 +200,14 @@ public class ConsultationMessageServiceImpl implements ConsultationMessageServic
                 && isBlank(request.getAttachmentUrl())) {
             throw new AppException(ErrorCode.INVALID_PARAMETER, "Attachment URL is required");
         }
+    }
+
+    private void requireActiveAccount(Long userId) {
+        boolean active = userAccountRepository.findById(userId)
+                .filter(account -> account.getStatus() == AccountStatus.ACTIVE)
+                .isPresent();
+        if (!active)
+            throw new AppException(ErrorCode.ACCOUNT_DISABLED);
     }
 
     private void validateSupportHours(ConsultationSession session, ConsultationParticipant participant) {

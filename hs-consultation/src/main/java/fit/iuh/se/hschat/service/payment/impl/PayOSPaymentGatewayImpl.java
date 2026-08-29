@@ -2,6 +2,7 @@ package fit.iuh.se.hschat.service.payment.impl;
 
 import fit.iuh.se.hschat.dto.PayOSPaymentLink;
 import fit.iuh.se.hschat.dto.VerifiedPayOSPayment;
+import fit.iuh.se.hschat.dto.ProviderRefundResult;
 import fit.iuh.se.hschat.service.payment.PayOSPaymentGateway;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
@@ -17,6 +18,7 @@ import vn.payos.model.webhooks.Webhook;
 import vn.payos.model.webhooks.WebhookData;
 
 import java.time.Instant;
+import java.math.BigDecimal;
 
 @Component
 @RequiredArgsConstructor
@@ -58,6 +60,18 @@ public class PayOSPaymentGatewayImpl implements PayOSPaymentGateway {
     public String getPaymentStatus(Long orderCode) {
         var paymentLink = payOS().paymentRequests().get(orderCode);
         return paymentLink.getStatus() == null ? null : paymentLink.getStatus().name();
+    }
+
+    @Override
+    public void cancelPaymentLink(Long orderCode, String reason) {
+        payOS().paymentRequests().cancel(orderCode, reason);
+    }
+
+    @Override
+    public ProviderRefundResult refundPayment(
+            Long orderCode, BigDecimal amount, String currency, String idempotencyKey, String reason) {
+        throw new AppException(ErrorCode.PAYMENT_PROVIDER_ERROR,
+                "The configured PayOS SDK does not expose a refund API; reconcile the externally executed refund");
     }
 
     @Override

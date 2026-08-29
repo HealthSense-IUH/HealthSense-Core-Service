@@ -59,7 +59,9 @@ public class ConsultationFinalSummaryServiceImpl implements ConsultationFinalSum
         requireActiveDoctor(doctorId);
         ConsultationSession session = getAssignedDoctorSession(doctorId, sessionId);
         if (session.getStatus() != ConsultationStatus.ACTIVE
-                && session.getStatus() != ConsultationStatus.COMPLETED)
+                && session.getStatus() != ConsultationStatus.COMPLETED
+                && !(session.getStatus() == ConsultationStatus.CANCELLED
+                && Boolean.TRUE.equals(session.getMeaningfulCareOccurred())))
             throw new AppException(ErrorCode.INVALID_CONSULTATION_STATUS,
                     "Final summary draft can be edited only for active or completed sessions");
 
@@ -87,7 +89,9 @@ public class ConsultationFinalSummaryServiceImpl implements ConsultationFinalSum
     public ConsultationFinalSummaryResponse finalizeSummary(Long doctorId, Long sessionId) {
         requireActiveDoctor(doctorId);
         ConsultationSession session = getAssignedDoctorSession(doctorId, sessionId);
-        if (session.getStatus() != ConsultationStatus.COMPLETED)
+        if (session.getStatus() != ConsultationStatus.COMPLETED
+                && !(session.getStatus() == ConsultationStatus.CANCELLED
+                && Boolean.TRUE.equals(session.getMeaningfulCareOccurred())))
             throw new AppException(ErrorCode.INVALID_CONSULTATION_STATUS,
                     "Final summary can be finalized only after session completion");
 

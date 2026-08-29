@@ -16,6 +16,7 @@ import fit.iuh.se.hschat.repository.DoctorCareProfileRepository;
 import fit.iuh.se.hschat.service.request.ConsultationRequestService;
 import fit.iuh.se.hschat.service.reservation.DoctorReservationService;
 import fit.iuh.se.hschat.service.agreement.CareServiceAgreementService;
+import fit.iuh.se.hschat.service.payment.PaymentCancellationService;
 import fit.iuh.se.hshealthrecord.entity.HealthRecord;
 import fit.iuh.se.hshealthrecord.repository.HealthRecordRepository;
 import fit.iuh.se.hsshared.advice.entity.AppException;
@@ -76,6 +77,7 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
     DoctorCareProfileRepository doctorCareProfileRepository;
     DoctorReservationService reservationService;
     CareServiceAgreementService agreementService;
+    PaymentCancellationService paymentCancellationService;
     ConsultationMapper mapper;
 
     @NonFinal
@@ -276,8 +278,10 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
         agreementService.invalidateCurrent(requestId, "Member cancelled before care activation");
         consultationRequest.setStatus(ConsultationRequestStatus.CANCELLED);
         consultationRequest.setCancelledAt(Instant.now());
-
-        return toRequestResponse(requestRepository.save(consultationRequest));
+        consultationRequest = requestRepository.save(consultationRequest);
+        paymentCancellationService.prepareRequestCancellation(requestId);
+        paymentCancellationService.cancelProviderLinksAfterCommit(requestId);
+        return toRequestResponse(consultationRequest);
     }
 
     @Override

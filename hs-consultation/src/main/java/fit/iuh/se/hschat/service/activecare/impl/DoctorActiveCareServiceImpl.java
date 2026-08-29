@@ -23,6 +23,7 @@ import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsshared.dto.response.PageResponse;
 import fit.iuh.se.hsshared.service.s3.S3Service;
 import fit.iuh.se.hsuser.entity.UserAccount;
+import fit.iuh.se.hsuser.entity.enums.AccountStatus;
 import fit.iuh.se.hsuser.repository.UserAccountRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -47,7 +48,8 @@ public class DoctorActiveCareServiceImpl implements DoctorActiveCareService {
     static final List<ConsultationStatus> DASHBOARD_STATUSES = List.of(
             ConsultationStatus.ACTIVE,
             ConsultationStatus.SCHEDULED,
-            ConsultationStatus.COMPLETED
+            ConsultationStatus.COMPLETED,
+            ConsultationStatus.CANCELLED
     );
 
     ConsultationSessionRepository sessionRepository;
@@ -64,6 +66,9 @@ public class DoctorActiveCareServiceImpl implements DoctorActiveCareService {
     @Override
     @Transactional(readOnly = true)
     public PageResponse<DoctorConsultationSessionResponse> getAssignedSessions(Long doctorId, Pageable pageable) {
+        if (userAccountRepository.findById(doctorId)
+                .filter(account -> account.getStatus() == AccountStatus.ACTIVE).isEmpty())
+            throw new AppException(ErrorCode.ACCOUNT_DISABLED);
         Page<DoctorConsultationSessionResponse> page = sessionRepository
                 .findByDoctorIdAndStatusInOrderByLastMessageAtDesc(doctorId, DASHBOARD_STATUSES, pageable)
                 .map(session -> toDoctorSessionResponse(session, doctorId));
@@ -162,6 +167,10 @@ public class DoctorActiveCareServiceImpl implements DoctorActiveCareService {
                 && session.getStatus() != ConsultationStatus.COMPLETED
                 && session.getStatus() != ConsultationStatus.CANCELLED))
             throw new AppException(ErrorCode.CONSULTATION_NOT_ACTIVE);
+        if (session.getStatus() == ConsultationStatus.ACTIVE
+                && userAccountRepository.findById(doctorId)
+                .filter(account -> account.getStatus() == AccountStatus.ACTIVE).isEmpty())
+            throw new AppException(ErrorCode.ACCOUNT_DISABLED);
         return session;
     }
 

@@ -24,4 +24,8 @@ public interface ConsultationRenewalService {
     void expireForPayment(ConsultationPayment payment, Instant now);
     void markRequiresReview(ConsultationPayment payment);
     void expireOverdueRenewals(Instant now);
+
+    void cancelUnresolvedForClosedSession(Long sessionId, String reason, Instant now);
+
+    void lockSessionForPayment(Long renewalId);
 }

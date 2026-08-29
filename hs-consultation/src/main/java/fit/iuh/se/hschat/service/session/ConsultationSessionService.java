@@ -2,6 +2,7 @@ package fit.iuh.se.hschat.service.session;
 
 import fit.iuh.se.hschat.dto.request.AdminCreateConsultationSessionRequest;
 import fit.iuh.se.hschat.dto.request.CloseConsultationRequest;
+import fit.iuh.se.hschat.dto.request.RequestSessionTerminationRequest;
 import fit.iuh.se.hschat.dto.request.ExtendConsultationRequest;
 import fit.iuh.se.hschat.dto.response.ConsultationSessionResponse;
 import fit.iuh.se.hsshared.dto.response.PageResponse;
@@ -23,6 +24,11 @@ public interface ConsultationSessionService {
     ConsultationSessionResponse extendSession(Long actorId, UserRole actorRole, Long sessionId, ExtendConsultationRequest request);
 
     ConsultationSessionResponse closeSession(Long actorId, UserRole actorRole, Long sessionId, CloseConsultationRequest request);
+
+    ConsultationSessionResponse requestTermination(Long actorId, UserRole actorRole, Long sessionId,
+                                                    RequestSessionTerminationRequest request);
+
+    void flagDisabledActiveParticipantsForReview(UserRole actorRole);
 
     void expireOverdueSessions(UserRole actorRole);
 
