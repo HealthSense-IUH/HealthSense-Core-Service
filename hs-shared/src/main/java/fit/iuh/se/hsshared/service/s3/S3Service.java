@@ -7,7 +7,10 @@ import org.springframework.stereotype.Service;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
@@ -56,6 +59,21 @@ public class S3Service {
             log.error("Error generating Presigned Upload URL for key {}: {}", objectKey, e.getMessage(), e);
             throw new RuntimeException("Không thể tạo Presigned URL upload S3: " + e.getMessage(), e);
         }
+    }
+
+    public String generatePresignedDownloadUrl(String objectKey) {
+        if (objectKey == null || objectKey.isBlank())
+            throw new IllegalArgumentException("Object key must not be blank");
+        GetObjectRequest objectRequest = GetObjectRequest.builder()
+                .bucket(s3Config.getBucketName())
+                .key(objectKey)
+                .build();
+        GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
+                .signatureDuration(Duration.ofMinutes(s3Config.getPresignedUrlTtlMinutes()))
+                .getObjectRequest(objectRequest)
+                .build();
+        PresignedGetObjectRequest presignedRequest = s3Presigner.presignGetObject(presignRequest);
+        return presignedRequest.url().toString();
     }
 
     /**
