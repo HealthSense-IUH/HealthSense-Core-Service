@@ -3,6 +3,7 @@ package fit.iuh.se.hschat.service.request.impl;
 import fit.iuh.se.hschat.dto.request.ApproveConsultationRequest;
 import fit.iuh.se.hschat.dto.request.CreateConsultationRequest;
 import fit.iuh.se.hschat.dto.request.RequestMoreConsultationInfoRequest;
+import fit.iuh.se.hschat.dto.request.RejectConsultationRequest;
 import fit.iuh.se.hschat.dto.request.SubmitConsultationMoreInfoRequest;
 import fit.iuh.se.hschat.dto.response.ConsultationRequestResponse;
 import fit.iuh.se.hschat.dto.response.DoctorCandidateResponse;
@@ -10,17 +11,20 @@ import fit.iuh.se.hschat.entity.CareServicePackage;
 import fit.iuh.se.hschat.entity.ConsultationMoreInfoCycle;
 import fit.iuh.se.hschat.entity.ConsultationRequest;
 import fit.iuh.se.hschat.entity.DoctorCareProfile;
+import fit.iuh.se.hschat.entity.DoctorReservation;
 import fit.iuh.se.hschat.entity.enums.CareServicePackageStatus;
 import fit.iuh.se.hschat.entity.enums.ConsultationRequestStatus;
 import fit.iuh.se.hschat.entity.enums.DoctorIneligibilityReason;
 import fit.iuh.se.hschat.entity.enums.DoctorSpecialty;
+import fit.iuh.se.hschat.entity.enums.DoctorReservationReleaseReason;
 import fit.iuh.se.hschat.mapper.ConsultationMapper;
 import fit.iuh.se.hschat.repository.CareServicePackageRepository;
 import fit.iuh.se.hschat.repository.ConsultationMoreInfoCycleRepository;
 import fit.iuh.se.hschat.repository.ConsultationRequestRepository;
 import fit.iuh.se.hschat.repository.ConsultationSessionRepository;
 import fit.iuh.se.hschat.repository.DoctorCareProfileRepository;
-import fit.iuh.se.hschat.service.doctor.SupportScheduleValidator;
+import fit.iuh.se.hschat.service.reservation.DoctorReservationService;
+import fit.iuh.se.hschat.service.agreement.CareServiceAgreementService;
 import fit.iuh.se.hshealthrecord.repository.HealthRecordRepository;
 import fit.iuh.se.hshealthrecord.entity.HealthRecord;
 import fit.iuh.se.hsshared.advice.entity.AppException;
@@ -73,7 +77,9 @@ class ConsultationRequestServiceImplTest {
     @Mock
     DoctorCareProfileRepository doctorCareProfileRepository;
     @Mock
-    SupportScheduleValidator scheduleValidator;
+    DoctorReservationService reservationService;
+    @Mock
+    CareServiceAgreementService agreementService;
     @Mock
     ConsultationMapper mapper;
 
@@ -89,10 +95,18 @@ class ConsultationRequestServiceImplTest {
                 userAccountRepository,
                 packageRepository,
                 doctorCareProfileRepository,
-                scheduleValidator,
+                reservationService,
+                agreementService,
                 mapper
         );
         ReflectionTestUtils.setField(service, "paymentDeadlineMinutes", 30L);
+        lenient().when(reservationService.reserve(any(), anyLong(), anyLong(), any(Instant.class)))
+                .thenAnswer(invocation -> DoctorReservation.builder()
+                        .requestId(((ConsultationRequest) invocation.getArgument(0)).getId())
+                        .doctorId(invocation.getArgument(2))
+                        .reservedAt(Instant.now())
+                        .expiresAt(invocation.getArgument(3))
+                        .build());
     }
 
     @Test
@@ -150,18 +164,19 @@ class ConsultationRequestServiceImplTest {
 
         when(requestRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(existing));
         when(userAccountRepository.findById(1L)).thenReturn(Optional.of(user(1L, UserRole.MEMBER)));
-        when(userAccountRepository.findById(2L)).thenReturn(Optional.of(user(2L, UserRole.DOCTOR)));
-        when(doctorCareProfileRepository.findByDoctorId(2L)).thenReturn(Optional.of(doctorProfile(5)));
-        when(scheduleValidator.isValid(anyString(), anyString(), eq(true))).thenReturn(true);
         when(sessionRepository.existsByMemberIdAndStatusIn(eq(1L), anyCollection())).thenReturn(false);
-        when(sessionRepository.countByDoctorIdAndStatusIn(eq(2L), anyCollection())).thenReturn(2L);
-        when(requestRepository.countByAssignedDoctorIdAndStatusInAndPaymentDeadlineAfter(
-                eq(2L),
-                anyCollection(),
-                any(Instant.class))
-        ).thenReturn(1L);
         when(requestRepository.save(any(ConsultationRequest.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
+        when(reservationService.reserve(eq(existing), eq(9L), eq(2L), any(Instant.class)))
+                .thenAnswer(invocation -> {
+                    Instant deadline = invocation.getArgument(3);
+                    return DoctorReservation.builder()
+                            .requestId(existing.getId())
+                            .doctorId(2L)
+                            .reservedAt(deadline.minus(30, ChronoUnit.MINUTES))
+                            .expiresAt(deadline)
+                            .build();
+                });
         when(mapper.toRequestResponse(any(ConsultationRequest.class)))
                 .thenReturn(ConsultationRequestResponse.builder().status(ConsultationRequestStatus.WAITING_ACCEPTANCE).build());
 
@@ -182,6 +197,82 @@ class ConsultationRequestServiceImplTest {
     }
 
     @Test
+    void twoCoordinatorsApprovingSameRequestOnlyOneTransitionWins() throws Exception {
+        ConsultationRequest shared = ConsultationRequest.builder()
+                .id(100L)
+                .memberId(1L)
+                .status(ConsultationRequestStatus.PENDING_REVIEW)
+                .build();
+        ReentrantLock requestLock = new ReentrantLock();
+        when(requestRepository.findByIdForUpdate(100L)).thenAnswer(invocation -> {
+            requestLock.lock();
+            return Optional.of(shared);
+        });
+        when(userAccountRepository.findById(1L)).thenReturn(Optional.of(user(1L, UserRole.MEMBER)));
+        when(sessionRepository.existsByMemberIdAndStatusIn(eq(1L), anyCollection())).thenReturn(false);
+        when(requestRepository.save(shared)).thenAnswer(invocation -> {
+            requestLock.unlock();
+            return shared;
+        });
+        when(mapper.toRequestResponse(shared)).thenReturn(
+                ConsultationRequestResponse.builder().status(ConsultationRequestStatus.WAITING_ACCEPTANCE).build());
+
+        ApproveConsultationRequest approval = new ApproveConsultationRequest();
+        approval.setDoctorId(2L);
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        try {
+            CountDownLatch start = new CountDownLatch(1);
+            Callable<Boolean> task = () -> {
+                start.await();
+                try {
+                    service.approveRequest(9L, UserRole.CARE_COORDINATOR, 100L, approval);
+                    return true;
+                } catch (AppException exception) {
+                    return false;
+                }
+            };
+            Future<Boolean> first = executor.submit(task);
+            Future<Boolean> second = executor.submit(task);
+            start.countDown();
+
+            assertEquals(1, List.of(first.get(), second.get()).stream().filter(Boolean::booleanValue).count());
+            verify(reservationService, times(1)).reserve(any(), eq(9L), eq(2L), any(Instant.class));
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
+    @Test
+    void cancellationBeforeActivationReleasesReservation() {
+        ConsultationRequest request = ConsultationRequest.builder()
+                .id(100L).memberId(1L).status(ConsultationRequestStatus.WAITING_PAYMENT).build();
+        when(requestRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(request));
+        when(requestRepository.save(request)).thenReturn(request);
+        when(mapper.toRequestResponse(request)).thenReturn(ConsultationRequestResponse.builder().build());
+
+        service.cancelMyRequest(1L, 100L);
+
+        verify(reservationService).release(request, DoctorReservationReleaseReason.MEMBER_CANCELLED);
+        assertEquals(ConsultationRequestStatus.CANCELLED, request.getStatus());
+    }
+
+    @Test
+    void rejectionBeforeActivationReleasesReservation() {
+        ConsultationRequest request = ConsultationRequest.builder()
+                .id(100L).memberId(1L).status(ConsultationRequestStatus.WAITING_ACCEPTANCE).build();
+        when(requestRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(request));
+        when(requestRepository.save(request)).thenReturn(request);
+        when(mapper.toRequestResponse(request)).thenReturn(ConsultationRequestResponse.builder().build());
+        RejectConsultationRequest rejection = new RejectConsultationRequest();
+        rejection.setRejectionReason("Assignment cannot proceed");
+
+        service.rejectRequest(9L, UserRole.CARE_COORDINATOR, 100L, rejection);
+
+        verify(reservationService).release(request, DoctorReservationReleaseReason.COORDINATOR_REJECTED);
+        assertEquals(ConsultationRequestStatus.REJECTED, request.getStatus());
+    }
+
+    @Test
     void approveRequestCountsActiveScheduledSessionsAndReservationsForCapacity() {
         ConsultationRequest existing = ConsultationRequest.builder()
                 .id(100L)
@@ -191,15 +282,8 @@ class ConsultationRequestServiceImplTest {
 
         when(requestRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(existing));
         when(userAccountRepository.findById(1L)).thenReturn(Optional.of(user(1L, UserRole.MEMBER)));
-        when(userAccountRepository.findById(2L)).thenReturn(Optional.of(user(2L, UserRole.DOCTOR)));
-        when(doctorCareProfileRepository.findByDoctorId(2L)).thenReturn(Optional.of(doctorProfile(5)));
-        when(scheduleValidator.isValid(anyString(), anyString(), eq(true))).thenReturn(true);
-        when(sessionRepository.countByDoctorIdAndStatusIn(eq(2L), anyCollection())).thenReturn(4L);
-        when(requestRepository.countByAssignedDoctorIdAndStatusInAndPaymentDeadlineAfter(
-                eq(2L),
-                anyCollection(),
-                any(Instant.class))
-        ).thenReturn(1L);
+        when(reservationService.reserve(any(), eq(9L), eq(2L), any(Instant.class)))
+                .thenThrow(new AppException(fit.iuh.se.hsshared.advice.entity.enums.ErrorCode.DOCTOR_CAPACITY_EXCEEDED));
 
         ApproveConsultationRequest request = new ApproveConsultationRequest();
         request.setDoctorId(2L);
@@ -218,16 +302,7 @@ class ConsultationRequestServiceImplTest {
 
         when(requestRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(existing));
         when(userAccountRepository.findById(1L)).thenReturn(Optional.of(user(1L, UserRole.MEMBER)));
-        when(userAccountRepository.findById(2L)).thenReturn(Optional.of(user(2L, UserRole.DOCTOR)));
-        when(doctorCareProfileRepository.findByDoctorId(2L)).thenReturn(Optional.of(doctorProfile(2)));
-        when(scheduleValidator.isValid(anyString(), anyString(), eq(true))).thenReturn(true);
         when(sessionRepository.existsByMemberIdAndStatusIn(eq(1L), anyCollection())).thenReturn(false);
-        when(sessionRepository.countByDoctorIdAndStatusIn(eq(2L), anyCollection())).thenReturn(1L);
-        when(requestRepository.countByAssignedDoctorIdAndStatusInAndPaymentDeadlineAfter(
-                eq(2L),
-                anyCollection(),
-                any(Instant.class))
-        ).thenReturn(0L);
         when(requestRepository.save(any(ConsultationRequest.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
         when(mapper.toRequestResponse(any(ConsultationRequest.class)))
@@ -238,11 +313,7 @@ class ConsultationRequestServiceImplTest {
 
         service.approveRequest(9L, UserRole.CARE_COORDINATOR, 100L, request);
 
-        verify(requestRepository, atLeastOnce()).countByAssignedDoctorIdAndStatusInAndPaymentDeadlineAfter(
-                eq(2L),
-                anyCollection(),
-                any(Instant.class)
-        );
+        verify(reservationService).reserve(any(), eq(9L), eq(2L), any(Instant.class));
         verify(requestRepository).save(any(ConsultationRequest.class));
     }
 
@@ -256,18 +327,19 @@ class ConsultationRequestServiceImplTest {
 
         when(requestRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(existing));
         when(userAccountRepository.findById(1L)).thenReturn(Optional.of(user(1L, UserRole.MEMBER)));
-        when(userAccountRepository.findById(2L)).thenReturn(Optional.of(user(2L, UserRole.DOCTOR)));
-        when(doctorCareProfileRepository.findByDoctorId(2L)).thenReturn(Optional.of(doctorProfile(5)));
-        when(scheduleValidator.isValid(anyString(), anyString(), eq(true))).thenReturn(true);
         when(sessionRepository.existsByMemberIdAndStatusIn(eq(1L), anyCollection())).thenReturn(false);
-        when(sessionRepository.countByDoctorIdAndStatusIn(eq(2L), anyCollection())).thenReturn(0L);
-        when(requestRepository.countByAssignedDoctorIdAndStatusInAndPaymentDeadlineAfter(
-                eq(2L),
-                anyCollection(),
-                any(Instant.class))
-        ).thenReturn(0L);
         when(requestRepository.save(any(ConsultationRequest.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
+        when(reservationService.reserve(eq(existing), eq(9L), eq(2L), any(Instant.class)))
+                .thenAnswer(invocation -> {
+                    Instant deadline = invocation.getArgument(3);
+                    return DoctorReservation.builder()
+                            .requestId(existing.getId())
+                            .doctorId(2L)
+                            .reservedAt(deadline.minus(30, ChronoUnit.MINUTES))
+                            .expiresAt(deadline)
+                            .build();
+                });
         when(mapper.toRequestResponse(any(ConsultationRequest.class)))
                 .thenReturn(ConsultationRequestResponse.builder().status(ConsultationRequestStatus.WAITING_ACCEPTANCE).build());
 
@@ -302,13 +374,10 @@ class ConsultationRequestServiceImplTest {
         ).thenReturn(new PageImpl<>(List.of(preferredDoctor), PageRequest.of(0, 10), 1));
         when(doctorCareProfileRepository.findByDoctorIdIn(List.of(2L)))
                 .thenReturn(List.of(doctorProfile(1)));
-        when(scheduleValidator.isValid(anyString(), anyString(), eq(true))).thenReturn(true);
-        when(sessionRepository.countByDoctorIdAndStatusIn(eq(2L), anyCollection())).thenReturn(1L);
-        when(requestRepository.countByAssignedDoctorIdAndStatusInAndPaymentDeadlineAfter(
-                eq(2L),
-                anyCollection(),
-                any(Instant.class))
-        ).thenReturn(0L);
+        when(reservationService.getEffectiveLoad(eq(2L), any(Instant.class))).thenReturn(1L);
+        when(reservationService.getIneligibilityReasons(
+                eq(existing), eq(preferredDoctor), any(Instant.class), isNull()))
+                .thenReturn(List.of(DoctorIneligibilityReason.CAPACITY_FULL));
 
         PageResponse<DoctorCandidateResponse> response = service.getDoctorCandidates(
                 UserRole.CARE_COORDINATOR,
@@ -338,9 +407,9 @@ class ConsultationRequestServiceImplTest {
 
         when(requestRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(existing));
         when(userAccountRepository.findById(1L)).thenReturn(Optional.of(user(1L, UserRole.MEMBER)));
-        when(userAccountRepository.findById(2L)).thenReturn(Optional.of(user(2L, UserRole.DOCTOR)));
-        when(doctorCareProfileRepository.findByDoctorId(2L)).thenReturn(Optional.of(doctorProfile(5, false)));
-        when(scheduleValidator.isValid(anyString(), anyString(), eq(false))).thenReturn(true);
+        when(reservationService.reserve(any(), eq(9L), eq(2L), any(Instant.class)))
+                .thenThrow(new AppException(
+                        fit.iuh.se.hsshared.advice.entity.enums.ErrorCode.DOCTOR_NOT_ELIGIBLE_FOR_CONSULTATION));
 
         ApproveConsultationRequest request = new ApproveConsultationRequest();
         request.setDoctorId(2L);

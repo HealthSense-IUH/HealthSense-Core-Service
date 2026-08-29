@@ -14,6 +14,9 @@ import fit.iuh.se.hschat.repository.ConsultationRequestRepository;
 import fit.iuh.se.hschat.repository.ConsultationSessionRepository;
 import fit.iuh.se.hschat.repository.DoctorCareProfileRepository;
 import fit.iuh.se.hschat.service.doctor.SupportScheduleValidator;
+import fit.iuh.se.hschat.service.authorization.EpisodeHealthRecordAuthorizationService;
+import fit.iuh.se.hschat.service.reservation.DoctorReservationService;
+import fit.iuh.se.hschat.service.finalsummary.FinalSummaryClosureService;
 import fit.iuh.se.hshealthrecord.repository.HealthRecordRepository;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsuser.entity.UserAccount;
@@ -57,6 +60,12 @@ class ConsultationSessionServiceImplTest {
     @Mock
     SupportScheduleValidator scheduleValidator;
     @Mock
+    DoctorReservationService reservationService;
+    @Mock
+    EpisodeHealthRecordAuthorizationService authorizationService;
+    @Mock
+    FinalSummaryClosureService finalSummaryClosureService;
+    @Mock
     ConsultationMapper mapper;
 
     ConsultationSessionServiceImpl service;
@@ -73,6 +82,9 @@ class ConsultationSessionServiceImplTest {
                 packageRepository,
                 doctorCareProfileRepository,
                 scheduleValidator,
+                reservationService,
+                authorizationService,
+                finalSummaryClosureService,
                 mapper
         );
         ReflectionTestUtils.setField(service, "defaultDoctorMaxActiveSessions", 5);
@@ -87,6 +99,7 @@ class ConsultationSessionServiceImplTest {
                 .build();
         when(sessionRepository.findByStatusAndEndsAtBefore(eq(ConsultationStatus.ACTIVE), any(Instant.class)))
                 .thenReturn(List.of(overdue));
+        when(sessionRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(overdue));
 
         service.expireOverdueSessions(UserRole.CARE_COORDINATOR);
 
@@ -96,6 +109,26 @@ class ConsultationSessionServiceImplTest {
         assertEquals(ConsultationStatus.COMPLETED, saved.getStatus());
         assertEquals(ConsultationCompletionReason.PERIOD_ENDED, saved.getCompletionReason());
         assertNotNull(saved.getCompletedAt());
+        verify(finalSummaryClosureService).onSessionCompleted(eq(overdue), any(Instant.class));
+        verify(finalSummaryClosureService).refreshOpenClosures(any(Instant.class));
+    }
+
+    @Test
+    void successfulRenewalDefersCompletionAndFinalSummaryUntilFinalEffectiveEnd() {
+        ConsultationSession staleCandidate = ConsultationSession.builder().id(1L)
+                .status(ConsultationStatus.ACTIVE).endsAt(Instant.now().minusSeconds(60)).build();
+        ConsultationSession renewedLockedSession = ConsultationSession.builder().id(1L)
+                .status(ConsultationStatus.ACTIVE).endsAt(Instant.now().plusSeconds(86400)).build();
+        when(sessionRepository.findByStatusAndEndsAtBefore(eq(ConsultationStatus.ACTIVE), any()))
+                .thenReturn(List.of(staleCandidate));
+        when(sessionRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(renewedLockedSession));
+
+        service.expireOverdueSessions(UserRole.CARE_COORDINATOR);
+
+        assertEquals(ConsultationStatus.ACTIVE, renewedLockedSession.getStatus());
+        verify(sessionRepository, never()).save(any());
+        verify(finalSummaryClosureService, never()).onSessionCompleted(any(), any());
+        verify(finalSummaryClosureService).refreshOpenClosures(any());
     }
 
     @Test
@@ -113,12 +146,33 @@ class ConsultationSessionServiceImplTest {
         ArgumentCaptor<ConsultationSession> captor = ArgumentCaptor.forClass(ConsultationSession.class);
         verify(sessionRepository).save(captor.capture());
         assertEquals(ConsultationStatus.ACTIVE, captor.getValue().getStatus());
+        assertNotNull(captor.getValue().getActivatedAt());
+    }
+
+    @Test
+    void scheduledDoctorSessionResponseDoesNotRevealHealthRecordReferenceBeforeActivation() {
+        ConsultationSession scheduled = ConsultationSession.builder()
+                .id(1L)
+                .memberId(1L)
+                .doctorId(2L)
+                .status(ConsultationStatus.SCHEDULED)
+                .healthRecordId(500L)
+                .build();
+        var response = fit.iuh.se.hschat.dto.response.ConsultationSessionResponse.builder()
+                .healthRecordId(500L)
+                .build();
+        when(participantRepository.existsBySessionIdAndUserIdAndActiveTrue(1L, 2L)).thenReturn(true);
+        when(sessionRepository.findById(1L)).thenReturn(Optional.of(scheduled));
+        when(mapper.toSessionResponse(scheduled)).thenReturn(response);
+        when(participantRepository.findBySessionIdAndUserId(1L, 2L)).thenReturn(Optional.empty());
+
+        assertNull(service.getSessionById(2L, 1L).getHealthRecordId());
     }
 
     @Test
     void createSessionByAdminRejectsWhenMemberAlreadyHasScheduledSession() {
         when(userAccountRepository.findById(1L)).thenReturn(Optional.of(user(1L, UserRole.MEMBER)));
-        when(userAccountRepository.findById(2L)).thenReturn(Optional.of(user(2L, UserRole.DOCTOR)));
+        when(userAccountRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(user(2L, UserRole.DOCTOR)));
         when(doctorCareProfileRepository.findByDoctorId(2L)).thenReturn(Optional.of(doctorProfile()));
         when(scheduleValidator.isValid(anyString(), anyString(), eq(true))).thenReturn(true);
         when(sessionRepository.existsByMemberIdAndStatusIn(eq(1L), anyCollection())).thenReturn(true);
@@ -127,6 +181,7 @@ class ConsultationSessionServiceImplTest {
         request.setMemberId(1L);
         request.setDoctorId(2L);
         request.setEndsAt(Instant.now().plusSeconds(3600));
+        request.setOverrideReason("Administrative recovery");
 
         assertThrows(AppException.class, () -> service.createSessionByAdmin(9L, UserRole.ADMIN, request));
         verify(sessionRepository, never()).save(any());
@@ -137,12 +192,11 @@ class ConsultationSessionServiceImplTest {
     void createSessionByAdminSnapshotsDoctorSupportSchedule() {
         DoctorCareProfile profile = doctorProfile();
         when(userAccountRepository.findById(1L)).thenReturn(Optional.of(user(1L, UserRole.MEMBER)));
-        when(userAccountRepository.findById(2L)).thenReturn(Optional.of(user(2L, UserRole.DOCTOR)));
+        when(userAccountRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(user(2L, UserRole.DOCTOR)));
         when(doctorCareProfileRepository.findByDoctorId(2L)).thenReturn(Optional.of(profile));
         when(scheduleValidator.isValid(anyString(), anyString(), eq(true))).thenReturn(true);
         when(sessionRepository.existsByMemberIdAndStatusIn(eq(1L), anyCollection())).thenReturn(false);
-        when(sessionRepository.countByDoctorIdAndStatusIn(eq(2L), anyCollection())).thenReturn(0L);
-        when(requestRepository.countByAssignedDoctorIdAndStatusAndPaymentDeadlineAfter(eq(2L), any(), any())).thenReturn(0L);
+        when(reservationService.getEffectiveLoad(eq(2L), any(Instant.class))).thenReturn(0L);
         when(sessionRepository.save(any(ConsultationSession.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         AdminCreateConsultationSessionRequest request = new AdminCreateConsultationSessionRequest();
@@ -150,6 +204,7 @@ class ConsultationSessionServiceImplTest {
         request.setDoctorId(2L);
         request.setStartedAt(Instant.now().minusSeconds(60));
         request.setEndsAt(Instant.now().plusSeconds(3600));
+        request.setOverrideReason("Compensating care approved by Admin");
 
         service.createSessionByAdmin(9L, UserRole.ADMIN, request);
 
@@ -158,6 +213,27 @@ class ConsultationSessionServiceImplTest {
         ConsultationSession saved = captor.getValue();
         assertEquals(profile.getAvailabilityJson(), saved.getSupportScheduleSnapshotJson());
         assertEquals(profile.getTimezone(), saved.getSupportTimezoneSnapshot());
+        assertTrue(saved.getExceptionalOverride());
+        assertEquals("Compensating care approved by Admin", saved.getOverrideReason());
+    }
+
+    @Test
+    void coordinatorCannotUseExceptionalOverride() {
+        AdminCreateConsultationSessionRequest request = new AdminCreateConsultationSessionRequest();
+        request.setOverrideReason("Attempted bypass");
+
+        assertThrows(AppException.class,
+                () -> service.createSessionByAdmin(9L, UserRole.CARE_COORDINATOR, request));
+        verify(sessionRepository, never()).save(any());
+    }
+
+    @Test
+    void adminOverrideRequiresExplicitReason() {
+        AdminCreateConsultationSessionRequest request = new AdminCreateConsultationSessionRequest();
+
+        assertThrows(AppException.class,
+                () -> service.createSessionByAdmin(9L, UserRole.ADMIN, request));
+        verify(sessionRepository, never()).save(any());
     }
 
     private UserAccount user(Long id, UserRole role) {
