@@ -63,21 +63,6 @@ public class S3Service {
         }
     }
 
-    public String generatePresignedDownloadUrl(String objectKey) {
-        if (objectKey == null || objectKey.isBlank())
-            throw new IllegalArgumentException("Object key must not be blank");
-        GetObjectRequest objectRequest = GetObjectRequest.builder()
-                .bucket(s3Config.getBucketName())
-                .key(objectKey)
-                .build();
-        GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
-                .signatureDuration(Duration.ofMinutes(s3Config.getPresignedUrlTtlMinutes()))
-                .getObjectRequest(objectRequest)
-                .build();
-        PresignedGetObjectRequest presignedRequest = s3Presigner.presignGetObject(presignRequest);
-        return presignedRequest.url().toString();
-    }
-
     /**
      * Sinh Presigned GET URL để client tải file private từ S3
      *
@@ -85,6 +70,8 @@ public class S3Service {
      * @return Presigned URL có thời hạn (mặc định 15 phút)
      */
     public String generatePresignedDownloadUrl(String objectKey) {
+        if (objectKey == null || objectKey.isBlank())
+            throw new IllegalArgumentException("Object key must not be blank");
         log.info("Generating Presigned Download URL for key: {} in bucket: {}", objectKey, s3Config.getBucketName());
         try {
             software.amazon.awssdk.services.s3.model.GetObjectRequest getObjectRequest = 
