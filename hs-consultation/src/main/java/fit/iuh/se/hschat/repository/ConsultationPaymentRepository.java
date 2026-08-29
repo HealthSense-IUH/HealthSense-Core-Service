@@ -16,6 +16,10 @@ import java.util.Optional;
 @Repository
 public interface ConsultationPaymentRepository extends JpaRepository<ConsultationPayment, Long> {
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select payment from ConsultationPayment payment where payment.id = :id")
+    Optional<ConsultationPayment> findByIdForUpdate(Long id);
+
     Optional<ConsultationPayment> findFirstByRequestIdOrderByAttemptNumberDesc(Long requestId);
 
     Optional<ConsultationPayment> findFirstByAgreementIdOrderByAttemptNumberDesc(Long agreementId);
@@ -26,6 +30,10 @@ public interface ConsultationPaymentRepository extends JpaRepository<Consultatio
     );
 
     List<ConsultationPayment> findByRequestIdOrderByAttemptNumberAsc(Long requestId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select payment from ConsultationPayment payment where payment.requestId = :requestId order by payment.attemptNumber")
+    List<ConsultationPayment> findByRequestIdForUpdate(Long requestId);
 
     Optional<ConsultationPayment> findFirstByRenewalIdOrderByAttemptNumberDesc(Long renewalId);
 

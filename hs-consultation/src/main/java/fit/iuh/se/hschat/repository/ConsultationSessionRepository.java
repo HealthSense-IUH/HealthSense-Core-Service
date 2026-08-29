@@ -49,6 +49,9 @@ public interface ConsultationSessionRepository extends JpaRepository<Consultatio
 
     Page<ConsultationSession> findByMemberIdOrderByStartedAtDesc(Long memberId, Pageable pageable);
 
+    Page<ConsultationSession> findByMemberIdAndActivatedAtIsNotNullOrderByStartedAtDesc(
+            Long memberId, Pageable pageable);
+
     List<ConsultationSession> findByMemberIdAndIdNotAndActivatedAtIsNotNullOrderByStartedAtDesc(
             Long memberId, Long id);
 
