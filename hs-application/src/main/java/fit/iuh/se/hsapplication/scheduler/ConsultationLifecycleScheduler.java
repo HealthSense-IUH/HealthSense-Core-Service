@@ -22,5 +22,6 @@ public class ConsultationLifecycleScheduler {
     public void advanceLifecycle() {
         sessionService.activateScheduledSessions(UserRole.SUPER_ADMIN);
         sessionService.expireOverdueSessions(UserRole.SUPER_ADMIN);
+        sessionService.flagDisabledActiveParticipantsForReview(UserRole.SUPER_ADMIN);
     }
 }
