@@ -4,20 +4,24 @@ import fit.iuh.se.hschat.dto.response.*;
 import fit.iuh.se.hschat.entity.ConsultationHealthRecordAttention;
 import fit.iuh.se.hschat.entity.ConsultationParticipant;
 import fit.iuh.se.hschat.entity.ConsultationSession;
+import fit.iuh.se.hschat.entity.EpisodeHealthRecordAuthorization;
 import fit.iuh.se.hschat.entity.enums.ConsultationAttentionStatus;
 import fit.iuh.se.hschat.entity.enums.ConsultationStatus;
+import fit.iuh.se.hschat.entity.enums.EpisodeHealthRecordAuthorizationSource;
 import fit.iuh.se.hschat.mapper.ConsultationMapper;
 import fit.iuh.se.hschat.repository.ConsultationHealthRecordAttentionRepository;
 import fit.iuh.se.hschat.repository.ConsultationMessageRepository;
 import fit.iuh.se.hschat.repository.ConsultationParticipantRepository;
 import fit.iuh.se.hschat.repository.ConsultationSessionRepository;
 import fit.iuh.se.hschat.service.activecare.DoctorActiveCareService;
+import fit.iuh.se.hschat.service.authorization.EpisodeHealthRecordAuthorizationService;
 import fit.iuh.se.hshealthrecord.entity.HealthRecord;
 import fit.iuh.se.hshealthrecord.mapper.HealthRecordMapper;
 import fit.iuh.se.hshealthrecord.repository.HealthRecordRepository;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsshared.dto.response.PageResponse;
+import fit.iuh.se.hsshared.service.s3.S3Service;
 import fit.iuh.se.hsuser.entity.UserAccount;
 import fit.iuh.se.hsuser.repository.UserAccountRepository;
 import lombok.AccessLevel;
@@ -30,9 +34,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Objects;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -50,9 +55,11 @@ public class DoctorActiveCareServiceImpl implements DoctorActiveCareService {
     ConsultationMessageRepository messageRepository;
     ConsultationHealthRecordAttentionRepository attentionRepository;
     HealthRecordRepository healthRecordRepository;
+    EpisodeHealthRecordAuthorizationService authorizationService;
     UserAccountRepository userAccountRepository;
     ConsultationMapper consultationMapper;
     HealthRecordMapper healthRecordMapper;
+    S3Service s3Service;
 
     @Override
     @Transactional(readOnly = true)
@@ -66,11 +73,17 @@ public class DoctorActiveCareServiceImpl implements DoctorActiveCareService {
     @Override
     @Transactional(readOnly = true)
     public DoctorConsultationDetailResponse getSessionDetail(Long doctorId, Long sessionId) {
-        ConsultationSession session = getAssignedSession(doctorId, sessionId);
+        ConsultationSession session = getAssignedSessionForRecordAccess(doctorId, sessionId);
+        EpisodeHealthRecordAuthorization initialAuthorization = authorizationService
+                .getSessionAuthorizations(sessionId).stream()
+                .filter(item -> item.getAuthorizationSource() == EpisodeHealthRecordAuthorizationSource.INITIAL_SHARED)
+                .findFirst()
+                .orElse(null);
         return DoctorConsultationDetailResponse.builder()
                 .session(consultationMapper.toSessionResponse(session))
                 .member(toUserSummary(findUser(session.getMemberId())))
-                .initialHealthRecord(session.getHealthRecordId() == null ? null : getScopedHealthRecord(doctorId, sessionId, session.getHealthRecordId()))
+                .initialHealthRecord(initialAuthorization == null ? null
+                        : getScopedHealthRecord(doctorId, sessionId, initialAuthorization.getHealthRecordId()))
                 .unresolvedAttentionCount(attentionRepository.countBySessionIdAndStatus(sessionId, ConsultationAttentionStatus.REQUIRES_ATTENTION))
                 .build();
     }
@@ -83,7 +96,10 @@ public class DoctorActiveCareServiceImpl implements DoctorActiveCareService {
         List<DoctorScopedHealthRecordResponse> responses = records.stream()
                 .skip(pageable.getOffset())
                 .limit(pageable.getPageSize())
-                .map(record -> toScopedRecordResponse(session, record))
+                .map(record -> toScopedRecordResponse(
+                        session,
+                        record,
+                        authorizationService.requireDoctorReadAccess(doctorId, session, record.getId())))
                 .toList();
 
         Page<DoctorScopedHealthRecordResponse> page = new PageImpl<>(responses, pageable, records.size());
@@ -96,9 +112,24 @@ public class DoctorActiveCareServiceImpl implements DoctorActiveCareService {
         ConsultationSession session = getAssignedSessionForRecordAccess(doctorId, sessionId);
         HealthRecord record = healthRecordRepository.findByIdAndUserId(recordId, session.getMemberId())
                 .orElseThrow(() -> new AppException(ErrorCode.HEALTH_RECORD_NOT_FOUND));
-        if (!isRecordInScope(session, record))
-            throw new AppException(ErrorCode.CONSULTATION_ACCESS_DENIED);
-        return toScopedRecordResponse(session, record);
+        EpisodeHealthRecordAuthorization authorization = authorizationService
+                .requireDoctorReadAccess(doctorId, session, recordId);
+        return toScopedRecordResponse(session, record, authorization);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public RawHealthRecordArtifactResponse getRawArtifact(Long doctorId, Long sessionId, Long recordId) {
+        ConsultationSession session = getAssignedSessionForRecordAccess(doctorId, sessionId);
+        HealthRecord record = healthRecordRepository.findByIdAndUserId(recordId, session.getMemberId())
+                .orElseThrow(() -> new AppException(ErrorCode.HEALTH_RECORD_NOT_FOUND));
+        authorizationService.requireDoctorReadAccess(doctorId, session, recordId);
+        return RawHealthRecordArtifactResponse.builder()
+                .sessionId(sessionId)
+                .healthRecordId(recordId)
+                .fileName(record.getFileName())
+                .downloadUrl(s3Service.generatePresignedDownloadUrl(record.getS3FileKey()))
+                .build();
     }
 
     @Override
@@ -107,8 +138,8 @@ public class DoctorActiveCareServiceImpl implements DoctorActiveCareService {
         ConsultationSession session = getAssignedSessionForRecordAccess(doctorId, sessionId);
         HealthRecord record = healthRecordRepository.findByIdAndUserId(recordId, session.getMemberId())
                 .orElseThrow(() -> new AppException(ErrorCode.HEALTH_RECORD_NOT_FOUND));
-        if (!isRecordInScope(session, record))
-            throw new AppException(ErrorCode.CONSULTATION_ACCESS_DENIED);
+        EpisodeHealthRecordAuthorization authorization = authorizationService
+                .requireDoctorCurrentWriteAccess(doctorId, session, recordId);
 
         ConsultationHealthRecordAttention attention = attentionRepository.findBySessionIdAndHealthRecordId(sessionId, recordId)
                 .orElseThrow(() -> new AppException(ErrorCode.ENTITY_NOT_FOUND, "Consultation attention not found"));
@@ -116,7 +147,7 @@ public class DoctorActiveCareServiceImpl implements DoctorActiveCareService {
         attention.setReviewedAt(Instant.now());
         attention.setReviewedByDoctorId(doctorId);
         attentionRepository.save(attention);
-        return toScopedRecordResponse(session, record);
+        return toScopedRecordResponse(session, record, authorization);
     }
 
     private ConsultationSession getAssignedSession(Long doctorId, Long sessionId) {
@@ -126,42 +157,26 @@ public class DoctorActiveCareServiceImpl implements DoctorActiveCareService {
 
     private ConsultationSession getAssignedSessionForRecordAccess(Long doctorId, Long sessionId) {
         ConsultationSession session = getAssignedSession(doctorId, sessionId);
-        if (session.getStatus() != ConsultationStatus.ACTIVE && session.getStatus() != ConsultationStatus.COMPLETED)
+        if (session.getActivatedAt() == null
+                || (session.getStatus() != ConsultationStatus.ACTIVE
+                && session.getStatus() != ConsultationStatus.COMPLETED
+                && session.getStatus() != ConsultationStatus.CANCELLED))
             throw new AppException(ErrorCode.CONSULTATION_NOT_ACTIVE);
         return session;
     }
 
     private List<HealthRecord> getScopedRecords(ConsultationSession session) {
-        Instant from = session.getStartedAt() == null ? session.getCreatedAt() : session.getStartedAt();
-        Instant to = session.getEndsAt();
-        List<HealthRecord> records = healthRecordRepository
-                .findByUserIdAndCreatedAtBetweenOrderByCreatedAtDesc(session.getMemberId(), from, to);
-
-        if (session.getHealthRecordId() != null) {
-            healthRecordRepository.findByIdAndUserId(session.getHealthRecordId(), session.getMemberId())
-                    .filter(attached -> records.stream().noneMatch(record -> record.getId().equals(attached.getId())))
-                    .ifPresent(records::add);
-        }
-
-        return records.stream()
-                .filter(record -> isRecordInScope(session, record))
-                .sorted(Comparator.comparing(HealthRecord::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
+        List<EpisodeHealthRecordAuthorization> authorizations = authorizationService
+                .getSessionAuthorizations(session.getId());
+        Map<Long, HealthRecord> records = healthRecordRepository.findAllById(
+                        authorizations.stream().map(EpisodeHealthRecordAuthorization::getHealthRecordId).toList())
+                .stream()
+                .filter(record -> record.getUserId().equals(session.getMemberId()))
+                .collect(Collectors.toMap(HealthRecord::getId, Function.identity()));
+        return authorizations.stream()
+                .map(item -> records.get(item.getHealthRecordId()))
+                .filter(java.util.Objects::nonNull)
                 .toList();
-    }
-
-    private boolean isRecordInScope(ConsultationSession session, HealthRecord record) {
-        if (!record.getUserId().equals(session.getMemberId()))
-            return false;
-        if (Objects.equals(record.getId(), session.getHealthRecordId()))
-            return true;
-        Instant startedAt = session.getStartedAt();
-        Instant endsAt = session.getEndsAt();
-        Instant createdAt = record.getCreatedAt();
-        return startedAt != null
-                && endsAt != null
-                && createdAt != null
-                && !createdAt.isBefore(startedAt)
-                && !createdAt.isAfter(endsAt);
     }
 
     private DoctorConsultationSessionResponse toDoctorSessionResponse(ConsultationSession session, Long doctorId) {
@@ -172,7 +187,7 @@ public class DoctorActiveCareServiceImpl implements DoctorActiveCareService {
                 .startedAt(session.getStartedAt())
                 .endsAt(session.getEndsAt())
                 .supportEndsAt(session.getSupportEndsAt())
-                .healthRecordId(session.getHealthRecordId())
+                .healthRecordId(session.getActivatedAt() == null ? null : session.getHealthRecordId())
                 .lastMessagePreview(session.getLastMessagePreview())
                 .lastMessageAt(session.getLastMessageAt())
                 .unreadCount(countUnread(session, doctorId))
@@ -180,10 +195,15 @@ public class DoctorActiveCareServiceImpl implements DoctorActiveCareService {
                 .build();
     }
 
-    private DoctorScopedHealthRecordResponse toScopedRecordResponse(ConsultationSession session, HealthRecord record) {
+    private DoctorScopedHealthRecordResponse toScopedRecordResponse(
+            ConsultationSession session,
+            HealthRecord record,
+            EpisodeHealthRecordAuthorization authorization) {
         return DoctorScopedHealthRecordResponse.builder()
                 .record(healthRecordMapper.toResponse(record))
-                .initialAttachedRecord(Objects.equals(record.getId(), session.getHealthRecordId()))
+                .initialAttachedRecord(authorization.getAuthorizationSource()
+                        == EpisodeHealthRecordAuthorizationSource.INITIAL_SHARED)
+                .authorizationSource(authorization.getAuthorizationSource())
                 .attention(attentionRepository.findBySessionIdAndHealthRecordId(session.getId(), record.getId())
                         .map(this::toAttentionResponse)
                         .orElse(null))

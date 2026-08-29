@@ -172,7 +172,10 @@ public class ConsultationMessageServiceImpl implements ConsultationMessageServic
     private void ensureCanAccessSession(Long sessionId, Long userId) {
         ConsultationSession session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_NOT_FOUND));
-        if (session.getStatus() != ConsultationStatus.ACTIVE && session.getStatus() != ConsultationStatus.COMPLETED)
+        boolean retainedEpisode = session.getStatus() == ConsultationStatus.ACTIVE
+                || session.getStatus() == ConsultationStatus.COMPLETED
+                || (session.getStatus() == ConsultationStatus.CANCELLED && session.getActivatedAt() != null);
+        if (!retainedEpisode)
             throw new AppException(ErrorCode.CONSULTATION_NOT_ACTIVE);
 
         if (!participantRepository.existsBySessionIdAndUserIdAndActiveTrue(sessionId, userId))

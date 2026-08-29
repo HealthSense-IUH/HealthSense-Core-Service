@@ -7,6 +7,7 @@ import fit.iuh.se.hschat.entity.enums.ConsultationAttentionStatus;
 import fit.iuh.se.hschat.entity.enums.ConsultationStatus;
 import fit.iuh.se.hschat.repository.ConsultationHealthRecordAttentionRepository;
 import fit.iuh.se.hschat.repository.ConsultationSessionRepository;
+import fit.iuh.se.hschat.repository.EpisodeHealthRecordAuthorizationRepository;
 import fit.iuh.se.hshealthrecord.entity.HealthRecord;
 import fit.iuh.se.hshealthrecord.entity.enums.PredictionLabel;
 import fit.iuh.se.hshealthrecord.event.HealthRecordAnalyzedEvent;
@@ -20,9 +21,6 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
-import java.util.Objects;
-
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -32,6 +30,7 @@ public class HealthRecordAttentionEventHandler {
     ConsultationSessionRepository sessionRepository;
     ConsultationHealthRecordAttentionRepository attentionRepository;
     HealthRecordRepository healthRecordRepository;
+    EpisodeHealthRecordAuthorizationRepository authorizationRepository;
 
     @EventListener
     @Transactional
@@ -67,15 +66,8 @@ public class HealthRecordAttentionEventHandler {
     }
 
     private boolean isRecordInScope(ConsultationSession session, HealthRecord record) {
-        if (!record.getUserId().equals(session.getMemberId()))
-            return false;
-        if (Objects.equals(record.getId(), session.getHealthRecordId()))
-            return true;
-        Instant createdAt = record.getCreatedAt();
-        return session.getStartedAt() != null
-                && session.getEndsAt() != null
-                && createdAt != null
-                && !createdAt.isBefore(session.getStartedAt())
-                && !createdAt.isAfter(session.getEndsAt());
+        return record.getUserId().equals(session.getMemberId())
+                && session.getActivatedAt() != null
+                && authorizationRepository.existsBySessionIdAndHealthRecordId(session.getId(), record.getId());
     }
 }

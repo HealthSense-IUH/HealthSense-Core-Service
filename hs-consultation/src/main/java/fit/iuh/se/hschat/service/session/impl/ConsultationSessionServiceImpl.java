@@ -11,7 +11,6 @@ import fit.iuh.se.hschat.entity.DoctorCareProfile;
 import fit.iuh.se.hschat.entity.enums.CareServicePackageStatus;
 import fit.iuh.se.hschat.entity.enums.ConsultationCompletionReason;
 import fit.iuh.se.hschat.entity.enums.ConsultationParticipantRole;
-import fit.iuh.se.hschat.entity.enums.ConsultationRequestStatus;
 import fit.iuh.se.hschat.entity.enums.ConsultationSourceType;
 import fit.iuh.se.hschat.entity.enums.ConsultationStatus;
 import fit.iuh.se.hschat.mapper.ConsultationMapper;
@@ -22,6 +21,9 @@ import fit.iuh.se.hschat.repository.ConsultationRequestRepository;
 import fit.iuh.se.hschat.repository.ConsultationSessionRepository;
 import fit.iuh.se.hschat.repository.DoctorCareProfileRepository;
 import fit.iuh.se.hschat.service.doctor.SupportScheduleValidator;
+import fit.iuh.se.hschat.service.authorization.EpisodeHealthRecordAuthorizationService;
+import fit.iuh.se.hschat.service.reservation.DoctorReservationService;
+import fit.iuh.se.hschat.service.finalsummary.FinalSummaryClosureService;
 import fit.iuh.se.hschat.service.session.ConsultationSessionService;
 import fit.iuh.se.hshealthrecord.repository.HealthRecordRepository;
 import fit.iuh.se.hsshared.advice.entity.AppException;
@@ -65,6 +67,9 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
     CareServicePackageRepository packageRepository;
     DoctorCareProfileRepository doctorCareProfileRepository;
     SupportScheduleValidator scheduleValidator;
+    DoctorReservationService reservationService;
+    EpisodeHealthRecordAuthorizationService authorizationService;
+    FinalSummaryClosureService finalSummaryClosureService;
     ConsultationMapper mapper;
 
     @NonFinal
@@ -74,7 +79,11 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
     @Override
     @Transactional
     public ConsultationSessionResponse createSessionByAdmin(Long actorId, UserRole actorRole, AdminCreateConsultationSessionRequest request) {
-        validateConsultationManager(actorRole);
+        if (actorRole != UserRole.ADMIN && actorRole != UserRole.SUPER_ADMIN)
+            throw new AppException(ErrorCode.ACCESS_DENIED,
+                    "Only Admin or Super Admin may use exceptional care activation override");
+        if (request.getOverrideReason() == null || request.getOverrideReason().isBlank())
+            throw new AppException(ErrorCode.INVALID_PARAMETER, "Exceptional override reason is required");
         log.info("Creating consultation session by actor {} with role {} for member {} and doctor {}",
                 actorId, actorRole, request.getMemberId(), request.getDoctorId());
 
@@ -99,9 +108,12 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
                 .memberId(request.getMemberId())
                 .doctorId(request.getDoctorId())
                 .createdByAdminId(actorId)
+                .exceptionalOverride(true)
+                .overrideReason(request.getOverrideReason().trim())
                 .sourceType(ConsultationSourceType.ADMIN_CREATED)
                 .status(status)
                 .startedAt(startedAt)
+                .activatedAt(status == ConsultationStatus.ACTIVE ? now : null)
                 .endsAt(request.getEndsAt())
                 .supportEndsAt(supportEndsAt)
                 .supportScheduleSnapshotJson(doctorProfile.getAvailabilityJson())
@@ -131,6 +143,9 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
                 .active(true)
                 .build());
 
+        if (status == ConsultationStatus.ACTIVE && request.getHealthRecordId() != null)
+            authorizationService.authorizeAdminInitialRecord(session, request.getHealthRecordId(), actorId);
+
         return mapper.toSessionResponse(session);
     }
 
@@ -139,9 +154,9 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
         if (!participantRepository.existsBySessionIdAndUserIdAndActiveTrue(sessionId, userId))
             throw new AppException(ErrorCode.CONSULTATION_ACCESS_DENIED);
 
-        return sessionRepository.findById(sessionId)
-                .map(mapper::toSessionResponse)
+        ConsultationSession session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_NOT_FOUND));
+        return toSessionResponse(session, userId);
     }
 
     @Override
@@ -172,20 +187,8 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
     @Override
     public ConsultationSessionResponse extendSession(Long actorId, UserRole actorRole, Long sessionId, ExtendConsultationRequest request) {
         validateConsultationManager(actorRole);
-        ConsultationSession session = sessionRepository.findById(sessionId)
-                .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_NOT_FOUND));
-
-        if (session.getStatus() != ConsultationStatus.ACTIVE)
-            throw new AppException(ErrorCode.INVALID_CONSULTATION_STATUS);
-
-        validateConsultationPeriod(request.getEndsAt(), request.getSupportEndsAt());
-
-        Instant supportEndsAt = request.getSupportEndsAt() == null ? request.getEndsAt() : request.getSupportEndsAt();
-        session.setEndsAt(request.getEndsAt());
-        session.setSupportEndsAt(supportEndsAt);
-
-        session = sessionRepository.save(session);
-        return mapper.toSessionResponse(session);
+        throw new AppException(ErrorCode.INVALID_CONSULTATION_STATUS,
+                "Direct extension is disabled; use the Renewal Agreement and verified payment workflow");
     }
 
     @Override
@@ -216,13 +219,18 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
         validateConsultationManager(actorRole);
         Instant now = Instant.now();
         sessionRepository.findByStatusAndEndsAtBefore(ConsultationStatus.ACTIVE, now)
-                .forEach(session -> {
+                .forEach(candidate -> sessionRepository.findByIdForUpdate(candidate.getId()).ifPresent(session -> {
+                    if (session.getStatus() != ConsultationStatus.ACTIVE
+                            || session.getEndsAt() == null || session.getEndsAt().isAfter(now))
+                        return;
                     session.setStatus(ConsultationStatus.COMPLETED);
                     session.setCompletedAt(now);
                     session.setCompletionReason(ConsultationCompletionReason.PERIOD_ENDED);
                     session.setCloseReason("Consultation session completed automatically because the care period ended");
                     sessionRepository.save(session);
-                });
+                    finalSummaryClosureService.onSessionCompleted(session, now);
+                }));
+        finalSummaryClosureService.refreshOpenClosures(now);
     }
 
     @Override
@@ -233,7 +241,11 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
         sessionRepository.findByStatusAndStartedAtBefore(ConsultationStatus.SCHEDULED, now)
                 .forEach(session -> {
                     session.setStatus(ConsultationStatus.ACTIVE);
+                    session.setActivatedAt(now);
                     sessionRepository.save(session);
+                    if (session.getHealthRecordId() != null)
+                        authorizationService.authorizeAdminInitialRecord(
+                                session, session.getHealthRecordId(), session.getCreatedByAdminId());
                 });
     }
 
@@ -247,6 +259,8 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
 
     private ConsultationSessionResponse toSessionResponse(ConsultationSession session, Long userId) {
         ConsultationSessionResponse response = mapper.toSessionResponse(session);
+        if (session.getDoctorId().equals(userId) && session.getActivatedAt() == null)
+            response.setHealthRecordId(null);
         participantRepository.findBySessionIdAndUserId(session.getId(), userId)
                 .ifPresent(participant -> response.setUnreadCount(safeCountUnreadMessages(session.getId(), userId, participant.getLastReadAt())));
         return response;
@@ -282,7 +296,7 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
     }
 
     private DoctorCareProfile validateDoctorForConsultation(Long doctorId) {
-        UserAccount doctor = userAccountRepository.findById(doctorId)
+        UserAccount doctor = userAccountRepository.findByIdForUpdate(doctorId)
                 .orElseThrow(() -> new AppException(ErrorCode.DOCTOR_NOT_FOUND));
         if (doctor.getRole() != UserRole.DOCTOR)
             throw new AppException(ErrorCode.DOCTOR_NOT_FOUND);
@@ -308,16 +322,7 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
     }
 
     private long getDoctorEffectiveLoad(Long doctorId, Instant now) {
-        long scheduledOrActiveSessions = sessionRepository.countByDoctorIdAndStatusIn(
-                doctorId,
-                MEMBER_BUSY_SESSION_STATUSES
-        );
-        long activeReservations = requestRepository.countByAssignedDoctorIdAndStatusAndPaymentDeadlineAfter(
-                doctorId,
-                ConsultationRequestStatus.WAITING_PAYMENT,
-                now
-        );
-        return scheduledOrActiveSessions + activeReservations;
+        return reservationService.getEffectiveLoad(doctorId, now);
     }
 
     private void validateHealthRecordOwner(Long healthRecordId, Long memberId) {

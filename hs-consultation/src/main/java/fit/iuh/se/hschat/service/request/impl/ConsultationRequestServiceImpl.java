@@ -13,8 +13,9 @@ import fit.iuh.se.hschat.repository.ConsultationMoreInfoCycleRepository;
 import fit.iuh.se.hschat.repository.ConsultationRequestRepository;
 import fit.iuh.se.hschat.repository.ConsultationSessionRepository;
 import fit.iuh.se.hschat.repository.DoctorCareProfileRepository;
-import fit.iuh.se.hschat.service.doctor.SupportScheduleValidator;
 import fit.iuh.se.hschat.service.request.ConsultationRequestService;
+import fit.iuh.se.hschat.service.reservation.DoctorReservationService;
+import fit.iuh.se.hschat.service.agreement.CareServiceAgreementService;
 import fit.iuh.se.hshealthrecord.entity.HealthRecord;
 import fit.iuh.se.hshealthrecord.repository.HealthRecordRepository;
 import fit.iuh.se.hsshared.advice.entity.AppException;
@@ -73,7 +74,8 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
     UserAccountRepository userAccountRepository;
     CareServicePackageRepository packageRepository;
     DoctorCareProfileRepository doctorCareProfileRepository;
-    SupportScheduleValidator scheduleValidator;
+    DoctorReservationService reservationService;
+    CareServiceAgreementService agreementService;
     ConsultationMapper mapper;
 
     @NonFinal
@@ -127,7 +129,8 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
     @Override
     @Transactional
     public ConsultationRequestResponse approveRequest(Long actorId, UserRole actorRole, Long requestId, ApproveConsultationRequest request) {
-        validateConsultationManager(actorRole);
+        if (actorRole != UserRole.CARE_COORDINATOR)
+            throw new AppException(ErrorCode.ACCESS_DENIED, "Only a Care Coordinator may reserve a doctor");
         log.info("Reserving doctor for consultation request {} by actor {} with role {}", requestId, actorId, actorRole);
 
         ConsultationRequest consultationRequest = requestRepository.findByIdForUpdate(requestId)
@@ -138,37 +141,45 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
 
         Long memberId = consultationRequest.getMemberId();
         validateMember(memberId);
-        DoctorCareProfile doctorProfile = validateDoctorForReservation(request.getDoctorId());
 
         if (sessionRepository.existsByMemberIdAndStatusIn(memberId, MEMBER_BUSY_SESSION_STATUSES))
             throw new AppException(ErrorCode.MEMBER_ALREADY_HAS_ACTIVE_CONSULTATION);
 
-        if (getDoctorEffectiveLoad(request.getDoctorId(), Instant.now()) >= doctorProfile.getMaxActiveConsultations())
-            throw new AppException(ErrorCode.DOCTOR_CAPACITY_EXCEEDED);
-
         Instant now = Instant.now();
+        var reservation = reservationService.reserve(
+                consultationRequest,
+                actorId,
+                request.getDoctorId(),
+                now.plus(paymentDeadlineMinutes, ChronoUnit.MINUTES)
+        );
         consultationRequest.setStatus(ConsultationRequestStatus.WAITING_ACCEPTANCE);
         consultationRequest.setAssignedDoctorId(request.getDoctorId());
-        consultationRequest.setDoctorReservedAt(now);
-        consultationRequest.setPaymentDeadline(now.plus(paymentDeadlineMinutes, ChronoUnit.MINUTES));
+        consultationRequest.setDoctorReservedAt(reservation.getReservedAt());
+        consultationRequest.setPaymentDeadline(reservation.getExpiresAt());
         consultationRequest.setReviewedByAdminId(actorId);
         consultationRequest.setReviewedAt(now);
         consultationRequest.setMoreInfoReason(null);
         consultationRequest.setIntakeFrozenAt(now);
-
-        return toRequestResponse(requestRepository.save(consultationRequest));
+        consultationRequest = requestRepository.save(consultationRequest);
+        agreementService.createForReservation(consultationRequest);
+        return toRequestResponse(consultationRequest);
     }
 
     @Override
     @Transactional
     public ConsultationRequestResponse rejectRequest(Long actorId, UserRole actorRole, Long requestId, RejectConsultationRequest request) {
         validateConsultationManager(actorRole);
-        ConsultationRequest consultationRequest = requestRepository.findById(requestId)
+        ConsultationRequest consultationRequest = requestRepository.findByIdForUpdate(requestId)
                 .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_REQUEST_NOT_FOUND));
 
         if (consultationRequest.getStatus() != ConsultationRequestStatus.PENDING_REVIEW
-                && consultationRequest.getStatus() != ConsultationRequestStatus.NEED_MORE_INFO)
+                && consultationRequest.getStatus() != ConsultationRequestStatus.NEED_MORE_INFO
+                && consultationRequest.getStatus() != ConsultationRequestStatus.WAITING_ACCEPTANCE
+                && consultationRequest.getStatus() != ConsultationRequestStatus.WAITING_PAYMENT)
             throw new AppException(ErrorCode.INVALID_CONSULTATION_STATUS);
+
+        reservationService.release(consultationRequest, DoctorReservationReleaseReason.COORDINATOR_REJECTED);
+        agreementService.invalidateCurrent(requestId, "Request rejected before care activation");
 
         Instant now = Instant.now();
         consultationRequest.setStatus(ConsultationRequestStatus.REJECTED);
@@ -249,7 +260,7 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
     @Override
     @Transactional
     public ConsultationRequestResponse cancelMyRequest(Long memberId, Long requestId) {
-        ConsultationRequest consultationRequest = requestRepository.findById(requestId)
+        ConsultationRequest consultationRequest = requestRepository.findByIdForUpdate(requestId)
                 .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_REQUEST_NOT_FOUND));
 
         if (!consultationRequest.getMemberId().equals(memberId))
@@ -261,6 +272,8 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
                 && consultationRequest.getStatus() != ConsultationRequestStatus.WAITING_PAYMENT)
             throw new AppException(ErrorCode.INVALID_CONSULTATION_STATUS);
 
+        reservationService.release(consultationRequest, DoctorReservationReleaseReason.MEMBER_CANCELLED);
+        agreementService.invalidateCurrent(requestId, "Member cancelled before care activation");
         consultationRequest.setStatus(ConsultationRequestStatus.CANCELLED);
         consultationRequest.setCancelledAt(Instant.now());
 
@@ -355,10 +368,13 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
     public void expireWaitingPaymentRequests(UserRole actorRole) {
         validateConsultationManager(actorRole);
         Instant now = Instant.now();
-        requestRepository.findByStatusInAndPaymentDeadlineBefore(ACTIVE_RESERVATION_STATUSES, now)
-                .forEach(request -> {
+        List<ConsultationRequest> expiredRequests = requestRepository
+                .findByStatusInAndPaymentDeadlineBefore(ACTIVE_RESERVATION_STATUSES, now);
+        reservationService.expireOverdueReservations(now);
+        expiredRequests.forEach(request -> {
                     request.setStatus(ConsultationRequestStatus.EXPIRED);
                     request.setExpiredAt(now);
+                    agreementService.invalidateCurrent(request.getId(), "Offer/payment window expired");
                     requestRepository.save(request);
                 });
     }
@@ -378,44 +394,20 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
             throw new AppException(ErrorCode.MEMBER_NOT_FOUND);
     }
 
-    private DoctorCareProfile validateDoctorForReservation(Long doctorId) {
-        UserAccount doctor = userAccountRepository.findById(doctorId)
-                .orElseThrow(() -> new AppException(ErrorCode.DOCTOR_NOT_FOUND));
-        if (doctor.getRole() != UserRole.DOCTOR)
-            throw new AppException(ErrorCode.DOCTOR_NOT_FOUND);
-        if (doctor.getStatus() != AccountStatus.ACTIVE)
-            throw new AppException(ErrorCode.DOCTOR_NOT_ELIGIBLE_FOR_CONSULTATION);
-
-        DoctorCareProfile profile = doctorCareProfileRepository.findByDoctorId(doctorId)
-                .orElseThrow(() -> new AppException(ErrorCode.DOCTOR_CARE_PROFILE_NOT_FOUND));
-        List<DoctorIneligibilityReason> reasons = getIneligibilityReasons(doctor, profile, Instant.now());
-        if (!reasons.isEmpty())
-            throw new AppException(ErrorCode.DOCTOR_NOT_ELIGIBLE_FOR_CONSULTATION, "Doctor is not eligible: " + reasons);
-        return profile;
-    }
-
     private CareServicePackage findActivePackage(Long packageId) {
         return packageRepository.findByIdAndStatus(packageId, CareServicePackageStatus.ACTIVE)
                 .orElseThrow(() -> new AppException(ErrorCode.CARE_SERVICE_PACKAGE_NOT_FOUND));
     }
 
     private long getDoctorEffectiveLoad(Long doctorId, Instant now) {
-        long scheduledOrActiveSessions = sessionRepository.countByDoctorIdAndStatusIn(
-                doctorId,
-                MEMBER_BUSY_SESSION_STATUSES
-        );
-        long activeReservations = requestRepository.countByAssignedDoctorIdAndStatusInAndPaymentDeadlineAfter(
-                doctorId,
-                ACTIVE_RESERVATION_STATUSES,
-                now
-        );
-        return scheduledOrActiveSessions + activeReservations;
+        return reservationService.getEffectiveLoad(doctorId, now);
     }
 
     private DoctorCandidateResponse toCandidateResponse(ConsultationRequest request, UserAccount doctor, DoctorCareProfile profile) {
         Instant now = Instant.now();
         long effectiveLoad = getDoctorEffectiveLoad(doctor.getId(), now);
-        List<DoctorIneligibilityReason> reasons = getIneligibilityReasons(doctor, profile, now);
+        List<DoctorIneligibilityReason> reasons = reservationService.getIneligibilityReasons(
+                request, doctor, now, null);
 
         return DoctorCandidateResponse.builder()
                 .doctorId(doctor.getId())
@@ -432,29 +424,6 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
                 .eligible(reasons.isEmpty())
                 .ineligibleReasons(reasons)
                 .build();
-    }
-
-    private List<DoctorIneligibilityReason> getIneligibilityReasons(UserAccount doctor, DoctorCareProfile profile, Instant now) {
-        List<DoctorIneligibilityReason> reasons = new ArrayList<>();
-        if (doctor.getRole() != UserRole.DOCTOR)
-            reasons.add(DoctorIneligibilityReason.NOT_DOCTOR);
-        if (doctor.getStatus() != AccountStatus.ACTIVE)
-            reasons.add(DoctorIneligibilityReason.ACCOUNT_INACTIVE);
-        if (profile == null) {
-            reasons.add(DoctorIneligibilityReason.PROFILE_MISSING);
-            return reasons;
-        }
-        if (!Boolean.TRUE.equals(profile.getAcceptsOneOnOneCare()))
-            reasons.add(DoctorIneligibilityReason.NOT_ACCEPTING_ONE_ON_ONE_CARE);
-        if (profile.getSpecialty() == null)
-            reasons.add(DoctorIneligibilityReason.SPECIALTY_MISSING);
-        if (!scheduleValidator.isValid(profile.getAvailabilityJson(), profile.getTimezone(), Boolean.TRUE.equals(profile.getAcceptsOneOnOneCare())))
-            reasons.add(DoctorIneligibilityReason.SUPPORT_SCHEDULE_INVALID);
-        if (profile.getMaxActiveConsultations() == null
-                || profile.getMaxActiveConsultations() <= 0
-                || getDoctorEffectiveLoad(doctor.getId(), now) >= profile.getMaxActiveConsultations())
-            reasons.add(DoctorIneligibilityReason.CAPACITY_FULL);
-        return reasons;
     }
 
     private ConsultationRequestReviewResponse toReviewResponse(ConsultationRequest request) {
