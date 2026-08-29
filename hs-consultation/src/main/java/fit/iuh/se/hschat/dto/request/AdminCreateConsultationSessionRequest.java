@@ -38,4 +38,8 @@ public class AdminCreateConsultationSessionRequest {
 
     @NotBlank(message = "Exceptional override reason is required")
     String overrideReason;
+
+    @NotBlank(message = "Exceptional override service scope is required")
+    @jakarta.validation.constraints.Size(max = 2000)
+    String serviceScope;
 }
