@@ -10,7 +10,6 @@ import fit.iuh.se.hsuser.dto.response.AdminUserCreateResult;
 import fit.iuh.se.hsuser.dto.response.UserResponse;
 import fit.iuh.se.hsuser.entity.UserAccount;
 import fit.iuh.se.hsuser.entity.UserProfile;
-import fit.iuh.se.hsuser.entity.UserSensitiveData;
 import fit.iuh.se.hsuser.entity.enums.AccountStatus;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
 import fit.iuh.se.hsuser.mapper.UserMapper;
@@ -80,12 +79,7 @@ public class AdminUserServiceImpl implements AdminUserService {
                 .address(trimToNull(request.getAddress()))
                 .build();
 
-        UserSensitiveData sensitiveData = UserSensitiveData.builder()
-                .user(user)
-                .build();
-
         user.setProfile(profile);
-        user.setSensitiveData(sensitiveData);
 
         UserResponse response = userMapper.toUserResponse(userAccountRepository.save(user));
         return AdminUserCreateResult.builder()
@@ -236,5 +230,19 @@ public class AdminUserServiceImpl implements AdminUserService {
             profile.setGender(request.getGender().trim());
         if (request.getAddress() != null)
             profile.setAddress(request.getAddress().trim());
+        if (request.getCitizenId() != null)
+            profile.setCitizenId(request.getCitizenId().trim());
+        if (request.getBankAccount() != null)
+            profile.setBankAccount(request.getBankAccount().trim());
+        if (request.getHealthInsuranceNumber() != null)
+            profile.setHealthInsuranceNumber(request.getHealthInsuranceNumber().trim());
+        if (request.getIdentityCardFrontUrl() != null)
+            profile.setIdentityCardFrontUrl(request.getIdentityCardFrontUrl().trim());
+        if (request.getIdentityCardBackUrl() != null)
+            profile.setIdentityCardBackUrl(request.getIdentityCardBackUrl().trim());
+        if (request.getIdentityCardFrontRotate() != null)
+            profile.setIdentityCardFrontRotate(request.getIdentityCardFrontRotate());
+        if (request.getIdentityCardBackRotate() != null)
+            profile.setIdentityCardBackRotate(request.getIdentityCardBackRotate());
     }
 }

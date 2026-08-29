@@ -39,8 +39,4 @@ public class UserAccount extends BaseEntity {
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER, optional = false)
     UserProfile profile;
-
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER, optional = false)
-    UserSensitiveData sensitiveData;
-
 }

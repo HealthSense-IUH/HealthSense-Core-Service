@@ -46,4 +46,33 @@ public class UserProfile extends BaseEntity {
 
     @Column(name = "timezone", length = 50)
     String timezone;
+
+    @Column(name = "citizen_id", length = 20)
+    String citizenId;
+
+    @Column(name = "bank_account", length = 100)
+    String bankAccount;
+
+    @Column(name = "health_insurance_number", length = 50)
+    String healthInsuranceNumber;
+
+    @Column(name = "health_data", columnDefinition = "TEXT")
+    String healthData;
+
+    @Column(name = "biometric_data", columnDefinition = "TEXT")
+    String biometricData;
+
+    @Column(name = "identity_card_front_url", length = 500)
+    String identityCardFrontUrl;
+
+    @Column(name = "identity_card_back_url", length = 500)
+    String identityCardBackUrl;
+
+    @Builder.Default
+    @Column(name = "identity_card_front_rotate")
+    Integer identityCardFrontRotate = 0;
+
+    @Builder.Default
+    @Column(name = "identity_card_back_rotate")
+    Integer identityCardBackRotate = 0;
 }

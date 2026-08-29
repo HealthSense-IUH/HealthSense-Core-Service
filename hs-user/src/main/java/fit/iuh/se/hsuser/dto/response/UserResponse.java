@@ -27,6 +27,15 @@ public class UserResponse {
     String avatarUrl;
     String address;
     String timezone;
+    String citizenId;
+    String bankAccount;
+    String healthInsuranceNumber;
+    String healthData;
+    String biometricData;
+    String identityCardFrontUrl;
+    String identityCardBackUrl;
+    Integer identityCardFrontRotate;
+    Integer identityCardBackRotate;
     Instant createdAt;
     Instant updatedAt;
 }

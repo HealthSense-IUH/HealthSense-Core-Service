@@ -113,6 +113,47 @@ public class UserServiceImpl implements UserService {
                 .build();
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public fit.iuh.se.hsuser.dto.response.IdentityCardPresignedUrlResponse generateIdentityCardPresignedUrl(
+            Long currentUserId,
+            fit.iuh.se.hsuser.dto.request.IdentityCardPresignedUrlRequest request) {
+        if (currentUserId == null)
+            throw new AppException(ErrorCode.INVALID_ARGUMENT, "Current user ID must not be null");
+        if (request == null || request.getFileName() == null || request.getFileName().trim().isEmpty())
+            throw new AppException(ErrorCode.INVALID_ARGUMENT, "Yêu cầu tạo Presigned URL không hợp lệ: Thiếu tên file ảnh CCCD");
+
+        String fileName = request.getFileName().trim();
+        String lowerName = fileName.toLowerCase();
+        String contentType = request.getContentType() != null ? request.getContentType().trim().toLowerCase() : "";
+
+        if (!contentType.startsWith("image/") && !contentType.equals("application/pdf") || contentType.equals("application/octet-stream")) {
+            if (lowerName.endsWith(".jpg") || lowerName.endsWith(".jpeg") || lowerName.endsWith(".jfif") || lowerName.endsWith(".pjpeg")) contentType = "image/jpeg";
+            else if (lowerName.endsWith(".png")) contentType = "image/png";
+            else if (lowerName.endsWith(".webp")) contentType = "image/webp";
+            else if (lowerName.endsWith(".heic") || lowerName.endsWith(".heif")) contentType = "image/heic";
+            else if (lowerName.endsWith(".avif")) contentType = "image/avif";
+            else if (lowerName.endsWith(".pdf")) contentType = "application/pdf";
+            else {
+                throw new AppException(ErrorCode.INVALID_ARGUMENT, "Định dạng file CCCD không hợp lệ (hỗ trợ .jpg, .jpeg, .png, .webp, .heic, .pdf...)");
+            }
+        }
+
+        userAccountRepository.findByIdAndStatusNot(currentUserId, AccountStatus.INACTIVE)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        String s3Key = s3Service.generateObjectKey(S3Service.FOLDER_TMP_DOCUMENTS, currentUserId, fileName);
+        String uploadUrl = s3Service.generatePresignedUploadUrl(s3Key, contentType);
+        String publicUrl = s3Service.getPublicUrl(s3Key);
+
+        return fit.iuh.se.hsuser.dto.response.IdentityCardPresignedUrlResponse.builder()
+                .uploadUrl(uploadUrl)
+                .s3Key(s3Key)
+                .publicUrl(publicUrl)
+                .cardSide(request.getCardSide())
+                .build();
+    }
+
     private void validateSelfUpdateRole(UserRole currentUserRole) {
         if (currentUserRole == UserRole.ADMIN
                 || currentUserRole == UserRole.CARE_COORDINATOR
@@ -135,6 +176,21 @@ public class UserServiceImpl implements UserService {
             profile.setAddress(request.getAddress().trim());
         if (request.getTimezone() != null)
             profile.setTimezone(request.getTimezone().trim());
+        if (request.getCitizenId() != null)
+            profile.setCitizenId(request.getCitizenId().trim());
+        if (request.getBankAccount() != null)
+            profile.setBankAccount(request.getBankAccount().trim());
+        if (request.getHealthInsuranceNumber() != null)
+            profile.setHealthInsuranceNumber(request.getHealthInsuranceNumber().trim());
+        if (request.getHealthData() != null)
+            profile.setHealthData(request.getHealthData().trim());
+        if (request.getBiometricData() != null)
+            profile.setBiometricData(request.getBiometricData().trim());
+        if (request.getIdentityCardFrontRotate() != null)
+            profile.setIdentityCardFrontRotate(request.getIdentityCardFrontRotate());
+        if (request.getIdentityCardBackRotate() != null)
+            profile.setIdentityCardBackRotate(request.getIdentityCardBackRotate());
+
         if (request.getAvatarUrl() != null && !request.getAvatarUrl().trim().isEmpty()) {
             String newAvatarUrl = request.getAvatarUrl().trim();
             String newKey = s3Service.extractObjectKeyFromUrl(newAvatarUrl);
@@ -154,6 +210,48 @@ public class UserServiceImpl implements UserService {
                 }
             }
             profile.setAvatarUrl(newAvatarUrl);
+        }
+
+        if (request.getIdentityCardFrontUrl() != null && !request.getIdentityCardFrontUrl().trim().isEmpty()) {
+            String newFrontUrl = request.getIdentityCardFrontUrl().trim();
+            String newKey = s3Service.extractObjectKeyFromUrl(newFrontUrl);
+            if (newKey != null && (newKey.startsWith(S3Service.FOLDER_TMP_DOCUMENTS) || newKey.startsWith("tmp/"))) {
+                String destinationKey = newKey.replaceFirst("^tmp/", "");
+                log.info("Dispatching S3FileMoveEvent for CCCD front from {} to {}", newKey, destinationKey);
+                applicationEventPublisher.publishEvent(new S3FileMoveEvent(newKey, destinationKey));
+                newFrontUrl = s3Service.getPublicUrl(destinationKey);
+            }
+
+            String oldFrontUrl = profile.getIdentityCardFrontUrl();
+            if (oldFrontUrl != null && !oldFrontUrl.equals(newFrontUrl)) {
+                String oldKey = s3Service.extractObjectKeyFromUrl(oldFrontUrl);
+                if (oldKey != null && (oldKey.startsWith(S3Service.FOLDER_DOCUMENTS) || oldKey.startsWith(S3Service.FOLDER_TMP_DOCUMENTS) || oldKey.startsWith("tmp/"))) {
+                    log.info("Dispatching S3FileDeleteEvent for old CCCD front: {}", oldKey);
+                    applicationEventPublisher.publishEvent(new S3FileDeleteEvent(oldKey));
+                }
+            }
+            profile.setIdentityCardFrontUrl(newFrontUrl);
+        }
+
+        if (request.getIdentityCardBackUrl() != null && !request.getIdentityCardBackUrl().trim().isEmpty()) {
+            String newBackUrl = request.getIdentityCardBackUrl().trim();
+            String newKey = s3Service.extractObjectKeyFromUrl(newBackUrl);
+            if (newKey != null && (newKey.startsWith(S3Service.FOLDER_TMP_DOCUMENTS) || newKey.startsWith("tmp/"))) {
+                String destinationKey = newKey.replaceFirst("^tmp/", "");
+                log.info("Dispatching S3FileMoveEvent for CCCD back from {} to {}", newKey, destinationKey);
+                applicationEventPublisher.publishEvent(new S3FileMoveEvent(newKey, destinationKey));
+                newBackUrl = s3Service.getPublicUrl(destinationKey);
+            }
+
+            String oldBackUrl = profile.getIdentityCardBackUrl();
+            if (oldBackUrl != null && !oldBackUrl.equals(newBackUrl)) {
+                String oldKey = s3Service.extractObjectKeyFromUrl(oldBackUrl);
+                if (oldKey != null && (oldKey.startsWith(S3Service.FOLDER_DOCUMENTS) || oldKey.startsWith(S3Service.FOLDER_TMP_DOCUMENTS) || oldKey.startsWith("tmp/"))) {
+                    log.info("Dispatching S3FileDeleteEvent for old CCCD back: {}", oldKey);
+                    applicationEventPublisher.publishEvent(new S3FileDeleteEvent(oldKey));
+                }
+            }
+            profile.setIdentityCardBackUrl(newBackUrl);
         }
     }
 }

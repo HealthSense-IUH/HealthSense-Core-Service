@@ -25,6 +25,8 @@ public class S3Service {
 
     public static final String FOLDER_TMP_AVATARS = "tmp/avatars/";
     public static final String FOLDER_AVATARS = "avatars/";
+    public static final String FOLDER_TMP_DOCUMENTS = "tmp/documents/";
+    public static final String FOLDER_DOCUMENTS = "documents/";
     public static final String FOLDER_RECORDS = "records/";
 
     private final S3Presigner s3Presigner;
@@ -77,6 +79,36 @@ public class S3Service {
     }
 
     /**
+     * Sinh Presigned GET URL để client tải file private từ S3
+     *
+     * @param objectKey Tên file trên S3 (VD: records/1/1722000_file.csv)
+     * @return Presigned URL có thời hạn (mặc định 15 phút)
+     */
+    public String generatePresignedDownloadUrl(String objectKey) {
+        log.info("Generating Presigned Download URL for key: {} in bucket: {}", objectKey, s3Config.getBucketName());
+        try {
+            software.amazon.awssdk.services.s3.model.GetObjectRequest getObjectRequest = 
+                    software.amazon.awssdk.services.s3.model.GetObjectRequest.builder()
+                    .bucket(s3Config.getBucketName())
+                    .key(objectKey)
+                    .build();
+
+            software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest presignRequest = 
+                    software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest.builder()
+                    .signatureDuration(Duration.ofMinutes(s3Config.getPresignedUrlTtlMinutes()))
+                    .getObjectRequest(getObjectRequest)
+                    .build();
+
+            software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest presignedRequest = 
+                    s3Presigner.presignGetObject(presignRequest);
+            return presignedRequest.url().toString();
+        } catch (Exception e) {
+            log.error("Error generating Presigned Download URL for key {}: {}", objectKey, e.getMessage(), e);
+            throw new RuntimeException("Không thể tạo Presigned URL download S3: " + e.getMessage(), e);
+        }
+    }
+
+    /**
      * Tạo Object Key chuẩn theo thư mục, ID người dùng và Timestamp
      */
     public String generateObjectKey(String folder, Long userId, String fileName) {
@@ -126,6 +158,10 @@ public class S3Service {
         if (idxTmpAvatars != -1) return url.substring(idxTmpAvatars);
         int idxAvatars = url.indexOf(FOLDER_AVATARS);
         if (idxAvatars != -1) return url.substring(idxAvatars);
+        int idxTmpDocs = url.indexOf(FOLDER_TMP_DOCUMENTS);
+        if (idxTmpDocs != -1) return url.substring(idxTmpDocs);
+        int idxDocs = url.indexOf(FOLDER_DOCUMENTS);
+        if (idxDocs != -1) return url.substring(idxDocs);
         int idxRecords = url.indexOf(FOLDER_RECORDS);
         if (idxRecords != -1) return url.substring(idxRecords);
         int idxTmp = url.indexOf("tmp/");

@@ -33,4 +33,27 @@ public class UserProfileUpdateRequest {
 
     @Size(max = 500, message = "Avatar URL must not exceed 500 characters")
     String avatarUrl;
+
+    @Size(max = 20, message = "Citizen ID must not exceed 20 characters")
+    String citizenId;
+
+    @Size(max = 100, message = "Bank account must not exceed 100 characters")
+    String bankAccount;
+
+    @Size(max = 50, message = "Health insurance number must not exceed 50 characters")
+    String healthInsuranceNumber;
+
+    String healthData;
+
+    String biometricData;
+
+    @Size(max = 500, message = "Identity card front URL must not exceed 500 characters")
+    String identityCardFrontUrl;
+
+    @Size(max = 500, message = "Identity card back URL must not exceed 500 characters")
+    String identityCardBackUrl;
+
+    Integer identityCardFrontRotate;
+
+    Integer identityCardBackRotate;
 }
