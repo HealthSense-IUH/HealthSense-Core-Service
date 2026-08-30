@@ -7,7 +7,10 @@ import org.springframework.stereotype.Service;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
@@ -67,6 +70,8 @@ public class S3Service {
      * @return Presigned URL có thời hạn (mặc định 15 phút)
      */
     public String generatePresignedDownloadUrl(String objectKey) {
+        if (objectKey == null || objectKey.isBlank())
+            throw new IllegalArgumentException("Object key must not be blank");
         log.info("Generating Presigned Download URL for key: {} in bucket: {}", objectKey, s3Config.getBucketName());
         try {
             software.amazon.awssdk.services.s3.model.GetObjectRequest getObjectRequest = 

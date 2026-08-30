@@ -20,6 +20,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @Validated
 @RestController
 @RequestMapping("/api/admin/care-service-packages")
@@ -50,11 +52,22 @@ public class AdminCareServicePackageController {
         return new ApiResponse<>(careServicePackageService.getPackageForAdmin(currentUser.getRole(), packageId));
     }
 
+    @GetMapping("/{packageId}/versions")
+    public ApiResponse<List<CareServicePackageResponse>> getPackageVersions(
+            @AuthenticationPrincipal UserAuthentication currentUser,
+            @PathVariable Long packageId) {
+        return new ApiResponse<>(careServicePackageService.getPackageVersionsForAdmin(
+                currentUser.getRole(),
+                packageId
+        ));
+    }
+
     @PostMapping
     public ApiResponse<CareServicePackageResponse> createPackage(
             @AuthenticationPrincipal UserAuthentication currentUser,
             @Valid @RequestBody CreateCareServicePackageRequest request) {
-        return new ApiResponse<>(careServicePackageService.createPackage(currentUser.getRole(), request));
+        return new ApiResponse<>(careServicePackageService.createPackage(
+                currentUser.getUserId(), currentUser.getRole(), request));
     }
 
     @PatchMapping("/{packageId}")
@@ -62,27 +75,31 @@ public class AdminCareServicePackageController {
             @AuthenticationPrincipal UserAuthentication currentUser,
             @PathVariable Long packageId,
             @Valid @RequestBody UpdateCareServicePackageRequest request) {
-        return new ApiResponse<>(careServicePackageService.updatePackage(currentUser.getRole(), packageId, request));
+        return new ApiResponse<>(careServicePackageService.updatePackage(
+                currentUser.getUserId(), currentUser.getRole(), packageId, request));
     }
 
     @PatchMapping("/{packageId}/activate")
     public ApiResponse<CareServicePackageResponse> activatePackage(
             @AuthenticationPrincipal UserAuthentication currentUser,
             @PathVariable Long packageId) {
-        return new ApiResponse<>(careServicePackageService.activatePackage(currentUser.getRole(), packageId));
+        return new ApiResponse<>(careServicePackageService.activatePackage(
+                currentUser.getUserId(), currentUser.getRole(), packageId));
     }
 
     @PatchMapping("/{packageId}/deactivate")
     public ApiResponse<CareServicePackageResponse> deactivatePackage(
             @AuthenticationPrincipal UserAuthentication currentUser,
             @PathVariable Long packageId) {
-        return new ApiResponse<>(careServicePackageService.deactivatePackage(currentUser.getRole(), packageId));
+        return new ApiResponse<>(careServicePackageService.deactivatePackage(
+                currentUser.getUserId(), currentUser.getRole(), packageId));
     }
 
     @PatchMapping("/{packageId}/retire")
     public ApiResponse<CareServicePackageResponse> retirePackage(
             @AuthenticationPrincipal UserAuthentication currentUser,
             @PathVariable Long packageId) {
-        return new ApiResponse<>(careServicePackageService.retirePackage(currentUser.getRole(), packageId));
+        return new ApiResponse<>(careServicePackageService.retirePackage(
+                currentUser.getUserId(), currentUser.getRole(), packageId));
     }
 }

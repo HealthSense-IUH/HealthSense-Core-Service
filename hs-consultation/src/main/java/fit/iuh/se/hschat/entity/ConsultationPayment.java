@@ -1,7 +1,9 @@
 package fit.iuh.se.hschat.entity;
 
 import fit.iuh.se.hschat.entity.enums.ConsultationPaymentProvider;
+import fit.iuh.se.hschat.entity.enums.ConsultationPaymentPurpose;
 import fit.iuh.se.hschat.entity.enums.ConsultationPaymentStatus;
+import fit.iuh.se.hschat.entity.enums.PaymentProviderCancellationStatus;
 import fit.iuh.se.hsshared.generator.SnowflakeGenerated;
 import fit.iuh.se.hsuser.entity.BaseEntity;
 import jakarta.persistence.*;
@@ -22,12 +24,13 @@ import java.time.Instant;
         name = "consultation_payments",
         indexes = {
                 @Index(name = "idx_payment_request", columnList = "request_id"),
+                @Index(name = "idx_payment_agreement_status", columnList = "agreement_id, status"),
                 @Index(name = "idx_payment_member_status", columnList = "member_id, status"),
                 @Index(name = "idx_payment_order_code", columnList = "order_code"),
                 @Index(name = "idx_payment_status_expires_at", columnList = "status, expires_at")
         },
         uniqueConstraints = {
-                @UniqueConstraint(name = "uq_payment_request", columnNames = "request_id"),
+                @UniqueConstraint(name = "uq_payment_agreement_attempt", columnNames = {"agreement_id", "attempt_number"}),
                 @UniqueConstraint(name = "uq_payment_order_code", columnNames = "order_code"),
                 @UniqueConstraint(name = "uq_payment_link_id", columnNames = "payment_link_id")
         }
@@ -39,8 +42,22 @@ public class ConsultationPayment extends BaseEntity {
     @Column(name = "id", nullable = false, updatable = false)
     Long id;
 
-    @Column(name = "request_id", nullable = false, unique = true)
+    @Column(name = "request_id")
     Long requestId;
+
+    @Column(name = "renewal_id")
+    Long renewalId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_purpose", nullable = false, length = 30)
+    @Builder.Default
+    ConsultationPaymentPurpose paymentPurpose = ConsultationPaymentPurpose.INITIAL_CARE;
+
+    @Column(name = "agreement_id", nullable = false)
+    Long agreementId;
+
+    @Column(name = "attempt_number", nullable = false)
+    Integer attemptNumber;
 
     @Column(name = "member_id", nullable = false)
     Long memberId;
@@ -79,4 +96,21 @@ public class ConsultationPayment extends BaseEntity {
 
     @Column(name = "cancelled_at")
     Instant cancelledAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "provider_cancellation_status", nullable = false, length = 30)
+    @Builder.Default
+    PaymentProviderCancellationStatus providerCancellationStatus = PaymentProviderCancellationStatus.NOT_REQUESTED;
+
+    @Column(name = "provider_cancellation_requested_at")
+    Instant providerCancellationRequestedAt;
+
+    @Column(name = "provider_cancellation_completed_at")
+    Instant providerCancellationCompletedAt;
+
+    @Column(name = "provider_cancellation_last_attempt_at")
+    Instant providerCancellationLastAttemptAt;
+
+    @Column(name = "provider_cancellation_error", length = 1000)
+    String providerCancellationError;
 }

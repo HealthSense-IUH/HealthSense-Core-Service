@@ -47,9 +47,8 @@ public interface ConsultationRequestRepository extends JpaRepository<Consultatio
             Instant paymentDeadline
     );
 
-    long countByAssignedDoctorIdAndStatusAndPaymentDeadlineAfter(
-            Long assignedDoctorId,
-            ConsultationRequestStatus status,
+    List<ConsultationRequest> findByStatusInAndPaymentDeadlineBefore(
+            Collection<ConsultationRequestStatus> statuses,
             Instant paymentDeadline
     );
 }

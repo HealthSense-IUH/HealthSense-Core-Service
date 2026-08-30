@@ -58,7 +58,9 @@ public enum ErrorCode {
     INVALID_CONSULTATION_PAYMENT_STATUS(4019, "Invalid consultation payment status", HttpStatus.CONFLICT),
     PAYMENT_PROVIDER_NOT_CONFIGURED(4020, "Payment provider is not configured", HttpStatus.INTERNAL_SERVER_ERROR),
     PAYMENT_PROVIDER_ERROR(4021, "Payment provider error", HttpStatus.BAD_GATEWAY),
-    INVALID_PAYMENT_WEBHOOK(4022, "Invalid payment webhook", HttpStatus.BAD_REQUEST);
+    INVALID_PAYMENT_WEBHOOK(4022, "Invalid payment webhook", HttpStatus.BAD_REQUEST),
+    CONSULTATION_REFUND_NOT_FOUND(4023, "Consultation refund not found", HttpStatus.NOT_FOUND),
+    INVALID_REFUND_STATUS(4024, "Invalid refund status", HttpStatus.CONFLICT);
 
     private final int code;
     private final String message;

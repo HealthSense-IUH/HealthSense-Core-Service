@@ -10,6 +10,8 @@ import lombok.experimental.FieldDefaults;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/consultation-requests/{requestId}/payment")
 @RequiredArgsConstructor
@@ -30,5 +32,12 @@ public class ConsultationPaymentController {
             @AuthenticationPrincipal UserAuthentication currentUser,
             @PathVariable Long requestId) {
         return new ApiResponse<>(consultationPaymentService.getPayment(currentUser.getUserId(), requestId));
+    }
+
+    @GetMapping("/attempts")
+    public ApiResponse<List<ConsultationPaymentResponse>> getPaymentAttempts(
+            @AuthenticationPrincipal UserAuthentication currentUser,
+            @PathVariable Long requestId) {
+        return new ApiResponse<>(consultationPaymentService.getPaymentAttempts(currentUser.getUserId(), requestId));
     }
 }

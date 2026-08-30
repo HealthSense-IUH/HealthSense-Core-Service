@@ -18,6 +18,12 @@ import fit.iuh.se.hschat.service.message.SupportHoursPolicy;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsshared.dto.response.PageResponse;
+import fit.iuh.se.hsuser.entity.enums.AccountStatus;
+import fit.iuh.se.hsuser.repository.UserAccountRepository;
+import fit.iuh.se.hsuser.entity.enums.UserRole;
+import fit.iuh.se.hsoperations.dto.command.*;
+import fit.iuh.se.hsoperations.entity.enums.*;
+import fit.iuh.se.hsoperations.service.OperationalEventService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -41,12 +47,15 @@ public class ConsultationMessageServiceImpl implements ConsultationMessageServic
     ConsultationParticipantRepository participantRepository;
     ConsultationMapper mapper;
     SupportHoursPolicy supportHoursPolicy;
+    UserAccountRepository userAccountRepository;
+    OperationalEventService operationalEventService;
 
     @Override
     @Transactional
     public ConsultationMessageResponse sendMessage(Long senderId, Long sessionId, SendConsultationMessageRequest request) {
         ConsultationSession session = getSessionForSending(sessionId);
         ConsultationParticipant participant = getActiveParticipant(sessionId, senderId);
+        requireActiveAccount(senderId);
         validateMessagePayload(request);
         validateSupportHours(session, participant);
 
@@ -152,6 +161,21 @@ public class ConsultationMessageServiceImpl implements ConsultationMessageServic
         session.setLastMessageAt(message.getCreatedAt());
         sessionRepository.save(session);
 
+        Long recipientId = participant.getRole() == fit.iuh.se.hschat.entity.enums.ConsultationParticipantRole.MEMBER
+                ? session.getDoctorId() : session.getMemberId();
+        UserRole senderRole = participant.getRole() == fit.iuh.se.hschat.entity.enums.ConsultationParticipantRole.MEMBER
+                ? UserRole.MEMBER : UserRole.DOCTOR;
+        String key = "message:" + message.getId() + ":sent";
+        operationalEventService.record(OperationalEventCommand.builder()
+                .domainType(BusinessDomainType.SESSION).domainId(session.getId()).eventType(BusinessEventType.MESSAGE_SENT)
+                .actorType(BusinessActorType.USER).actorUserId(participant.getUserId()).actorRole(senderRole.name())
+                .sessionId(session.getId()).memberId(session.getMemberId()).doctorId(session.getDoctorId())
+                .metadata(java.util.Map.of("messageType", message.getType().name())).occurredAt(message.getCreatedAt())
+                .idempotencyKey(key).notifications(List.of(new NotificationIntent(recipientId,
+                        NotificationType.NEW_MESSAGE, "New care message",
+                        "You have a new message in an active care episode.", BusinessDomainType.SESSION,
+                        session.getId(), key + ":recipient"))).build());
+
         return mapper.toMessageResponse(message);
     }
 
@@ -172,7 +196,10 @@ public class ConsultationMessageServiceImpl implements ConsultationMessageServic
     private void ensureCanAccessSession(Long sessionId, Long userId) {
         ConsultationSession session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_NOT_FOUND));
-        if (session.getStatus() != ConsultationStatus.ACTIVE && session.getStatus() != ConsultationStatus.COMPLETED)
+        boolean retainedEpisode = session.getStatus() == ConsultationStatus.ACTIVE
+                || session.getStatus() == ConsultationStatus.COMPLETED
+                || (session.getStatus() == ConsultationStatus.CANCELLED && session.getActivatedAt() != null);
+        if (!retainedEpisode)
             throw new AppException(ErrorCode.CONSULTATION_NOT_ACTIVE);
 
         if (!participantRepository.existsBySessionIdAndUserIdAndActiveTrue(sessionId, userId))
@@ -193,6 +220,14 @@ public class ConsultationMessageServiceImpl implements ConsultationMessageServic
                 && isBlank(request.getAttachmentUrl())) {
             throw new AppException(ErrorCode.INVALID_PARAMETER, "Attachment URL is required");
         }
+    }
+
+    private void requireActiveAccount(Long userId) {
+        boolean active = userAccountRepository.findById(userId)
+                .filter(account -> account.getStatus() == AccountStatus.ACTIVE)
+                .isPresent();
+        if (!active)
+            throw new AppException(ErrorCode.ACCOUNT_DISABLED);
     }
 
     private void validateSupportHours(ConsultationSession session, ConsultationParticipant participant) {

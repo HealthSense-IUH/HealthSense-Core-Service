@@ -49,3 +49,9 @@ id_ed25519
 .env.*
 
 *.sql
+
+docs/
+artifacts/
+tools/
+.m2repo/
+.m2/

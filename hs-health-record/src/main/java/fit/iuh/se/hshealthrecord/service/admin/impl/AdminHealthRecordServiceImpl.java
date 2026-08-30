@@ -15,6 +15,9 @@ import fit.iuh.se.hsshared.dto.response.PageResponse;
 import fit.iuh.se.hsuser.entity.UserAccount;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
 import fit.iuh.se.hsuser.repository.UserAccountRepository;
+import fit.iuh.se.hsoperations.dto.command.OperationalEventCommand;
+import fit.iuh.se.hsoperations.entity.enums.*;
+import fit.iuh.se.hsoperations.service.OperationalEventService;
 import jakarta.persistence.criteria.Predicate;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +29,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,6 +44,7 @@ public class AdminHealthRecordServiceImpl implements AdminHealthRecordService {
     HealthRecordMapper mapper;
     UserAccountRepository userAccountRepository;
     DailyHealthStatisticRepository dailyHealthStatisticRepository;
+    OperationalEventService operationalEventService;
 
     @Override
     @Transactional
@@ -98,9 +103,18 @@ public class AdminHealthRecordServiceImpl implements AdminHealthRecordService {
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public HealthRecordResponse getRecord(Long id) {
-        return mapper.toResponse(findRecord(id));
+    @Transactional
+    public HealthRecordResponse getRecord(Long adminId, UserRole actorRole, Long id) {
+        HealthRecord record = findRecord(id);
+        Instant now = Instant.now();
+        operationalEventService.record(OperationalEventCommand.builder()
+                .domainType(BusinessDomainType.HEALTH_RECORD).domainId(record.getId())
+                .eventType(BusinessEventType.ADMIN_CLINICAL_RECORD_ACCESSED).actorType(BusinessActorType.USER)
+                .actorUserId(adminId).actorRole(actorRole.name()).healthRecordId(record.getId())
+                .memberId(record.getUserId()).metadata(java.util.Map.of("accessContext", "ADMIN_CLINICAL_ACCESS"))
+                .occurredAt(now).idempotencyKey("admin-health-record-access:" + adminId + ":" + id + ":"
+                        + now.truncatedTo(ChronoUnit.HOURS)).build());
+        return mapper.toResponse(record);
     }
 
     private HealthRecord findRecord(Long id) {

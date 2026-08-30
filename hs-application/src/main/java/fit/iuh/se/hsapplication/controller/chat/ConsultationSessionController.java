@@ -3,6 +3,9 @@ package fit.iuh.se.hsapplication.controller.chat;
 import fit.iuh.se.hsapplication.dto.auth.UserAuthentication;
 import fit.iuh.se.hschat.dto.response.ConsultationFinalSummaryResponse;
 import fit.iuh.se.hschat.dto.response.ConsultationSessionResponse;
+import fit.iuh.se.hschat.dto.response.EpisodeHealthRecordAuthorizationResponse;
+import fit.iuh.se.hschat.dto.request.RequestSessionTerminationRequest;
+import fit.iuh.se.hschat.service.authorization.EpisodeHealthRecordAuthorizationService;
 import fit.iuh.se.hschat.service.finalsummary.ConsultationFinalSummaryService;
 import fit.iuh.se.hschat.service.session.ConsultationSessionService;
 import fit.iuh.se.hsshared.dto.response.ApiResponse;
@@ -28,6 +31,7 @@ public class ConsultationSessionController {
 
     ConsultationSessionService consultationSessionService;
     ConsultationFinalSummaryService finalSummaryService;
+    EpisodeHealthRecordAuthorizationService authorizationService;
 
     @GetMapping
     public ApiResponse<PageResponse<ConsultationSessionResponse>> getMySessions(
@@ -53,5 +57,23 @@ public class ConsultationSessionController {
             @AuthenticationPrincipal UserAuthentication currentUser,
             @PathVariable Long sessionId) {
         return new ApiResponse<>(finalSummaryService.getForMember(currentUser.getUserId(), sessionId));
+    }
+
+    @PostMapping("/{sessionId}/health-records/{recordId}/share")
+    public ApiResponse<EpisodeHealthRecordAuthorizationResponse> shareHealthRecord(
+            @AuthenticationPrincipal UserAuthentication currentUser,
+            @PathVariable Long sessionId,
+            @PathVariable Long recordId) {
+        return new ApiResponse<>(authorizationService.shareDuringActiveCare(
+                currentUser.getUserId(), sessionId, recordId));
+    }
+
+    @PostMapping("/{sessionId}/termination-request")
+    public ApiResponse<ConsultationSessionResponse> requestTermination(
+            @AuthenticationPrincipal UserAuthentication currentUser,
+            @PathVariable Long sessionId,
+            @jakarta.validation.Valid @RequestBody RequestSessionTerminationRequest request) {
+        return new ApiResponse<>(consultationSessionService.requestTermination(
+                currentUser.getUserId(), currentUser.getRole(), sessionId, request));
     }
 }

@@ -35,6 +35,7 @@
     <modules>
         <module>hs-shared</module>
         <module>hs-user</module>
+        <module>hs-operations</module>
         <module>hs-auth</module>
         <module>hs-consultation</module>
         <module>hs-notification</module>

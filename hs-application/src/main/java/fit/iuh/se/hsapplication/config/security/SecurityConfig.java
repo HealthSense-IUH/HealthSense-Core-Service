@@ -63,6 +63,10 @@ public class SecurityConfig {
             "/api/admin/consultation-requests/**",
             "/api/admin/consultation-sessions/**",
             "/api/admin/doctors/**",
+            "/api/admin/consultation-refunds/**",
+            "/api/admin/payment-reconciliation/**",
+            "/api/admin/business-audit-events/**",
+            "/api/admin/needs-actions/**",
     };
 
     @Bean

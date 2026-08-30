@@ -12,6 +12,9 @@ import fit.iuh.se.hschat.repository.ConsultationMessageRepository;
 import fit.iuh.se.hschat.repository.ConsultationParticipantRepository;
 import fit.iuh.se.hschat.repository.ConsultationSessionRepository;
 import fit.iuh.se.hschat.service.message.SupportHoursPolicy;
+import fit.iuh.se.hsuser.repository.UserAccountRepository;
+import fit.iuh.se.hsuser.entity.UserAccount;
+import fit.iuh.se.hsuser.entity.enums.AccountStatus;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,6 +44,10 @@ class ConsultationMessageServiceImplTest {
     ConsultationMapper mapper;
     @Mock
     SupportHoursPolicy supportHoursPolicy;
+    @Mock
+    UserAccountRepository userAccountRepository;
+    @Mock
+    fit.iuh.se.hsoperations.service.OperationalEventService operationalEventService;
 
     ConsultationMessageServiceImpl service;
 
@@ -51,8 +58,32 @@ class ConsultationMessageServiceImplTest {
                 sessionRepository,
                 participantRepository,
                 mapper,
-                supportHoursPolicy
+                supportHoursPolicy,
+                userAccountRepository,
+                operationalEventService
         );
+        lenient().when(userAccountRepository.findById(anyLong())).thenAnswer(invocation ->
+                java.util.Optional.of(UserAccount.builder()
+                        .id(invocation.getArgument(0)).status(AccountStatus.ACTIVE).build()));
+    }
+
+    @Test
+    void disabledParticipantCannotSendButHistoryRemainsUntouched() {
+        ConsultationSession session = ConsultationSession.builder().id(100L)
+                .status(ConsultationStatus.ACTIVE).endsAt(Instant.now().plusSeconds(3600)).build();
+        ConsultationParticipant participant = ConsultationParticipant.builder()
+                .sessionId(100L).userId(1L).active(true).build();
+        when(sessionRepository.findById(100L)).thenReturn(java.util.Optional.of(session));
+        when(participantRepository.findBySessionIdAndUserIdAndActiveTrue(100L, 1L))
+                .thenReturn(java.util.Optional.of(participant));
+        when(userAccountRepository.findById(1L)).thenReturn(java.util.Optional.of(
+                UserAccount.builder().id(1L).status(AccountStatus.INACTIVE).build()));
+
+        assertThrows(AppException.class, () -> service.sendMessage(
+                1L, 100L, new SendConsultationMessageRequest()));
+
+        verify(messageRepository, never()).delete(any());
+        verify(messageRepository, never()).save(any());
     }
 
     @Test

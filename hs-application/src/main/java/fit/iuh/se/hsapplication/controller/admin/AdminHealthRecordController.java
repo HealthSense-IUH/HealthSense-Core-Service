@@ -62,8 +62,9 @@ public class AdminHealthRecordController {
     }
 
     @GetMapping("/{id}")
-    public ApiResponse<HealthRecordResponse> getRecord(@PathVariable Long id) {
-        return new ApiResponse<>(adminHealthRecordService.getRecord(id));
+    public ApiResponse<HealthRecordResponse> getRecord(
+            @AuthenticationPrincipal UserAuthentication currentUser, @PathVariable Long id) {
+        return new ApiResponse<>(adminHealthRecordService.getRecord(currentUser.getUserId(), currentUser.getRole(), id));
     }
 
     @GetMapping("/statistics")

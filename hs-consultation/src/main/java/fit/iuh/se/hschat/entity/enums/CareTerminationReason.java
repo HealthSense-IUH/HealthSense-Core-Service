@@ -1,0 +1,13 @@
+package fit.iuh.se.hschat.entity.enums;
+
+public enum CareTerminationReason {
+    MEMBER_REQUESTED,
+    DOCTOR_UNAVAILABLE,
+    MEMBER_UNAVAILABLE,
+    ACCOUNT_SUSPENDED,
+    SERVICE_VIOLATION,
+    TECHNICAL_FAILURE,
+    ADMINISTRATIVE_CLOSURE,
+    SAFETY_OR_SCOPE_REASON,
+    OTHER
+}
