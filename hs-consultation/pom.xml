@@ -33,6 +33,11 @@
         <!-- import another modules-->
         <dependency>
             <groupId>fit.iuh.se</groupId>
+            <artifactId>hs-operations</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>fit.iuh.se</groupId>
             <artifactId>hs-user</artifactId>
             <version>${project.version}</version>
         </dependency>
