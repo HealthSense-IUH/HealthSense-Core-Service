@@ -10,6 +10,9 @@ import fit.iuh.se.hsuser.entity.UserAccount;
 import fit.iuh.se.hsuser.entity.enums.AccountStatus;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
 import fit.iuh.se.hsuser.repository.UserAccountRepository;
+import fit.iuh.se.hsoperations.dto.command.*;
+import fit.iuh.se.hsoperations.entity.enums.*;
+import fit.iuh.se.hsoperations.service.OperationalEventService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -33,6 +36,7 @@ public class FinalSummaryClosureServiceImpl implements FinalSummaryClosureServic
     ConsultationSessionRepository sessionRepository;
     ConsultationFinalSummaryRepository summaryRepository;
     UserAccountRepository userAccountRepository;
+    OperationalEventService operationalEventService;
 
     @NonFinal
     @Value("${app.consultation.final-summary-due-hours:24}")
@@ -55,6 +59,9 @@ public class FinalSummaryClosureServiceImpl implements FinalSummaryClosureServic
             session.setSummaryEscalationReason(null);
         }
         sessionRepository.save(session);
+        if (!finalized) recordClosure(session,
+                session.getSummaryClosureStatus() == FinalSummaryClosureStatus.ESCALATED
+                        ? BusinessEventType.SUMMARY_ESCALATED : BusinessEventType.SUMMARY_PENDING);
     }
 
     @Override
@@ -62,6 +69,10 @@ public class FinalSummaryClosureServiceImpl implements FinalSummaryClosureServic
     public void onSummaryFinalized(ConsultationSession session, Instant finalizedAt) {
         markFinalized(session);
         sessionRepository.save(session);
+        operationalEventService.resolveNeedsAction(summaryKey(session, "pending"), "Final summary finalized");
+        operationalEventService.resolveNeedsAction(summaryKey(session, "overdue"), "Final summary finalized");
+        operationalEventService.resolveNeedsAction(summaryKey(session, "escalated"), "Final summary finalized");
+        recordClosure(session, BusinessEventType.SUMMARY_FINALIZED);
     }
 
     @Override
@@ -74,11 +85,13 @@ public class FinalSummaryClosureServiceImpl implements FinalSummaryClosureServic
             if (!isActiveDoctor(session.getDoctorId())) {
                 markEscalated(session, now);
                 sessionRepository.save(session);
+                recordClosure(session, BusinessEventType.SUMMARY_ESCALATED);
             } else if (session.getSummaryClosureStatus() == FinalSummaryClosureStatus.SUMMARY_PENDING
                     && session.getSummaryDueAt() != null
                     && !session.getSummaryDueAt().isAfter(now)) {
                 session.setSummaryClosureStatus(FinalSummaryClosureStatus.SUMMARY_OVERDUE);
                 sessionRepository.save(session);
+                recordClosure(session, BusinessEventType.SUMMARY_OVERDUE);
             }
         });
     }
@@ -101,5 +114,44 @@ public class FinalSummaryClosureServiceImpl implements FinalSummaryClosureServic
         session.setSummaryClosureStatus(FinalSummaryClosureStatus.ESCALATED);
         session.setSummaryEscalatedAt(now);
         session.setSummaryEscalationReason(DISABLED_DOCTOR_REASON);
+    }
+
+    private void recordClosure(ConsultationSession session, BusinessEventType eventType) {
+        String suffix = switch (eventType) {
+            case SUMMARY_PENDING -> "pending";
+            case SUMMARY_OVERDUE -> "overdue";
+            case SUMMARY_ESCALATED -> "escalated";
+            default -> "finalized";
+        };
+        NeedsActionIntent action = eventType == BusinessEventType.SUMMARY_FINALIZED ? null
+                : new NeedsActionIntent(switch (eventType) {
+                    case SUMMARY_OVERDUE -> NeedsActionType.SUMMARY_OVERDUE;
+                    case SUMMARY_ESCALATED -> NeedsActionType.SUMMARY_ESCALATED;
+                    default -> NeedsActionType.SUMMARY_PENDING;
+                }, eventType == BusinessEventType.SUMMARY_ESCALATED ? NeedsActionPriority.CRITICAL
+                        : eventType == BusinessEventType.SUMMARY_OVERDUE ? NeedsActionPriority.HIGH : NeedsActionPriority.NORMAL,
+                        "Final summary " + suffix, "The care episode requires Final Care Summary follow-up.",
+                        BusinessDomainType.FINAL_SUMMARY, session.getId(), UserRole.CARE_COORDINATOR.name(),
+                        summaryKey(session, suffix));
+        String eventKey = "summary-closure:" + session.getId() + ":" + suffix;
+        operationalEventService.record(OperationalEventCommand.builder()
+                .domainType(BusinessDomainType.FINAL_SUMMARY).domainId(session.getId()).eventType(eventType)
+                .actorType(BusinessActorType.SYSTEM).sessionId(session.getId()).memberId(session.getMemberId())
+                .doctorId(session.getDoctorId()).newState(session.getSummaryClosureStatus().name())
+                .reason(session.getSummaryEscalationReason()).idempotencyKey(eventKey).needsAction(action)
+                .notifications(eventType == BusinessEventType.SUMMARY_FINALIZED ? List.of()
+                        : List.of(
+                        new NotificationIntent(session.getDoctorId(), NotificationType.SUMMARY_ACTION_REQUIRED,
+                                "Final summary action required", "A care episode requires Final Care Summary action.",
+                                BusinessDomainType.SESSION, session.getId(), eventKey + ":doctor"),
+                        NotificationIntent.forRole(UserRole.CARE_COORDINATOR,
+                                NotificationType.OPERATIONAL_REVIEW_REQUIRED, "Final summary follow-up",
+                                "A care episode requires Final Care Summary follow-up.",
+                                BusinessDomainType.SESSION, session.getId(), eventKey + ":coordinators")))
+                .build());
+    }
+
+    private String summaryKey(ConsultationSession session, String suffix) {
+        return "summary-action:" + session.getId() + ":" + suffix;
     }
 }

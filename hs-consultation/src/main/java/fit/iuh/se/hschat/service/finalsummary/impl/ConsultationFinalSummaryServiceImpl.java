@@ -20,6 +20,9 @@ import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsuser.entity.enums.AccountStatus;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
 import fit.iuh.se.hsuser.repository.UserAccountRepository;
+import fit.iuh.se.hsoperations.dto.command.*;
+import fit.iuh.se.hsoperations.entity.enums.*;
+import fit.iuh.se.hsoperations.service.OperationalEventService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -42,6 +45,7 @@ public class ConsultationFinalSummaryServiceImpl implements ConsultationFinalSum
     EpisodeHealthRecordAuthorizationRepository authorizationRepository;
     UserAccountRepository userAccountRepository;
     FinalSummaryClosureService closureService;
+    OperationalEventService operationalEventService;
 
     @Override
     @Transactional(readOnly = true)
@@ -81,6 +85,7 @@ public class ConsultationFinalSummaryServiceImpl implements ConsultationFinalSum
         apply(summary, request);
         summary.setStatus(ConsultationFinalSummaryStatus.DRAFT);
         summary = summaryRepository.save(summary);
+        auditSummary(summary, session, BusinessEventType.FINAL_SUMMARY_DRAFTED, doctorId, null);
         return toResponse(summary, session);
     }
 
@@ -109,6 +114,11 @@ public class ConsultationFinalSummaryServiceImpl implements ConsultationFinalSum
         summary.setFinalizedAt(now);
         summary = summaryRepository.save(summary);
         closureService.onSummaryFinalized(session, now);
+        auditSummary(summary, session, BusinessEventType.FINAL_SUMMARY_FINALIZED, doctorId,
+                new NotificationIntent(session.getMemberId(), NotificationType.FINAL_SUMMARY_AVAILABLE,
+                        "Final care summary available", "Your finalized care summary is available in Care History.",
+                        BusinessDomainType.FINAL_SUMMARY, summary.getId(),
+                        "summary:" + summary.getId() + ":finalized:member"));
         return toResponse(summary, session);
     }
 
@@ -136,6 +146,13 @@ public class ConsultationFinalSummaryServiceImpl implements ConsultationFinalSum
                         .content(request.getContent().trim())
                         .authoredAt(Instant.now())
                         .build());
+        operationalEventService.record(OperationalEventCommand.builder()
+                .domainType(BusinessDomainType.FINAL_SUMMARY).domainId(summary.getId())
+                .eventType(BusinessEventType.FINAL_SUMMARY_ADDENDUM_CREATED).actorType(BusinessActorType.USER)
+                .actorUserId(doctorId).actorRole(UserRole.DOCTOR.name()).sessionId(session.getId())
+                .summaryId(summary.getId()).memberId(session.getMemberId()).doctorId(doctorId)
+                .reason(request.getReason()).idempotencyKey("summary-addendum:" + addendum.getId() + ":created")
+                .build());
         return toAddendumResponse(addendum);
     }
 
@@ -166,6 +183,17 @@ public class ConsultationFinalSummaryServiceImpl implements ConsultationFinalSum
         if (!activeDoctor)
             throw new AppException(ErrorCode.CONSULTATION_ACCESS_DENIED,
                     "Only the active assigned Doctor may author clinical closure content");
+    }
+
+    private void auditSummary(ConsultationFinalSummary summary, ConsultationSession session,
+            BusinessEventType eventType, Long doctorId, NotificationIntent notification) {
+        operationalEventService.record(OperationalEventCommand.builder()
+                .domainType(BusinessDomainType.FINAL_SUMMARY).domainId(summary.getId()).eventType(eventType)
+                .actorType(BusinessActorType.USER).actorUserId(doctorId).actorRole(UserRole.DOCTOR.name())
+                .sessionId(session.getId()).summaryId(summary.getId()).memberId(session.getMemberId()).doctorId(doctorId)
+                .newState(summary.getStatus().name()).occurredAt(summary.getFinalizedAt())
+                .idempotencyKey("summary:" + summary.getId() + ":" + eventType)
+                .notifications(notification == null ? List.of() : List.of(notification)).build());
     }
 
     private ConsultationSession getAssignedDoctorSession(Long doctorId, Long sessionId) {

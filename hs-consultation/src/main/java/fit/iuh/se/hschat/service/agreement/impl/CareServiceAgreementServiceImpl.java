@@ -7,6 +7,10 @@ import fit.iuh.se.hschat.repository.*;
 import fit.iuh.se.hschat.service.agreement.CareServiceAgreementService;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
+import fit.iuh.se.hsoperations.dto.command.*;
+import fit.iuh.se.hsoperations.entity.enums.*;
+import fit.iuh.se.hsoperations.service.OperationalEventService;
+import fit.iuh.se.hsuser.entity.enums.UserRole;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -45,6 +49,7 @@ public class CareServiceAgreementServiceImpl implements CareServiceAgreementServ
     CareServicePackageRepository packageRepository;
     DoctorCareProfileRepository profileRepository;
     ConsultationRenewalRepository renewalRepository;
+    OperationalEventService operationalEventService;
 
     @Override
     @Transactional
@@ -86,7 +91,10 @@ public class CareServiceAgreementServiceImpl implements CareServiceAgreementServ
                 .status(CareServiceAgreementStatus.PENDING_ACCEPTANCE)
                 .validUntil(request.getPaymentDeadline())
                 .build();
-        return agreementRepository.saveAndFlush(agreement);
+        agreement = agreementRepository.saveAndFlush(agreement);
+        auditAgreement(agreement, BusinessEventType.AGREEMENT_CREATED, null, null,
+                null, CareServiceAgreementStatus.PENDING_ACCEPTANCE, null, NotificationType.AGREEMENT_READY);
+        return agreement;
     }
 
     @Override
@@ -126,6 +134,9 @@ public class CareServiceAgreementServiceImpl implements CareServiceAgreementServ
 
         request.setStatus(ConsultationRequestStatus.WAITING_PAYMENT);
         requestRepository.save(request);
+        auditAgreement(agreement, BusinessEventType.AGREEMENT_ACCEPTED, memberId, UserRole.MEMBER,
+                CareServiceAgreementStatus.PENDING_ACCEPTANCE, CareServiceAgreementStatus.ACCEPTED,
+                null, NotificationType.PAYMENT_REQUIRED);
         return toResponse(agreement);
     }
 
@@ -153,6 +164,8 @@ public class CareServiceAgreementServiceImpl implements CareServiceAgreementServ
         agreement.setStatus(CareServiceAgreementStatus.CONSUMED);
         agreement.setConsumedAt(Instant.now());
         agreementRepository.save(agreement);
+        auditAgreement(agreement, BusinessEventType.AGREEMENT_CONSUMED, null, null,
+                CareServiceAgreementStatus.ACCEPTED, CareServiceAgreementStatus.CONSUMED, null, null);
     }
 
     @Override
@@ -164,6 +177,8 @@ public class CareServiceAgreementServiceImpl implements CareServiceAgreementServ
                     agreement.setInvalidatedAt(Instant.now());
                     agreement.setInvalidationReason(reason);
                     agreementRepository.save(agreement);
+                    auditAgreement(agreement, BusinessEventType.AGREEMENT_INVALIDATED, null, null,
+                            null, CareServiceAgreementStatus.INVALIDATED, reason, NotificationType.AGREEMENT_INVALIDATED);
                 });
     }
 
@@ -204,7 +219,10 @@ public class CareServiceAgreementServiceImpl implements CareServiceAgreementServ
                 .status(CareServiceAgreementStatus.PENDING_ACCEPTANCE)
                 .validUntil(renewal.getPaymentDeadline())
                 .build();
-        return agreementRepository.saveAndFlush(agreement);
+        agreement = agreementRepository.saveAndFlush(agreement);
+        auditAgreement(agreement, BusinessEventType.AGREEMENT_CREATED, null, null,
+                null, CareServiceAgreementStatus.PENDING_ACCEPTANCE, null, NotificationType.AGREEMENT_READY);
+        return agreement;
     }
 
     @Override
@@ -241,6 +259,9 @@ public class CareServiceAgreementServiceImpl implements CareServiceAgreementServ
         agreementRepository.save(agreement);
         renewal.setStatus(ConsultationRenewalStatus.WAITING_PAYMENT);
         renewalRepository.save(renewal);
+        auditAgreement(agreement, BusinessEventType.RENEWAL_AGREEMENT_ACCEPTED, memberId, UserRole.MEMBER,
+                CareServiceAgreementStatus.PENDING_ACCEPTANCE, CareServiceAgreementStatus.ACCEPTED,
+                null, NotificationType.PAYMENT_REQUIRED);
         return toResponse(agreement);
     }
 
@@ -271,7 +292,33 @@ public class CareServiceAgreementServiceImpl implements CareServiceAgreementServ
                     agreement.setInvalidatedAt(Instant.now());
                     agreement.setInvalidationReason(reason);
                     agreementRepository.save(agreement);
+                    auditAgreement(agreement, BusinessEventType.AGREEMENT_INVALIDATED, null, null,
+                            null, CareServiceAgreementStatus.INVALIDATED, reason, NotificationType.AGREEMENT_INVALIDATED);
                 });
+    }
+
+    private void auditAgreement(CareServiceAgreement agreement, BusinessEventType eventType, Long actorId,
+            UserRole actorRole, CareServiceAgreementStatus previous, CareServiceAgreementStatus next,
+            String reason, NotificationType notificationType) {
+        String transitionKey = "agreement:" + agreement.getId() + ":" + eventType;
+        operationalEventService.record(OperationalEventCommand.builder()
+                .domainType(BusinessDomainType.AGREEMENT).domainId(agreement.getId()).eventType(eventType)
+                .actorType(actorId == null ? BusinessActorType.SYSTEM : BusinessActorType.USER)
+                .actorUserId(actorId).actorRole(actorRole == null ? null : actorRole.name())
+                .requestId(agreement.getRequestId()).agreementId(agreement.getId()).renewalId(agreement.getRenewalId())
+                .memberId(agreement.getMemberId()).doctorId(agreement.getDoctorId())
+                .previousState(previous == null ? null : previous.name()).newState(next == null ? null : next.name())
+                .reason(reason).occurredAt(agreement.getAcceptedAt()).idempotencyKey(transitionKey)
+                .notifications(notificationType == null ? List.of() : List.of(new NotificationIntent(
+                        agreement.getMemberId(), notificationType,
+                        notificationType == NotificationType.PAYMENT_REQUIRED ? "Payment required" : "Care agreement update",
+                        notificationType == NotificationType.PAYMENT_REQUIRED
+                                ? "Your agreement was accepted. Complete payment to activate care."
+                                : notificationType == NotificationType.AGREEMENT_READY
+                                ? "A care agreement is ready for your review and acceptance."
+                                : "The care agreement is no longer valid.",
+                        BusinessDomainType.AGREEMENT, agreement.getId(), transitionKey + ":member")))
+                .build());
     }
 
     private void validateOwner(Long memberId, ConsultationRequest request) {

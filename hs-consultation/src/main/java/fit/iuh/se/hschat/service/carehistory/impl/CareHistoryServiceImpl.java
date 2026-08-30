@@ -14,6 +14,10 @@ import fit.iuh.se.hschat.service.carehistory.CareHistoryService;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsshared.dto.response.PageResponse;
+import fit.iuh.se.hsoperations.dto.command.OperationalEventCommand;
+import fit.iuh.se.hsoperations.entity.enums.*;
+import fit.iuh.se.hsoperations.service.OperationalEventService;
+import fit.iuh.se.hsuser.entity.enums.UserRole;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -24,6 +28,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -36,6 +42,7 @@ public class CareHistoryServiceImpl implements CareHistoryService {
     ConsultationFinalSummaryRepository summaryRepository;
     ConsultationFinalSummaryAddendumRepository addendumRepository;
     EpisodeHealthRecordAuthorizationService authorizationService;
+    OperationalEventService operationalEventService;
 
     @Override
     @Transactional(readOnly = true)
@@ -60,7 +67,7 @@ public class CareHistoryServiceImpl implements CareHistoryService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public List<CareContinuitySummaryResponse> getContinuitySummaries(
             Long doctorId, Long currentSessionId) {
         ConsultationSession current = sessionRepository.findByIdAndDoctorId(currentSessionId, doctorId)
@@ -71,15 +78,13 @@ public class CareHistoryServiceImpl implements CareHistoryService {
         List<ConsultationSession> previous = sessionRepository
                 .findByMemberIdAndIdNotAndActivatedAtIsNotNullOrderByStartedAtDesc(
                         current.getMemberId(), currentSessionId);
-        if (previous.isEmpty())
-            return List.of();
-        Map<Long, ConsultationFinalSummary> finalized = summaryRepository
+        Map<Long, ConsultationFinalSummary> finalized = previous.isEmpty() ? Map.of() : summaryRepository
                 .findBySessionIdInAndStatus(
                         previous.stream().map(ConsultationSession::getId).toList(),
                         ConsultationFinalSummaryStatus.FINALIZED)
                 .stream()
                 .collect(Collectors.toMap(ConsultationFinalSummary::getSessionId, Function.identity()));
-        return previous.stream()
+        List<CareContinuitySummaryResponse> result = previous.stream()
                 .filter(session -> finalized.containsKey(session.getId()))
                 .map(session -> CareContinuitySummaryResponse.builder()
                         .sessionId(session.getId())
@@ -92,6 +97,16 @@ public class CareHistoryServiceImpl implements CareHistoryService {
                         .finalizedSummary(toSummary(finalized.get(session.getId())))
                         .build())
                 .toList();
+        Instant bucket = Instant.now().truncatedTo(ChronoUnit.HOURS);
+        operationalEventService.record(OperationalEventCommand.builder()
+                .domainType(BusinessDomainType.SESSION).domainId(current.getId())
+                .eventType(BusinessEventType.CARE_CONTINUITY_ACCESSED)
+                .actorType(BusinessActorType.USER).actorUserId(doctorId).actorRole(UserRole.DOCTOR.name())
+                .sessionId(current.getId()).memberId(current.getMemberId()).doctorId(doctorId)
+                .metadata(Map.of("accessContext", "ACTIVE_CARE_CONTINUITY", "summaryCount", String.valueOf(result.size())))
+                .idempotencyKey("care-continuity:" + doctorId + ":" + current.getId() + ":" + bucket)
+                .build());
+        return result;
     }
 
     private CareHistoryEpisodeResponse toMemberEpisode(ConsultationSession session) {

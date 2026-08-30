@@ -16,6 +16,9 @@ import fit.iuh.se.hsuser.entity.UserAccount;
 import fit.iuh.se.hsuser.entity.enums.AccountStatus;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
 import fit.iuh.se.hsuser.repository.UserAccountRepository;
+import fit.iuh.se.hsoperations.dto.command.*;
+import fit.iuh.se.hsoperations.entity.enums.*;
+import fit.iuh.se.hsoperations.service.OperationalEventService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -60,6 +63,7 @@ public class ConsultationRenewalServiceImpl implements ConsultationRenewalServic
     ConsultationPaymentRepository paymentRepository;
     CareServiceAgreementService agreementService;
     SupportScheduleValidator scheduleValidator;
+    OperationalEventService operationalEventService;
 
     @NonFinal
     @Value("${app.consultation.renewal-payment-window-minutes:30}")
@@ -92,6 +96,8 @@ public class ConsultationRenewalServiceImpl implements ConsultationRenewalServic
                 .status(ConsultationRenewalStatus.REQUESTED)
                 .requestedAt(Instant.now())
                 .build());
+        auditRenewal(renewal, BusinessEventType.RENEWAL_REQUESTED, memberId, UserRole.MEMBER,
+                null, ConsultationRenewalStatus.REQUESTED, null);
         return toResponse(renewal);
     }
 
@@ -109,7 +115,10 @@ public class ConsultationRenewalServiceImpl implements ConsultationRenewalServic
         renewal.setStatus(ConsultationRenewalStatus.UNDER_REVIEW);
         renewal.setReviewedBy(actorId);
         renewal.setReviewStartedAt(Instant.now());
-        return toResponse(renewalRepository.save(renewal));
+        renewal = renewalRepository.save(renewal);
+        auditRenewal(renewal, BusinessEventType.RENEWAL_REVIEWED, actorId, role,
+                ConsultationRenewalStatus.REQUESTED, ConsultationRenewalStatus.UNDER_REVIEW, null);
+        return toResponse(renewal);
     }
 
     @Override
@@ -128,7 +137,10 @@ public class ConsultationRenewalServiceImpl implements ConsultationRenewalServic
             renewal.setReviewedBy(actorId);
             renewal.setReviewedAt(Instant.now());
             renewal.setRejectionReason(request.getRejectionReason().trim());
-            return toResponse(renewalRepository.save(renewal));
+            renewal = renewalRepository.save(renewal);
+            auditRenewal(renewal, BusinessEventType.RENEWAL_REVIEWED, actorId, role,
+                    ConsultationRenewalStatus.UNDER_REVIEW, ConsultationRenewalStatus.REJECTED, renewal.getRejectionReason());
+            return toResponse(renewal);
         }
 
         ConsultationSession session = sessionRepository.findByIdForUpdate(renewal.getSessionId())
@@ -148,7 +160,10 @@ public class ConsultationRenewalServiceImpl implements ConsultationRenewalServic
             renewal.setReviewedBy(actorId);
             renewal.setReviewedAt(Instant.now());
             renewal.setRejectionReason("Doctor is not eligible, available, or within capacity for the extension window");
-            return toResponse(renewalRepository.save(renewal));
+            renewal = renewalRepository.save(renewal);
+            auditRenewal(renewal, BusinessEventType.RENEWAL_REVIEWED, actorId, role,
+                    ConsultationRenewalStatus.UNDER_REVIEW, ConsultationRenewalStatus.REJECTED, renewal.getRejectionReason());
+            return toResponse(renewal);
         }
 
         Instant now = Instant.now();
@@ -178,7 +193,10 @@ public class ConsultationRenewalServiceImpl implements ConsultationRenewalServic
         CareServiceAgreement agreement = agreementService.createForRenewal(renewal, carePackage, profile);
         renewal.setAgreementId(agreement.getId());
         renewal.setStatus(ConsultationRenewalStatus.PENDING_ACCEPTANCE);
-        return toResponse(renewalRepository.save(renewal));
+        renewal = renewalRepository.save(renewal);
+        auditRenewal(renewal, BusinessEventType.RENEWAL_REVIEWED, actorId, role,
+                ConsultationRenewalStatus.UNDER_REVIEW, ConsultationRenewalStatus.PENDING_ACCEPTANCE, null);
+        return toResponse(renewal);
     }
 
     @Override
@@ -191,7 +209,10 @@ public class ConsultationRenewalServiceImpl implements ConsultationRenewalServic
             throw new AppException(ErrorCode.INVALID_CONSULTATION_STATUS);
         renewal.setStatus(ConsultationRenewalStatus.CANCELLED);
         agreementService.invalidateRenewal(renewalId, "Renewal cancelled by Member");
-        return toResponse(renewalRepository.save(renewal));
+        renewal = renewalRepository.save(renewal);
+        auditRenewal(renewal, BusinessEventType.RENEWAL_CANCELLED, memberId, UserRole.MEMBER,
+                null, ConsultationRenewalStatus.CANCELLED, "Renewal cancelled by Member");
+        return toResponse(renewal);
     }
 
     @Override
@@ -285,6 +306,15 @@ public class ConsultationRenewalServiceImpl implements ConsultationRenewalServic
         payment.setStatus(ConsultationPaymentStatus.PAID);
         payment.setPaidAt(now);
         paymentRepository.save(payment);
+        operationalEventService.record(OperationalEventCommand.builder()
+                .domainType(BusinessDomainType.RENEWAL).domainId(renewal.getId())
+                .eventType(BusinessEventType.RENEWAL_PAYMENT_VERIFIED).actorType(BusinessActorType.SYSTEM)
+                .renewalId(renewal.getId()).sessionId(session.getId()).agreementId(agreement.getId())
+                .paymentId(payment.getId()).memberId(renewal.getMemberId()).doctorId(renewal.getDoctorId())
+                .previousState(ConsultationPaymentStatus.PENDING.name())
+                .newState(ConsultationPaymentStatus.PAID.name())
+                .idempotencyKey("renewal:" + renewal.getId() + ":payment-verified:" + payment.getId())
+                .build());
         SessionExtension extension = extensionRepository.saveAndFlush(SessionExtension.builder()
                 .sessionId(session.getId())
                 .renewalId(renewal.getId())
@@ -316,6 +346,19 @@ public class ConsultationRenewalServiceImpl implements ConsultationRenewalServic
         renewal.setAppliedAt(now);
         renewal.setStatus(ConsultationRenewalStatus.APPLIED);
         renewalRepository.save(renewal);
+        operationalEventService.record(OperationalEventCommand.builder()
+                .domainType(BusinessDomainType.RENEWAL).domainId(renewal.getId())
+                .eventType(BusinessEventType.RENEWAL_EXTENSION_APPLIED).actorType(BusinessActorType.SYSTEM)
+                .renewalId(renewal.getId()).sessionId(session.getId()).agreementId(agreement.getId())
+                .paymentId(payment.getId()).memberId(renewal.getMemberId()).doctorId(renewal.getDoctorId())
+                .previousState(renewal.getPreviousEndsAt().toString()).newState(renewal.getProposedNewEndsAt().toString())
+                .metadata(java.util.Map.of("previousEndsAt", renewal.getPreviousEndsAt().toString(),
+                        "newEndsAt", renewal.getProposedNewEndsAt().toString()))
+                .idempotencyKey("renewal:" + renewal.getId() + ":extension-applied")
+                .notifications(List.of(
+                        renewalNotification(renewal, renewal.getMemberId(), "member", "Your care end date was extended."),
+                        renewalNotification(renewal, renewal.getDoctorId(), "doctor", "The care episode end date was extended.")))
+                .build());
     }
 
     @Override
@@ -327,6 +370,9 @@ public class ConsultationRenewalServiceImpl implements ConsultationRenewalServic
                 renewal.setStatus(ConsultationRenewalStatus.EXPIRED);
                 renewalRepository.save(renewal);
                 agreementService.invalidateRenewal(renewal.getId(), "Renewal payment expired or failed");
+                auditRenewal(renewal, BusinessEventType.RENEWAL_EXPIRED, null, null,
+                        ConsultationRenewalStatus.WAITING_PAYMENT, ConsultationRenewalStatus.EXPIRED,
+                        "Renewal payment expired or failed");
             }
         });
     }
@@ -421,6 +467,29 @@ public class ConsultationRenewalServiceImpl implements ConsultationRenewalServic
                 || otherSessions + reservations + extensionHolds >= profile.getMaxActiveConsultations())
             throw new AppException(ErrorCode.DOCTOR_CAPACITY_EXCEEDED);
         return profile;
+    }
+
+    private void auditRenewal(ConsultationRenewal renewal, BusinessEventType eventType, Long actorId,
+            UserRole actorRole, ConsultationRenewalStatus previous, ConsultationRenewalStatus next, String reason) {
+        String key = "renewal:" + renewal.getId() + ":" + eventType + ":" + next;
+        operationalEventService.record(OperationalEventCommand.builder()
+                .domainType(BusinessDomainType.RENEWAL).domainId(renewal.getId()).eventType(eventType)
+                .actorType(actorId == null ? BusinessActorType.SYSTEM : BusinessActorType.USER)
+                .actorUserId(actorId).actorRole(actorRole == null ? null : actorRole.name())
+                .renewalId(renewal.getId()).sessionId(renewal.getSessionId()).agreementId(renewal.getAgreementId())
+                .paymentId(renewal.getSuccessfulPaymentId()).memberId(renewal.getMemberId()).doctorId(renewal.getDoctorId())
+                .previousState(previous == null ? null : previous.name()).newState(next == null ? null : next.name())
+                .reason(reason).idempotencyKey(key)
+                .notifications(List.of(renewalNotification(renewal, renewal.getMemberId(), "member",
+                        "Your renewal status is now " + next + ".")))
+                .build());
+    }
+
+    private NotificationIntent renewalNotification(ConsultationRenewal renewal, Long recipient, String recipientType,
+            String message) {
+        return new NotificationIntent(recipient, NotificationType.RENEWAL_STATUS_CHANGED, "Renewal update", message,
+                BusinessDomainType.RENEWAL, renewal.getId(),
+                "renewal:" + renewal.getId() + ":" + renewal.getStatus() + ":" + recipientType);
     }
 
     private void markReview(ConsultationRenewal renewal, ConsultationPayment payment, Instant now) {

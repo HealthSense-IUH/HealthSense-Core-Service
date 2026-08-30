@@ -24,6 +24,10 @@ import fit.iuh.se.hschat.service.renewal.ConsultationRenewalService;
 import fit.iuh.se.hschat.service.refund.RefundReviewCaseService;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
+import fit.iuh.se.hsoperations.dto.command.*;
+import fit.iuh.se.hsoperations.entity.enums.*;
+import fit.iuh.se.hsoperations.service.OperationalEventService;
+import fit.iuh.se.hsuser.entity.enums.UserRole;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -63,6 +67,7 @@ public class ConsultationPaymentServiceImpl implements ConsultationPaymentServic
     EpisodeHealthRecordAuthorizationService authorizationService;
     ConsultationRenewalService renewalService;
     RefundReviewCaseService refundReviewCaseService;
+    OperationalEventService operationalEventService;
 
     @NonFinal
     @Value("${app.payment.return-url:http://localhost:5173/payment/result}")
@@ -109,6 +114,8 @@ public class ConsultationPaymentServiceImpl implements ConsultationPaymentServic
             payment.setPaymentLinkId(paymentLink.getPaymentLinkId());
             payment.setCheckoutUrl(paymentLink.getCheckoutUrl());
             payment = paymentRepository.saveAndFlush(payment);
+            auditPayment(payment, BusinessEventType.PAYMENT_ATTEMPT_CREATED, BusinessActorType.USER, memberId,
+                    null, ConsultationPaymentStatus.PENDING, null, NotificationType.PAYMENT_REQUIRED, null);
             return toResponse(payment);
         } catch (DataIntegrityViolationException exception) {
             return paymentRepository.findFirstByAgreementIdOrderByAttemptNumberDesc(agreement.getId())
@@ -164,7 +171,10 @@ public class ConsultationPaymentServiceImpl implements ConsultationPaymentServic
                     "HS REN " + payment.getOrderCode(), returnUrl, cancelUrl, payment.getExpiresAt());
             payment.setPaymentLinkId(paymentLink.getPaymentLinkId());
             payment.setCheckoutUrl(paymentLink.getCheckoutUrl());
-            return toResponse(paymentRepository.saveAndFlush(payment));
+            payment = paymentRepository.saveAndFlush(payment);
+            auditPayment(payment, BusinessEventType.PAYMENT_ATTEMPT_CREATED, BusinessActorType.USER, memberId,
+                    null, ConsultationPaymentStatus.PENDING, null, NotificationType.PAYMENT_REQUIRED, null);
+            return toResponse(payment);
         } catch (DataIntegrityViolationException exception) {
             return paymentRepository.findFirstByAgreementIdOrderByAttemptNumberDesc(agreement.getId())
                     .map(this::toResponse).orElseThrow(() -> exception);
@@ -317,6 +327,8 @@ public class ConsultationPaymentServiceImpl implements ConsultationPaymentServic
         lockedPayment.setStatus(toExpiredPaymentStatus(providerStatus));
         lockedPayment.setExpiredAt(now);
         paymentRepository.save(lockedPayment);
+        auditPayment(lockedPayment, BusinessEventType.PAYMENT_STATUS_CHANGED, BusinessActorType.SYSTEM, null,
+                null, lockedPayment.getStatus(), "Provider reconciliation/expiration", NotificationType.PAYMENT_FAILED, null);
         if (lockedPayment.getPaymentPurpose() == ConsultationPaymentPurpose.RENEWAL) {
             renewalService.expireForPayment(lockedPayment, now);
             return;
@@ -376,9 +388,37 @@ public class ConsultationPaymentServiceImpl implements ConsultationPaymentServic
         agreementService.consume(agreement);
         reservationService.release(request, DoctorReservationReleaseReason.ACTIVATED);
 
+        operationalEventService.record(OperationalEventCommand.builder()
+                .domainType(BusinessDomainType.SESSION).domainId(session.getId())
+                .eventType(BusinessEventType.SESSION_CREATED).actorType(BusinessActorType.SYSTEM)
+                .requestId(request.getId()).paymentId(payment.getId()).agreementId(agreement.getId())
+                .sessionId(session.getId()).memberId(session.getMemberId()).doctorId(session.getDoctorId())
+                .newState(ConsultationStatus.ACTIVE.name())
+                .idempotencyKey("session:" + session.getId() + ":created")
+                .build());
+
+        ConsultationPaymentStatus previousPaymentStatus = payment.getStatus();
         payment.setStatus(ConsultationPaymentStatus.PAID);
         payment.setPaidAt(now);
         paymentRepository.save(payment);
+        auditPayment(payment, BusinessEventType.PAYMENT_VERIFIED, BusinessActorType.SYSTEM, null,
+                previousPaymentStatus, ConsultationPaymentStatus.PAID, null, NotificationType.PAYMENT_CONFIRMED, null);
+        operationalEventService.record(OperationalEventCommand.builder()
+                .domainType(BusinessDomainType.SESSION).domainId(session.getId())
+                .eventType(BusinessEventType.SESSION_ACTIVATED).actorType(BusinessActorType.SYSTEM)
+                .requestId(request.getId()).paymentId(payment.getId()).agreementId(agreement.getId())
+                .sessionId(session.getId()).memberId(session.getMemberId()).doctorId(session.getDoctorId())
+                .newState(ConsultationStatus.ACTIVE.name())
+                .idempotencyKey("session:" + session.getId() + ":activated")
+                .notifications(List.of(
+                        new NotificationIntent(session.getMemberId(), NotificationType.CARE_ACTIVATED,
+                                "Care activated", "Your care episode is now active.", BusinessDomainType.SESSION,
+                                session.getId(), "session:" + session.getId() + ":activated:member"),
+                        new NotificationIntent(session.getDoctorId(), NotificationType.CARE_ACTIVATED,
+                                "Care episode assigned", "A care episode is now active and available in your care list.",
+                                BusinessDomainType.SESSION, session.getId(),
+                                "session:" + session.getId() + ":activated:doctor")))
+                .build());
     }
 
     private ConsultationSession createActiveSession(
@@ -552,7 +592,58 @@ public class ConsultationPaymentServiceImpl implements ConsultationPaymentServic
             payment.setPaidAt(now);
         paymentRepository.save(payment);
         refundReviewCaseService.ensureReviewRequired(payment);
+        auditPayment(payment, BusinessEventType.PAYMENT_REQUIRES_REVIEW, BusinessActorType.SYSTEM, null,
+                null, ConsultationPaymentStatus.REQUIRES_REVIEW, "Verified payment requires operational review",
+                NotificationType.PAYMENT_REQUIRES_REVIEW,
+                new NeedsActionIntent(NeedsActionType.PAYMENT_REQUIRES_REVIEW, NeedsActionPriority.HIGH,
+                        "Payment requires review", "Verified payment evidence could not safely activate care.",
+                        BusinessDomainType.PAYMENT, payment.getId(), UserRole.CARE_COORDINATOR.name(),
+                        "payment:" + payment.getId() + ":requires-review"));
         if (payment.getPaymentPurpose() == ConsultationPaymentPurpose.RENEWAL)
             renewalService.markRequiresReview(payment);
+    }
+
+    private void auditPayment(ConsultationPayment payment, BusinessEventType eventType, BusinessActorType actorType,
+            Long actorId, ConsultationPaymentStatus previous, ConsultationPaymentStatus next, String reason,
+            NotificationType notificationType, NeedsActionIntent needsAction) {
+        String key = "payment:" + payment.getId() + ":" + eventType + ":" + next;
+        List<NotificationIntent> notifications = new java.util.ArrayList<>();
+        if (notificationType != null)
+            notifications.add(new NotificationIntent(payment.getMemberId(), notificationType,
+                    paymentNotificationTitle(notificationType), paymentNotificationMessage(notificationType),
+                    BusinessDomainType.PAYMENT, payment.getId(), key + ":member"));
+        if (eventType == BusinessEventType.PAYMENT_REQUIRES_REVIEW)
+            notifications.add(NotificationIntent.forRole(UserRole.CARE_COORDINATOR,
+                    NotificationType.OPERATIONAL_REVIEW_REQUIRED, "Payment requires review",
+                    "Verified payment evidence requires coordinator review and did not activate care.",
+                    BusinessDomainType.PAYMENT, payment.getId(), key + ":coordinators"));
+        operationalEventService.record(OperationalEventCommand.builder()
+                .domainType(BusinessDomainType.PAYMENT).domainId(payment.getId()).eventType(eventType)
+                .actorType(actorType).actorUserId(actorId)
+                .actorRole(actorId == null ? null : UserRole.MEMBER.name())
+                .requestId(payment.getRequestId()).agreementId(payment.getAgreementId()).paymentId(payment.getId())
+                .renewalId(payment.getRenewalId()).memberId(payment.getMemberId())
+                .previousState(previous == null ? null : previous.name()).newState(next == null ? null : next.name())
+                .reason(reason).idempotencyKey(key).needsAction(needsAction)
+                .notifications(notifications)
+                .build());
+    }
+
+    private String paymentNotificationTitle(NotificationType type) {
+        return switch (type) {
+            case PAYMENT_CONFIRMED -> "Payment confirmed";
+            case PAYMENT_REQUIRES_REVIEW -> "Payment under review";
+            case PAYMENT_FAILED -> "Payment attempt closed";
+            default -> "Payment required";
+        };
+    }
+
+    private String paymentNotificationMessage(NotificationType type) {
+        return switch (type) {
+            case PAYMENT_CONFIRMED -> "Your payment was verified.";
+            case PAYMENT_REQUIRES_REVIEW -> "Your payment was received and requires operational review. Care was not activated.";
+            case PAYMENT_FAILED -> "The payment attempt failed, was cancelled, or expired.";
+            default -> "A payment link is available for your accepted care agreement.";
+        };
     }
 }

@@ -12,6 +12,10 @@ import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsuser.entity.enums.AccountStatus;
 import fit.iuh.se.hsuser.repository.UserAccountRepository;
+import fit.iuh.se.hsuser.entity.enums.UserRole;
+import fit.iuh.se.hsoperations.dto.command.*;
+import fit.iuh.se.hsoperations.entity.enums.*;
+import fit.iuh.se.hsoperations.service.OperationalEventService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -33,6 +37,7 @@ public class EpisodeHealthRecordAuthorizationServiceImpl
     ConsultationSessionRepository sessionRepository;
     HealthRecordRepository healthRecordRepository;
     UserAccountRepository userAccountRepository;
+    OperationalEventService operationalEventService;
 
     @Override
     @Transactional
@@ -150,7 +155,7 @@ public class EpisodeHealthRecordAuthorizationServiceImpl
         if (existing != null)
             return existing;
 
-        return authorizationRepository.save(EpisodeHealthRecordAuthorization.builder()
+        EpisodeHealthRecordAuthorization authorization = authorizationRepository.save(EpisodeHealthRecordAuthorization.builder()
                 .sessionId(session.getId())
                 .healthRecordId(healthRecordId)
                 .memberId(session.getMemberId())
@@ -159,6 +164,24 @@ public class EpisodeHealthRecordAuthorizationServiceImpl
                 .authorizedBy(authorizedBy)
                 .authorizedByType(authorizedByType)
                 .build());
+        BusinessActorType actorType = authorizedByType == EpisodeHealthRecordAuthorizedByType.SYSTEM
+                ? BusinessActorType.SYSTEM : BusinessActorType.USER;
+        operationalEventService.record(OperationalEventCommand.builder()
+                .domainType(BusinessDomainType.HEALTH_RECORD).domainId(healthRecordId)
+                .eventType(BusinessEventType.HEALTH_RECORD_AUTHORIZED).actorType(actorType)
+                .actorUserId(actorType == BusinessActorType.USER ? authorizedBy : null)
+                .actorRole(authorizedByType == EpisodeHealthRecordAuthorizedByType.MEMBER ? UserRole.MEMBER.name()
+                        : authorizedByType == EpisodeHealthRecordAuthorizedByType.ADMIN_OVERRIDE ? UserRole.ADMIN.name() : null)
+                .sessionId(session.getId()).healthRecordId(healthRecordId).memberId(session.getMemberId())
+                .doctorId(session.getDoctorId()).newState(source.name())
+                .metadata(java.util.Map.of("authorizationSource", source.name()))
+                .idempotencyKey("health-record-authorization:" + session.getId() + ":" + healthRecordId)
+                .notifications(List.of(new NotificationIntent(session.getDoctorId(), NotificationType.HEALTH_RECORD_AUTHORIZED,
+                        "Health record shared", "A HealthRecord was authorized for this active care episode.",
+                        BusinessDomainType.HEALTH_RECORD, healthRecordId,
+                        "health-record-authorization:" + session.getId() + ":" + healthRecordId + ":doctor")))
+                .build());
+        return authorization;
     }
 
     private void requireActiveSession(ConsultationSession session) {

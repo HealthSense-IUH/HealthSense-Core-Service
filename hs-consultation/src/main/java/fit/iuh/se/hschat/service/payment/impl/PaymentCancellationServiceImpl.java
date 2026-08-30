@@ -10,6 +10,9 @@ import fit.iuh.se.hschat.service.payment.PaymentCancellationService;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
+import fit.iuh.se.hsoperations.dto.command.*;
+import fit.iuh.se.hsoperations.entity.enums.*;
+import fit.iuh.se.hsoperations.service.OperationalEventService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -32,6 +35,7 @@ public class PaymentCancellationServiceImpl implements PaymentCancellationServic
     ConsultationPaymentRepository paymentRepository;
     PayOSPaymentGateway paymentGateway;
     ApplicationEventPublisher eventPublisher;
+    OperationalEventService operationalEventService;
 
     @Override
     @Transactional(propagation = Propagation.MANDATORY)
@@ -78,10 +82,10 @@ public class PaymentCancellationServiceImpl implements PaymentCancellationServic
         if (payment.getProviderCancellationStatus() != PaymentProviderCancellationStatus.FAILED
                 && payment.getProviderCancellationStatus() != PaymentProviderCancellationStatus.PENDING)
             return;
-        cancelOne(payment);
+        cancelOne(payment, actorId, role);
     }
 
-    private void cancelOne(ConsultationPayment payment) {
+    private void cancelOne(ConsultationPayment payment, Long actorId, UserRole role) {
         Instant now = Instant.now();
         payment.setProviderCancellationLastAttemptAt(now);
         try {
@@ -95,6 +99,23 @@ public class PaymentCancellationServiceImpl implements PaymentCancellationServic
             payment.setProviderCancellationError(truncate(exception.getMessage()));
         }
         paymentRepository.save(payment);
+        boolean failed = payment.getProviderCancellationStatus() == PaymentProviderCancellationStatus.FAILED;
+        String actionKey = "payment:" + payment.getId() + ":provider-cancellation-failure";
+        if (!failed) operationalEventService.resolveNeedsAction(actionKey, "Provider payment link cancellation succeeded");
+        operationalEventService.record(OperationalEventCommand.builder()
+                .domainType(BusinessDomainType.PAYMENT).domainId(payment.getId())
+                .eventType(failed ? BusinessEventType.PAYMENT_PROVIDER_CANCELLATION_FAILED
+                        : BusinessEventType.PAYMENT_PROVIDER_CANCELLATION_SUCCEEDED)
+                .actorType(BusinessActorType.USER).actorUserId(actorId).actorRole(role.name())
+                .requestId(payment.getRequestId()).paymentId(payment.getId()).memberId(payment.getMemberId())
+                .newState(payment.getProviderCancellationStatus().name()).reason(payment.getProviderCancellationError())
+                .idempotencyKey("payment:" + payment.getId() + ":provider-cancellation:"
+                        + payment.getProviderCancellationStatus() + ":" + payment.getProviderCancellationLastAttemptAt())
+                .needsAction(failed ? new NeedsActionIntent(NeedsActionType.PROVIDER_CANCELLATION_RECONCILIATION,
+                        NeedsActionPriority.HIGH, "Provider cancellation reconciliation",
+                        "The local request is cancelled but the provider payment link cancellation failed.",
+                        BusinessDomainType.PAYMENT, payment.getId(), UserRole.ADMIN.name(), actionKey) : null)
+                .build());
     }
 
     private String truncate(String value) {

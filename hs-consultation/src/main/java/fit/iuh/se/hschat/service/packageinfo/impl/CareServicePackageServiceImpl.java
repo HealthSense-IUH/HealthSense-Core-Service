@@ -16,6 +16,9 @@ import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsshared.dto.response.PageResponse;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
+import fit.iuh.se.hsoperations.dto.command.OperationalEventCommand;
+import fit.iuh.se.hsoperations.entity.enums.*;
+import fit.iuh.se.hsoperations.service.OperationalEventService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -48,6 +51,7 @@ public class CareServicePackageServiceImpl implements CareServicePackageService 
     CareServicePackageRepository packageRepository;
     CareServicePackageFamilyRepository familyRepository;
     ConsultationMapper mapper;
+    OperationalEventService operationalEventService;
 
     @Override
     @Transactional(readOnly = true)
@@ -101,6 +105,7 @@ public class CareServicePackageServiceImpl implements CareServicePackageService 
     @Override
     @Transactional
     public CareServicePackageResponse createPackage(
+            Long actorId,
             UserRole actorRole,
             CreateCareServicePackageRequest request
     ) {
@@ -132,12 +137,15 @@ public class CareServicePackageServiceImpl implements CareServicePackageService 
                 .build();
         validateServiceScope(carePackage.getIncludedServices(), carePackage.getExcludedServices());
 
-        return mapper.toCareServicePackageResponse(saveVersion(carePackage));
+        carePackage = saveVersion(carePackage);
+        auditPackage(carePackage, BusinessEventType.PACKAGE_CREATED, actorId, actorRole, null, carePackage.getStatus());
+        return mapper.toCareServicePackageResponse(carePackage);
     }
 
     @Override
     @Transactional
     public CareServicePackageResponse updatePackage(
+            Long actorId,
             UserRole actorRole,
             Long packageId,
             UpdateCareServicePackageRequest request
@@ -148,7 +156,10 @@ public class CareServicePackageServiceImpl implements CareServicePackageService 
 
         if (carePackage.getStatus() == CareServicePackageStatus.INACTIVE) {
             applyUpdate(carePackage, request);
-            return mapper.toCareServicePackageResponse(packageRepository.save(carePackage));
+            carePackage = packageRepository.save(carePackage);
+            auditPackage(carePackage, BusinessEventType.PACKAGE_UPDATED, actorId, actorRole,
+                    CareServicePackageStatus.INACTIVE, carePackage.getStatus());
+            return mapper.toCareServicePackageResponse(carePackage);
         }
 
         lockFamily(carePackage.getFamilyId());
@@ -164,12 +175,16 @@ public class CareServicePackageServiceImpl implements CareServicePackageService 
 
         publishedVersion.setStatus(CareServicePackageStatus.RETIRED);
         packageRepository.saveAndFlush(publishedVersion);
-        return mapper.toCareServicePackageResponse(saveVersion(newVersion));
+        newVersion = saveVersion(newVersion);
+        auditPackage(publishedVersion, BusinessEventType.PACKAGE_RETIRED, actorId, actorRole,
+                CareServicePackageStatus.ACTIVE, CareServicePackageStatus.RETIRED);
+        auditPackage(newVersion, BusinessEventType.PACKAGE_UPDATED, actorId, actorRole, null, newVersion.getStatus());
+        return mapper.toCareServicePackageResponse(newVersion);
     }
 
     @Override
     @Transactional
-    public CareServicePackageResponse activatePackage(UserRole actorRole, Long packageId) {
+    public CareServicePackageResponse activatePackage(Long actorId, UserRole actorRole, Long packageId) {
         validatePackageManager(actorRole);
         CareServicePackage carePackage = findPackage(packageId);
         ensureNotRetired(carePackage);
@@ -183,27 +198,48 @@ public class CareServicePackageServiceImpl implements CareServicePackageService 
                     packageRepository.saveAndFlush(active);
                 });
         carePackage.setStatus(CareServicePackageStatus.ACTIVE);
-        return mapper.toCareServicePackageResponse(packageRepository.save(carePackage));
+        carePackage = packageRepository.save(carePackage);
+        auditPackage(carePackage, BusinessEventType.PACKAGE_ACTIVATED, actorId, actorRole,
+                CareServicePackageStatus.INACTIVE, CareServicePackageStatus.ACTIVE);
+        return mapper.toCareServicePackageResponse(carePackage);
     }
 
     @Override
     @Transactional
-    public CareServicePackageResponse deactivatePackage(UserRole actorRole, Long packageId) {
+    public CareServicePackageResponse deactivatePackage(Long actorId, UserRole actorRole, Long packageId) {
         validatePackageManager(actorRole);
         CareServicePackage carePackage = findPackage(packageId);
         ensureNotRetired(carePackage);
         if (carePackage.getStatus() == CareServicePackageStatus.ACTIVE)
             carePackage.setStatus(CareServicePackageStatus.RETIRED);
-        return mapper.toCareServicePackageResponse(packageRepository.save(carePackage));
+        carePackage = packageRepository.save(carePackage);
+        auditPackage(carePackage, BusinessEventType.PACKAGE_DEACTIVATED, actorId, actorRole,
+                CareServicePackageStatus.ACTIVE, carePackage.getStatus());
+        return mapper.toCareServicePackageResponse(carePackage);
     }
 
     @Override
     @Transactional
-    public CareServicePackageResponse retirePackage(UserRole actorRole, Long packageId) {
+    public CareServicePackageResponse retirePackage(Long actorId, UserRole actorRole, Long packageId) {
         validatePackageManager(actorRole);
         CareServicePackage carePackage = findPackage(packageId);
         carePackage.setStatus(CareServicePackageStatus.RETIRED);
-        return mapper.toCareServicePackageResponse(packageRepository.save(carePackage));
+        carePackage = packageRepository.save(carePackage);
+        auditPackage(carePackage, BusinessEventType.PACKAGE_RETIRED, actorId, actorRole,
+                null, CareServicePackageStatus.RETIRED);
+        return mapper.toCareServicePackageResponse(carePackage);
+    }
+
+    private void auditPackage(CareServicePackage carePackage, BusinessEventType eventType, Long actorId, UserRole actorRole,
+            CareServicePackageStatus previous, CareServicePackageStatus next) {
+        operationalEventService.record(OperationalEventCommand.builder()
+                .domainType(BusinessDomainType.PACKAGE).domainId(carePackage.getId()).eventType(eventType)
+                .actorType(BusinessActorType.USER).actorUserId(actorId).actorRole(actorRole.name())
+                .previousState(previous == null ? null : previous.name()).newState(next == null ? null : next.name())
+                .metadata(java.util.Map.of("familyId", String.valueOf(carePackage.getFamilyId()),
+                        "version", String.valueOf(carePackage.getVersionNumber())))
+                .idempotencyKey("package:" + carePackage.getId() + ":" + eventType + ":" + carePackage.getVersionNumber())
+                .build());
     }
 
     private CareServicePackage copyForNextVersion(CareServicePackage source, int nextVersion) {

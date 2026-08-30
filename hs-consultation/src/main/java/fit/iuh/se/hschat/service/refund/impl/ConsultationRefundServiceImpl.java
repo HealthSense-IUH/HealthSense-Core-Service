@@ -11,6 +11,9 @@ import fit.iuh.se.hschat.service.refund.ConsultationRefundService;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
+import fit.iuh.se.hsoperations.dto.command.*;
+import fit.iuh.se.hsoperations.entity.enums.*;
+import fit.iuh.se.hsoperations.service.OperationalEventService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -31,6 +34,7 @@ public class ConsultationRefundServiceImpl implements ConsultationRefundService 
     ConsultationRequestRepository requestRepository;
     ConsultationRenewalRepository renewalRepository;
     PayOSPaymentGateway paymentGateway;
+    OperationalEventService operationalEventService;
 
     @Override
     @Transactional
@@ -70,7 +74,10 @@ public class ConsultationRefundServiceImpl implements ConsultationRefundService 
         refund.setReviewedBy(actorId);
         refund.setReviewedAt(Instant.now());
         refund.setStatus(ConsultationRefundStatus.RECOMMENDED);
-        return toResponse(refundRepository.save(refund));
+        refund = refundRepository.save(refund);
+        auditRefund(refund, BusinessEventType.REFUND_RECOMMENDED, actorId, role,
+                ConsultationRefundStatus.REVIEW_REQUIRED, ConsultationRefundStatus.RECOMMENDED, request.getReason(), null);
+        return toResponse(refund);
     }
 
     @Override
@@ -106,7 +113,10 @@ public class ConsultationRefundServiceImpl implements ConsultationRefundService 
             refund.setApprovedAmount(null);
             refund.setStatus(ConsultationRefundStatus.REJECTED);
         }
-        return toResponse(refundRepository.save(refund));
+        refund = refundRepository.save(refund);
+        auditRefund(refund, Boolean.TRUE.equals(request.getApproved()) ? BusinessEventType.REFUND_APPROVED : BusinessEventType.REFUND_REJECTED,
+                actorId, role, ConsultationRefundStatus.RECOMMENDED, refund.getStatus(), request.getReason(), null);
+        return toResponse(refund);
     }
 
     @Override
@@ -139,7 +149,13 @@ public class ConsultationRefundServiceImpl implements ConsultationRefundService 
             refund.setStatus(ConsultationRefundStatus.FAILED);
             refund.setProviderResult(truncate(exception.getMessage()));
         }
-        return toResponse(refundRepository.save(refund));
+        refund = refundRepository.save(refund);
+        NeedsActionIntent failure = refund.getStatus() == ConsultationRefundStatus.FAILED
+                ? refundFailureAction(refund) : null;
+        auditRefund(refund, refund.getStatus() == ConsultationRefundStatus.SUCCEEDED
+                        ? BusinessEventType.REFUND_SUCCEEDED : BusinessEventType.REFUND_FAILED,
+                actorId, role, ConsultationRefundStatus.PROCESSING, refund.getStatus(), refund.getProviderResult(), failure);
+        return toResponse(refund);
     }
 
     @Override
@@ -157,7 +173,10 @@ public class ConsultationRefundServiceImpl implements ConsultationRefundService 
         refund.setStatus(Boolean.TRUE.equals(request.getSucceeded())
                 ? ConsultationRefundStatus.SUCCEEDED : ConsultationRefundStatus.FAILED);
         refund.setCompletedAt(Boolean.TRUE.equals(request.getSucceeded()) ? Instant.now() : null);
-        return toResponse(refundRepository.save(refund));
+        refund = refundRepository.save(refund);
+        auditRefund(refund, BusinessEventType.REFUND_RECONCILED, actorId, role, null, refund.getStatus(),
+                request.getProviderResult(), refund.getStatus() == ConsultationRefundStatus.FAILED ? refundFailureAction(refund) : null);
+        return toResponse(refund);
     }
 
     @Override
@@ -231,6 +250,29 @@ public class ConsultationRefundServiceImpl implements ConsultationRefundService 
     private String truncate(String value) {
         if (value == null) return "Unknown refund provider failure";
         return value.length() <= 1000 ? value : value.substring(0, 1000);
+    }
+
+    private NeedsActionIntent refundFailureAction(ConsultationRefund refund) {
+        return new NeedsActionIntent(NeedsActionType.REFUND_PROVIDER_FAILURE, NeedsActionPriority.CRITICAL,
+                "Refund provider failure", "The approved refund requires provider reconciliation.",
+                BusinessDomainType.REFUND, refund.getId(), UserRole.ADMIN.name(),
+                "refund:" + refund.getId() + ":provider-failure");
+    }
+
+    private void auditRefund(ConsultationRefund refund, BusinessEventType eventType, Long actorId, UserRole actorRole,
+            ConsultationRefundStatus previous, ConsultationRefundStatus next, String reason, NeedsActionIntent needsAction) {
+        String key = "refund:" + refund.getId() + ":" + eventType + ":" + refund.getExecutionAttempts();
+        operationalEventService.record(OperationalEventCommand.builder()
+                .domainType(BusinessDomainType.REFUND).domainId(refund.getId()).eventType(eventType)
+                .actorType(BusinessActorType.USER).actorUserId(actorId).actorRole(actorRole.name())
+                .requestId(refund.getRequestId()).paymentId(refund.getPaymentId()).agreementId(refund.getAgreementId())
+                .sessionId(refund.getSessionId()).renewalId(refund.getRenewalId()).refundId(refund.getId())
+                .memberId(refund.getMemberId()).previousState(previous == null ? null : previous.name())
+                .newState(next == null ? null : next.name()).reason(reason).idempotencyKey(key).needsAction(needsAction)
+                .notifications(java.util.List.of(new NotificationIntent(refund.getMemberId(), NotificationType.REFUND_STATUS_CHANGED,
+                        "Refund status updated", "Your refund status is now " + next + ".",
+                        BusinessDomainType.REFUND, refund.getId(), key + ":member")))
+                .build());
     }
 
     private ConsultationRefundResponse toResponse(ConsultationRefund refund) {

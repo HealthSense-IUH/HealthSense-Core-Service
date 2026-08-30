@@ -14,6 +14,10 @@ import fit.iuh.se.hsuser.entity.UserAccount;
 import fit.iuh.se.hsuser.entity.enums.AccountStatus;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
 import fit.iuh.se.hsuser.repository.UserAccountRepository;
+import fit.iuh.se.hsoperations.dto.command.OperationalEventCommand;
+import fit.iuh.se.hsoperations.dto.command.NotificationIntent;
+import fit.iuh.se.hsoperations.entity.enums.*;
+import fit.iuh.se.hsoperations.service.OperationalEventService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -42,6 +46,7 @@ public class DoctorReservationServiceImpl implements DoctorReservationService {
     DoctorCareProfileRepository doctorCareProfileRepository;
     CareServicePackageRepository packageRepository;
     SupportScheduleValidator scheduleValidator;
+    OperationalEventService operationalEventService;
 
     @Override
     @Transactional
@@ -75,7 +80,15 @@ public class DoctorReservationServiceImpl implements DoctorReservationService {
                 .expiresAt(expiresAt)
                 .status(DoctorReservationStatus.ACTIVE)
                 .build();
-        return reservationRepository.saveAndFlush(reservation);
+        reservation = reservationRepository.saveAndFlush(reservation);
+        operationalEventService.record(OperationalEventCommand.builder()
+                .domainType(BusinessDomainType.RESERVATION).domainId(reservation.getId())
+                .eventType(BusinessEventType.DOCTOR_RESERVED).actorType(BusinessActorType.USER)
+                .actorUserId(coordinatorId).actorRole(UserRole.CARE_COORDINATOR.name())
+                .requestId(request.getId()).memberId(request.getMemberId()).doctorId(doctorId)
+                .newState(DoctorReservationStatus.ACTIVE.name())
+                .idempotencyKey("reservation:" + reservation.getId() + ":reserved").build());
+        return reservation;
     }
 
     @Override
@@ -184,7 +197,7 @@ public class DoctorReservationServiceImpl implements DoctorReservationService {
                 || !reservation.getExpiresAt().isAfter(now)) {
             if (reservation != null)
                 releaseReservation(reservation, failureReason, now);
-            returnToCoordination(request);
+            returnToCoordination(request, failureReason);
             return false;
         }
 
@@ -197,7 +210,7 @@ public class DoctorReservationServiceImpl implements DoctorReservationService {
             return true;
 
         releaseReservation(reservation, failureReason, now);
-        returnToCoordination(request);
+        returnToCoordination(request, failureReason);
         return false;
     }
 
@@ -214,12 +227,36 @@ public class DoctorReservationServiceImpl implements DoctorReservationService {
         reservation.setReleaseReason(reason);
         reservation.setReleasedAt(now);
         reservationRepository.save(reservation);
+        operationalEventService.record(OperationalEventCommand.builder()
+                .domainType(BusinessDomainType.RESERVATION).domainId(reservation.getId())
+                .eventType(BusinessEventType.RESERVATION_RELEASED).actorType(BusinessActorType.SYSTEM)
+                .requestId(reservation.getRequestId()).doctorId(reservation.getDoctorId())
+                .previousState(DoctorReservationStatus.ACTIVE.name()).newState(reservation.getStatus().name())
+                .reason(reason.name()).idempotencyKey("reservation:" + reservation.getId() + ":released:" + reason)
+                .build());
     }
 
-    private void returnToCoordination(ConsultationRequest request) {
+    private void returnToCoordination(
+            ConsultationRequest request,
+            DoctorReservationReleaseReason reason) {
+        ConsultationRequestStatus previous = request.getStatus();
+        Long previousDoctorId = request.getAssignedDoctorId();
         request.setStatus(ConsultationRequestStatus.PENDING_REVIEW);
         clearCurrentAssignment(request);
         requestRepository.save(request);
+        operationalEventService.record(OperationalEventCommand.builder()
+                .domainType(BusinessDomainType.REQUEST).domainId(request.getId())
+                .eventType(BusinessEventType.DOCTOR_RECOORDINATED).actorType(BusinessActorType.SYSTEM)
+                .requestId(request.getId()).memberId(request.getMemberId()).doctorId(previousDoctorId)
+                .previousState(previous.name()).newState(ConsultationRequestStatus.PENDING_REVIEW.name())
+                .reason(reason.name())
+                .idempotencyKey("request:" + request.getId() + ":doctor-recoordination:" + reason)
+                .notifications(java.util.List.of(NotificationIntent.forRole(UserRole.CARE_COORDINATOR,
+                        NotificationType.OPERATIONAL_REVIEW_REQUIRED, "Doctor coordination required",
+                        "A care request requires a new Doctor reservation.", BusinessDomainType.REQUEST,
+                        request.getId(), "request:" + request.getId() + ":doctor-recoordination:" + reason
+                                + ":coordinators")))
+                .build());
     }
 
     private void clearCurrentAssignment(ConsultationRequest request) {

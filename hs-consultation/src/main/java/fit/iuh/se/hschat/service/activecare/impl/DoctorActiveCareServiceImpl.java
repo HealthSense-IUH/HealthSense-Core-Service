@@ -25,6 +25,10 @@ import fit.iuh.se.hsshared.service.s3.S3Service;
 import fit.iuh.se.hsuser.entity.UserAccount;
 import fit.iuh.se.hsuser.entity.enums.AccountStatus;
 import fit.iuh.se.hsuser.repository.UserAccountRepository;
+import fit.iuh.se.hsoperations.dto.command.OperationalEventCommand;
+import fit.iuh.se.hsoperations.entity.enums.*;
+import fit.iuh.se.hsoperations.service.OperationalEventService;
+import fit.iuh.se.hsuser.entity.enums.UserRole;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -35,6 +39,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -62,6 +67,7 @@ public class DoctorActiveCareServiceImpl implements DoctorActiveCareService {
     ConsultationMapper consultationMapper;
     HealthRecordMapper healthRecordMapper;
     S3Service s3Service;
+    OperationalEventService operationalEventService;
 
     @Override
     @Transactional(readOnly = true)
@@ -76,7 +82,7 @@ public class DoctorActiveCareServiceImpl implements DoctorActiveCareService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public DoctorConsultationDetailResponse getSessionDetail(Long doctorId, Long sessionId) {
         ConsultationSession session = getAssignedSessionForRecordAccess(doctorId, sessionId);
         EpisodeHealthRecordAuthorization initialAuthorization = authorizationService
@@ -94,7 +100,7 @@ public class DoctorActiveCareServiceImpl implements DoctorActiveCareService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public PageResponse<DoctorScopedHealthRecordResponse> getScopedHealthRecords(Long doctorId, Long sessionId, Pageable pageable) {
         ConsultationSession session = getAssignedSessionForRecordAccess(doctorId, sessionId);
         List<HealthRecord> records = getScopedRecords(session);
@@ -107,28 +113,35 @@ public class DoctorActiveCareServiceImpl implements DoctorActiveCareService {
                         authorizationService.requireDoctorReadAccess(doctorId, session, record.getId())))
                 .toList();
 
+        if (session.getStatus() != ConsultationStatus.ACTIVE)
+            responses.forEach(response -> auditRecordAccess(doctorId, session, response.getRecord().getId(),
+                    BusinessEventType.HEALTH_RECORD_HISTORICAL_ACCESSED));
+
         Page<DoctorScopedHealthRecordResponse> page = new PageImpl<>(responses, pageable, records.size());
         return new PageResponse<>(page);
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public DoctorScopedHealthRecordResponse getScopedHealthRecord(Long doctorId, Long sessionId, Long recordId) {
         ConsultationSession session = getAssignedSessionForRecordAccess(doctorId, sessionId);
         HealthRecord record = healthRecordRepository.findByIdAndUserId(recordId, session.getMemberId())
                 .orElseThrow(() -> new AppException(ErrorCode.HEALTH_RECORD_NOT_FOUND));
         EpisodeHealthRecordAuthorization authorization = authorizationService
                 .requireDoctorReadAccess(doctorId, session, recordId);
+        if (session.getStatus() != ConsultationStatus.ACTIVE)
+            auditRecordAccess(doctorId, session, recordId, BusinessEventType.HEALTH_RECORD_HISTORICAL_ACCESSED);
         return toScopedRecordResponse(session, record, authorization);
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public RawHealthRecordArtifactResponse getRawArtifact(Long doctorId, Long sessionId, Long recordId) {
         ConsultationSession session = getAssignedSessionForRecordAccess(doctorId, sessionId);
         HealthRecord record = healthRecordRepository.findByIdAndUserId(recordId, session.getMemberId())
                 .orElseThrow(() -> new AppException(ErrorCode.HEALTH_RECORD_NOT_FOUND));
         authorizationService.requireDoctorReadAccess(doctorId, session, recordId);
+        auditRecordAccess(doctorId, session, recordId, BusinessEventType.HEALTH_RECORD_RAW_ARTIFACT_ACCESSED);
         return RawHealthRecordArtifactResponse.builder()
                 .sessionId(sessionId)
                 .healthRecordId(recordId)
@@ -158,6 +171,20 @@ public class DoctorActiveCareServiceImpl implements DoctorActiveCareService {
     private ConsultationSession getAssignedSession(Long doctorId, Long sessionId) {
         return sessionRepository.findByIdAndDoctorId(sessionId, doctorId)
                 .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_ACCESS_DENIED));
+    }
+
+    private void auditRecordAccess(Long doctorId, ConsultationSession session, Long recordId,
+            BusinessEventType eventType) {
+        Instant bucket = Instant.now().truncatedTo(ChronoUnit.HOURS);
+        operationalEventService.record(OperationalEventCommand.builder()
+                .domainType(BusinessDomainType.HEALTH_RECORD).domainId(recordId).eventType(eventType)
+                .actorType(BusinessActorType.USER).actorUserId(doctorId).actorRole(UserRole.DOCTOR.name())
+                .sessionId(session.getId()).healthRecordId(recordId).memberId(session.getMemberId()).doctorId(doctorId)
+                .metadata(Map.of("accessContext", session.getStatus() == ConsultationStatus.ACTIVE
+                        ? "ACTIVE_EPISODE" : "RETAINED_HISTORICAL_EPISODE"))
+                .occurredAt(Instant.now()).idempotencyKey("health-record-access:" + eventType + ":" + doctorId
+                        + ":" + session.getId() + ":" + recordId + ":" + bucket)
+                .build());
     }
 
     private ConsultationSession getAssignedSessionForRecordAccess(Long doctorId, Long sessionId) {

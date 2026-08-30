@@ -27,6 +27,10 @@ import fit.iuh.se.hsuser.entity.UserProfile;
 import fit.iuh.se.hsuser.entity.enums.AccountStatus;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
 import fit.iuh.se.hsuser.repository.UserAccountRepository;
+import fit.iuh.se.hsoperations.dto.command.NotificationIntent;
+import fit.iuh.se.hsoperations.dto.command.OperationalEventCommand;
+import fit.iuh.se.hsoperations.entity.enums.*;
+import fit.iuh.se.hsoperations.service.OperationalEventService;
 import jakarta.persistence.criteria.Predicate;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -79,6 +83,7 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
     CareServiceAgreementService agreementService;
     PaymentCancellationService paymentCancellationService;
     ConsultationMapper mapper;
+    OperationalEventService operationalEventService;
 
     @NonFinal
     @Value("${app.consultation.payment-deadline-minutes:30}")
@@ -125,7 +130,10 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
                 .status(ConsultationRequestStatus.PENDING_REVIEW)
                 .build();
 
-        return toRequestResponse(requestRepository.save(consultationRequest));
+        consultationRequest = requestRepository.save(consultationRequest);
+        auditRequest(consultationRequest, BusinessEventType.REQUEST_CREATED, memberId, UserRole.MEMBER,
+                null, ConsultationRequestStatus.PENDING_REVIEW, null, NotificationType.REQUEST_RECEIVED);
+        return toRequestResponse(consultationRequest);
     }
 
     @Override
@@ -164,6 +172,9 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
         consultationRequest.setIntakeFrozenAt(now);
         consultationRequest = requestRepository.save(consultationRequest);
         agreementService.createForReservation(consultationRequest);
+        auditRequest(consultationRequest, BusinessEventType.DOCTOR_RESERVED, actorId, actorRole,
+                ConsultationRequestStatus.PENDING_REVIEW, ConsultationRequestStatus.WAITING_ACCEPTANCE,
+                null, null);
         return toRequestResponse(consultationRequest);
     }
 
@@ -189,7 +200,10 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
         consultationRequest.setReviewedAt(now);
         consultationRequest.setRejectionReason(request.getRejectionReason());
 
-        return toRequestResponse(requestRepository.save(consultationRequest));
+        consultationRequest = requestRepository.save(consultationRequest);
+        auditRequest(consultationRequest, BusinessEventType.REQUEST_REJECTED, actorId, actorRole,
+                null, ConsultationRequestStatus.REJECTED, request.getRejectionReason(), NotificationType.REQUEST_REJECTED);
+        return toRequestResponse(consultationRequest);
     }
 
     @Override
@@ -216,7 +230,11 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
                 .requestedAt(now)
                 .build());
 
-        return toRequestResponse(requestRepository.save(consultationRequest));
+        consultationRequest = requestRepository.save(consultationRequest);
+        auditRequest(consultationRequest, BusinessEventType.REQUEST_MORE_INFO_REQUESTED, actorId, actorRole,
+                ConsultationRequestStatus.PENDING_REVIEW, ConsultationRequestStatus.NEED_MORE_INFO,
+                request.getReason(), NotificationType.REQUEST_NEEDS_INFO);
+        return toRequestResponse(consultationRequest);
     }
 
     @Override
@@ -256,7 +274,11 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
         consultationRequest.setMoreInfoReason(null);
         consultationRequest.setStatus(ConsultationRequestStatus.PENDING_REVIEW);
 
-        return toRequestResponse(requestRepository.save(consultationRequest));
+        consultationRequest = requestRepository.save(consultationRequest);
+        auditRequest(consultationRequest, BusinessEventType.REQUEST_MORE_INFO_SUBMITTED, memberId, UserRole.MEMBER,
+                ConsultationRequestStatus.NEED_MORE_INFO, ConsultationRequestStatus.PENDING_REVIEW,
+                null, NotificationType.REQUEST_RECEIVED);
+        return toRequestResponse(consultationRequest);
     }
 
     @Override
@@ -279,6 +301,8 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
         consultationRequest.setStatus(ConsultationRequestStatus.CANCELLED);
         consultationRequest.setCancelledAt(Instant.now());
         consultationRequest = requestRepository.save(consultationRequest);
+        auditRequest(consultationRequest, BusinessEventType.REQUEST_CANCELLED, memberId, UserRole.MEMBER,
+                null, ConsultationRequestStatus.CANCELLED, "Member cancelled before activation", NotificationType.AGREEMENT_INVALIDATED);
         paymentCancellationService.prepareRequestCancellation(requestId);
         paymentCancellationService.cancelProviderLinksAfterCommit(requestId);
         return toRequestResponse(consultationRequest);
@@ -380,7 +404,58 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
                     request.setExpiredAt(now);
                     agreementService.invalidateCurrent(request.getId(), "Offer/payment window expired");
                     requestRepository.save(request);
+                    auditRequest(request, BusinessEventType.REQUEST_EXPIRED, null, null,
+                            null, ConsultationRequestStatus.EXPIRED, "Offer/payment window expired", NotificationType.PAYMENT_FAILED);
                 });
+    }
+
+    private void auditRequest(ConsultationRequest request, BusinessEventType eventType, Long actorId,
+            UserRole actorRole, ConsultationRequestStatus previous, ConsultationRequestStatus next,
+            String reason, NotificationType notificationType) {
+        List<NotificationIntent> notifications = new ArrayList<>();
+        if (notificationType != null)
+            notifications.add(new NotificationIntent(request.getMemberId(), notificationType,
+                    requestNotificationTitle(notificationType), requestNotificationMessage(notificationType),
+                    BusinessDomainType.REQUEST, request.getId(),
+                    "request:" + request.getId() + ":" + eventType + ":member"));
+        if (eventType == BusinessEventType.REQUEST_CREATED
+                || eventType == BusinessEventType.REQUEST_MORE_INFO_SUBMITTED)
+            notifications.add(NotificationIntent.forRole(UserRole.CARE_COORDINATOR,
+                    NotificationType.REQUEST_RECEIVED,
+                    eventType == BusinessEventType.REQUEST_CREATED ? "New care request" : "Care request resubmitted",
+                    "A care request is ready for coordinator review.", BusinessDomainType.REQUEST, request.getId(),
+                    "request:" + request.getId() + ":" + eventType + ":coordinators"));
+        operationalEventService.record(OperationalEventCommand.builder()
+                .domainType(BusinessDomainType.REQUEST).domainId(request.getId()).eventType(eventType)
+                .actorType(actorId == null ? BusinessActorType.SYSTEM : BusinessActorType.USER)
+                .actorUserId(actorId).actorRole(actorRole == null ? null : actorRole.name())
+                .requestId(request.getId()).memberId(request.getMemberId()).doctorId(request.getAssignedDoctorId())
+                .previousState(previous == null ? null : previous.name()).newState(next == null ? null : next.name())
+                .reason(reason).idempotencyKey("request:" + request.getId() + ":" + eventType + ":" + next)
+                .notifications(notifications)
+                .build());
+    }
+
+    private String requestNotificationTitle(NotificationType type) {
+        return switch (type) {
+            case REQUEST_NEEDS_INFO -> "More information needed";
+            case REQUEST_REJECTED -> "Care request update";
+            case AGREEMENT_READY -> "Care agreement ready";
+            case AGREEMENT_INVALIDATED -> "Care request cancelled";
+            case PAYMENT_FAILED -> "Care offer expired";
+            default -> "Care request received";
+        };
+    }
+
+    private String requestNotificationMessage(NotificationType type) {
+        return switch (type) {
+            case REQUEST_NEEDS_INFO -> "Your care coordinator requested additional information.";
+            case REQUEST_REJECTED -> "Your care request was not approved. Review the request for details.";
+            case AGREEMENT_READY -> "A care agreement is ready for your review and acceptance.";
+            case AGREEMENT_INVALIDATED -> "Your care request was cancelled before activation.";
+            case PAYMENT_FAILED -> "The care offer and payment window expired.";
+            default -> "Your care request was submitted for review.";
+        };
     }
 
     private void validateConsultationManager(UserRole actorRole) {

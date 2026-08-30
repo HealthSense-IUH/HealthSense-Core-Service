@@ -37,6 +37,9 @@ import fit.iuh.se.hsuser.entity.UserAccount;
 import fit.iuh.se.hsuser.entity.enums.AccountStatus;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
 import fit.iuh.se.hsuser.repository.UserAccountRepository;
+import fit.iuh.se.hsoperations.dto.command.*;
+import fit.iuh.se.hsoperations.entity.enums.*;
+import fit.iuh.se.hsoperations.service.OperationalEventService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.NonFinal;
@@ -49,6 +52,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 @Service
@@ -76,6 +80,7 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
     FinalSummaryClosureService finalSummaryClosureService;
     ConsultationRenewalService renewalService;
     ConsultationMapper mapper;
+    OperationalEventService operationalEventService;
 
     @NonFinal
     @Value("${app.consultation.default-doctor-max-active-sessions:20}")
@@ -153,6 +158,9 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
 
         if (status == ConsultationStatus.ACTIVE && request.getHealthRecordId() != null)
             authorizationService.authorizeAdminInitialRecord(session, request.getHealthRecordId(), actorId);
+
+        auditSession(session, BusinessEventType.SESSION_OVERRIDE_CREATED, actorId, actorRole, null, status,
+                request.getOverrideReason(), null, status == ConsultationStatus.ACTIVE ? NotificationType.CARE_ACTIVATED : null);
 
         return mapper.toSessionResponse(session);
     }
@@ -233,6 +241,8 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
                 "Renewal cancelled because the active care episode was closed", now);
         if (meaningfulCare)
             finalSummaryClosureService.onSessionCompleted(session, now);
+        auditSession(session, BusinessEventType.SESSION_CANCELLED, actorId, actorRole, ConsultationStatus.ACTIVE,
+                ConsultationStatus.CANCELLED, request.getCloseReason(), null, NotificationType.CARE_CANCELLED);
         return mapper.toSessionResponse(session);
     }
 
@@ -261,7 +271,15 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
                 ? CareOperationalReviewReason.DOCTOR_TERMINATION_REQUESTED
                 : CareOperationalReviewReason.MEMBER_TERMINATION_REQUESTED);
         session.setOperationalReviewFlaggedAt(Instant.now());
-        return mapper.toSessionResponse(sessionRepository.save(session));
+        session = sessionRepository.save(session);
+        auditSession(session, BusinessEventType.SESSION_TERMINATION_REQUESTED, actorId, actorRole,
+                ConsultationStatus.ACTIVE, ConsultationStatus.ACTIVE, request.getDetails(),
+                new NeedsActionIntent(NeedsActionType.TERMINATION_REVIEW, NeedsActionPriority.HIGH,
+                        "Care termination review", "An active-care participant requested termination.",
+                        BusinessDomainType.SESSION, session.getId(), UserRole.CARE_COORDINATOR.name(),
+                        "session:" + session.getId() + ":termination-review"),
+                NotificationType.CARE_TERMINATION_REQUESTED);
+        return mapper.toSessionResponse(session);
     }
 
     @Override
@@ -284,6 +302,15 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
                     session.setOperationalReviewReason(reason);
                     session.setOperationalReviewFlaggedAt(Instant.now());
                     sessionRepository.save(session);
+                    NeedsActionType type = reason == CareOperationalReviewReason.DOCTOR_ACCOUNT_DISABLED
+                            ? NeedsActionType.DOCTOR_ACTIVE_CARE_INTERRUPTION : NeedsActionType.MEMBER_ACTIVE_CARE_INTERRUPTION;
+                    auditSession(session, BusinessEventType.SESSION_PARTICIPANT_INTERRUPTED, null, null,
+                            ConsultationStatus.ACTIVE, ConsultationStatus.ACTIVE, reason.name(),
+                            new NeedsActionIntent(type, NeedsActionPriority.CRITICAL,
+                                    "Active care interruption", "A disabled participant requires operational review.",
+                                    BusinessDomainType.SESSION, session.getId(), UserRole.CARE_COORDINATOR.name(),
+                                    "session:" + session.getId() + ":interruption:" + reason),
+                            NotificationType.OPERATIONAL_REVIEW_REQUIRED);
                 }));
     }
 
@@ -292,6 +319,11 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
     public void expireOverdueSessions(UserRole actorRole) {
         validateConsultationManager(actorRole);
         Instant now = Instant.now();
+        sessionRepository.findByStatusAndEndsAtBetween(
+                        ConsultationStatus.ACTIVE, now, now.plus(24, ChronoUnit.HOURS))
+                .forEach(session -> auditSession(session, BusinessEventType.SESSION_ENDING_SOON, null, null,
+                        ConsultationStatus.ACTIVE, ConsultationStatus.ACTIVE, null, null,
+                        NotificationType.CARE_ENDING));
         sessionRepository.findByStatusAndEndsAtBefore(ConsultationStatus.ACTIVE, now)
                 .forEach(candidate -> sessionRepository.findByIdForUpdate(candidate.getId()).ifPresent(session -> {
                     if (session.getStatus() != ConsultationStatus.ACTIVE
@@ -303,6 +335,9 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
                     session.setCloseReason("Consultation session completed automatically because the care period ended");
                     sessionRepository.save(session);
                     finalSummaryClosureService.onSessionCompleted(session, now);
+                    auditSession(session, BusinessEventType.SESSION_COMPLETED, null, null,
+                            ConsultationStatus.ACTIVE, ConsultationStatus.COMPLETED, session.getCloseReason(),
+                            null, NotificationType.CARE_COMPLETED);
                 }));
         finalSummaryClosureService.refreshOpenClosures(now);
     }
@@ -320,7 +355,48 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
                     if (session.getHealthRecordId() != null)
                         authorizationService.authorizeAdminInitialRecord(
                                 session, session.getHealthRecordId(), session.getCreatedByAdminId());
+                    auditSession(session, BusinessEventType.SESSION_ACTIVATED, null, null,
+                            ConsultationStatus.SCHEDULED, ConsultationStatus.ACTIVE, null, null,
+                            NotificationType.CARE_ACTIVATED);
                 });
+    }
+
+    private void auditSession(ConsultationSession session, BusinessEventType eventType, Long actorId,
+            UserRole actorRole, ConsultationStatus previous, ConsultationStatus next, String reason,
+            NeedsActionIntent needsAction, NotificationType notificationType) {
+        String key = "session:" + session.getId() + ":" + eventType + ":" + next;
+        List<NotificationIntent> notifications = notificationType == null ? new java.util.ArrayList<>()
+                : new java.util.ArrayList<>(List.of(
+                new NotificationIntent(session.getMemberId(), notificationType, "Care episode update",
+                        sessionMessage(notificationType), BusinessDomainType.SESSION, session.getId(), key + ":member"),
+                new NotificationIntent(session.getDoctorId(), notificationType, "Care episode update",
+                        sessionMessage(notificationType), BusinessDomainType.SESSION, session.getId(), key + ":doctor")));
+        if (eventType == BusinessEventType.SESSION_TERMINATION_REQUESTED
+                || eventType == BusinessEventType.SESSION_PARTICIPANT_INTERRUPTED)
+            notifications.add(NotificationIntent.forRole(UserRole.CARE_COORDINATOR,
+                    NotificationType.OPERATIONAL_REVIEW_REQUIRED, "Care episode requires review",
+                    "An active care episode requires coordinator review.", BusinessDomainType.SESSION,
+                    session.getId(), key + ":coordinators"));
+        operationalEventService.record(OperationalEventCommand.builder()
+                .domainType(BusinessDomainType.SESSION).domainId(session.getId()).eventType(eventType)
+                .actorType(actorId == null ? BusinessActorType.SYSTEM : BusinessActorType.USER)
+                .actorUserId(actorId).actorRole(actorRole == null ? null : actorRole.name())
+                .requestId(session.getRequestId()).sessionId(session.getId()).memberId(session.getMemberId())
+                .doctorId(session.getDoctorId()).previousState(previous == null ? null : previous.name())
+                .newState(next == null ? null : next.name()).reason(reason).idempotencyKey(key)
+                .needsAction(needsAction).notifications(notifications).build());
+    }
+
+    private String sessionMessage(NotificationType type) {
+        return switch (type) {
+            case CARE_ACTIVATED -> "The care episode is now active.";
+            case CARE_ENDING -> "The care episode is ending within 24 hours.";
+            case CARE_COMPLETED -> "The care period has completed.";
+            case CARE_CANCELLED -> "The care episode was administratively closed.";
+            case CARE_TERMINATION_REQUESTED -> "A termination request is awaiting operational review.";
+            case OPERATIONAL_REVIEW_REQUIRED -> "The active care episode requires operational review.";
+            default -> "The care episode status changed.";
+        };
     }
 
     private void validateConsultationManager(UserRole actorRole) {

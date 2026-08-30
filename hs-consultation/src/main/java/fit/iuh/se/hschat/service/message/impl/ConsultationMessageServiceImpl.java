@@ -20,6 +20,10 @@ import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsshared.dto.response.PageResponse;
 import fit.iuh.se.hsuser.entity.enums.AccountStatus;
 import fit.iuh.se.hsuser.repository.UserAccountRepository;
+import fit.iuh.se.hsuser.entity.enums.UserRole;
+import fit.iuh.se.hsoperations.dto.command.*;
+import fit.iuh.se.hsoperations.entity.enums.*;
+import fit.iuh.se.hsoperations.service.OperationalEventService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -44,6 +48,7 @@ public class ConsultationMessageServiceImpl implements ConsultationMessageServic
     ConsultationMapper mapper;
     SupportHoursPolicy supportHoursPolicy;
     UserAccountRepository userAccountRepository;
+    OperationalEventService operationalEventService;
 
     @Override
     @Transactional
@@ -155,6 +160,21 @@ public class ConsultationMessageServiceImpl implements ConsultationMessageServic
         session.setLastMessagePreview(buildPreview(message));
         session.setLastMessageAt(message.getCreatedAt());
         sessionRepository.save(session);
+
+        Long recipientId = participant.getRole() == fit.iuh.se.hschat.entity.enums.ConsultationParticipantRole.MEMBER
+                ? session.getDoctorId() : session.getMemberId();
+        UserRole senderRole = participant.getRole() == fit.iuh.se.hschat.entity.enums.ConsultationParticipantRole.MEMBER
+                ? UserRole.MEMBER : UserRole.DOCTOR;
+        String key = "message:" + message.getId() + ":sent";
+        operationalEventService.record(OperationalEventCommand.builder()
+                .domainType(BusinessDomainType.SESSION).domainId(session.getId()).eventType(BusinessEventType.MESSAGE_SENT)
+                .actorType(BusinessActorType.USER).actorUserId(participant.getUserId()).actorRole(senderRole.name())
+                .sessionId(session.getId()).memberId(session.getMemberId()).doctorId(session.getDoctorId())
+                .metadata(java.util.Map.of("messageType", message.getType().name())).occurredAt(message.getCreatedAt())
+                .idempotencyKey(key).notifications(List.of(new NotificationIntent(recipientId,
+                        NotificationType.NEW_MESSAGE, "New care message",
+                        "You have a new message in an active care episode.", BusinessDomainType.SESSION,
+                        session.getId(), key + ":recipient"))).build());
 
         return mapper.toMessageResponse(message);
     }

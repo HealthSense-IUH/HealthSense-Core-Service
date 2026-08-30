@@ -27,19 +27,21 @@ public interface CareServicePackageService {
     List<CareServicePackageResponse> getPackageVersionsForAdmin(UserRole actorRole, Long packageId);
 
     CareServicePackageResponse createPackage(
+            Long actorId,
             UserRole actorRole,
             CreateCareServicePackageRequest request
     );
 
     CareServicePackageResponse updatePackage(
+            Long actorId,
             UserRole actorRole,
             Long packageId,
             UpdateCareServicePackageRequest request
     );
 
-    CareServicePackageResponse activatePackage(UserRole actorRole, Long packageId);
+    CareServicePackageResponse activatePackage(Long actorId, UserRole actorRole, Long packageId);
 
-    CareServicePackageResponse deactivatePackage(UserRole actorRole, Long packageId);
+    CareServicePackageResponse deactivatePackage(Long actorId, UserRole actorRole, Long packageId);
 
-    CareServicePackageResponse retirePackage(UserRole actorRole, Long packageId);
+    CareServicePackageResponse retirePackage(Long actorId, UserRole actorRole, Long packageId);
 }
