@@ -65,6 +65,9 @@ public interface ConsultationSessionRepository extends JpaRepository<Consultatio
 
     List<ConsultationSession> findByStatusAndEndsAtBefore(ConsultationStatus status, Instant endsAt);
 
+    List<ConsultationSession> findByStatusAndEndsAtBetween(
+            ConsultationStatus status, Instant startsAt, Instant endsAt);
+
     List<ConsultationSession> findByStatusAndStartedAtBefore(ConsultationStatus status, Instant startedAt);
 
     List<ConsultationSession> findAllByMemberIdAndStatus(Long memberId, ConsultationStatus status);
