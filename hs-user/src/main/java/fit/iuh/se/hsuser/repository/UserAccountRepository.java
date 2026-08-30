@@ -15,6 +15,7 @@ import jakarta.persistence.LockModeType;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
+import java.util.List;
 
 @Repository
 public interface UserAccountRepository extends JpaRepository<UserAccount, Long> {
@@ -108,4 +109,6 @@ public interface UserAccountRepository extends JpaRepository<UserAccount, Long> 
     boolean existsByEmailAndIdNot(String email, Long id);
 
     boolean existsByRoleAndStatus(UserRole role, AccountStatus status);
+
+    List<UserAccount> findAllByRoleAndStatus(UserRole role, AccountStatus status);
 }
