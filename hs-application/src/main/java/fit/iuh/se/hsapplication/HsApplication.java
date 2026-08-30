@@ -13,6 +13,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EntityScan(basePackages = "fit.iuh.se")
 @EnableJpaRepositories(basePackages = {
         "fit.iuh.se.hsuser.repository",
+        "fit.iuh.se.hsoperations.repository",
         "fit.iuh.se.hshealthrecord.repository",
         "fit.iuh.se.hschat.repository"
 })
@@ -24,8 +25,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 public class HsApplication {
 
     static {
-        System.setProperty("user.timezone", "Asia/Bangkok");
-        java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("Asia/Bangkok"));
+        System.setProperty("user.timezone", "Asia/Ho_Chi_Minh");
+        java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("Asia/Ho_Chi_Minh"));
     }
 
     public static void main(String[] args) {
