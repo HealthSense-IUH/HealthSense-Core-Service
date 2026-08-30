@@ -46,6 +46,8 @@ class ConsultationMessageServiceImplTest {
     SupportHoursPolicy supportHoursPolicy;
     @Mock
     UserAccountRepository userAccountRepository;
+    @Mock
+    fit.iuh.se.hsoperations.service.OperationalEventService operationalEventService;
 
     ConsultationMessageServiceImpl service;
 
@@ -57,7 +59,8 @@ class ConsultationMessageServiceImplTest {
                 participantRepository,
                 mapper,
                 supportHoursPolicy,
-                userAccountRepository
+                userAccountRepository,
+                operationalEventService
         );
         lenient().when(userAccountRepository.findById(anyLong())).thenAnswer(invocation ->
                 java.util.Optional.of(UserAccount.builder()

@@ -24,6 +24,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.util.Optional;
+import java.util.List;
+import org.springframework.data.domain.PageRequest;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -41,6 +43,7 @@ class DoctorActiveCareServiceImplTest {
     @Mock ConsultationMapper consultationMapper;
     @Mock HealthRecordMapper healthRecordMapper;
     @Mock S3Service s3Service;
+    @Mock fit.iuh.se.hsoperations.service.OperationalEventService operationalEventService;
 
     DoctorActiveCareServiceImpl service;
 
@@ -49,7 +52,7 @@ class DoctorActiveCareServiceImplTest {
         service = new DoctorActiveCareServiceImpl(
                 sessionRepository, participantRepository, messageRepository, attentionRepository,
                 healthRecordRepository, authorizationService, userAccountRepository,
-                consultationMapper, healthRecordMapper, s3Service
+                consultationMapper, healthRecordMapper, s3Service, operationalEventService
         );
         lenient().when(userAccountRepository.findById(2L)).thenReturn(Optional.of(
                 UserAccount.builder().id(2L).status(fit.iuh.se.hsuser.entity.enums.AccountStatus.ACTIVE).build()));
@@ -118,9 +121,34 @@ class DoctorActiveCareServiceImplTest {
         when(healthRecordMapper.toResponse(record)).thenReturn(HealthRecordResponse.builder().id(200L).build());
 
         assertNotNull(service.getScopedHealthRecord(2L, 100L, 200L));
+        verify(operationalEventService).record(argThat(command ->
+                command.eventType() == fit.iuh.se.hsoperations.entity.enums.BusinessEventType.HEALTH_RECORD_HISTORICAL_ACCESSED
+                        && Long.valueOf(100L).equals(command.sessionId())
+                        && Long.valueOf(200L).equals(command.healthRecordId())
+                        && Long.valueOf(2L).equals(command.actorUserId())));
         when(authorizationService.requireDoctorCurrentWriteAccess(2L, session, 200L))
                 .thenThrow(new AppException(ErrorCode.CONSULTATION_ACCESS_DENIED));
         assertThrows(AppException.class, () -> service.markAttentionReviewed(2L, 100L, 200L));
+    }
+
+    @Test
+    void historicalRecordListAccessIsAuditedForEachReturnedRecord() {
+        ConsultationSession session = session(ConsultationStatus.COMPLETED, Instant.now());
+        HealthRecord record = record(200L);
+        when(sessionRepository.findByIdAndDoctorId(100L, 2L)).thenReturn(Optional.of(session));
+        when(authorizationService.getSessionAuthorizations(100L))
+                .thenReturn(List.of(authorization(100L, 200L)));
+        when(healthRecordRepository.findAllById(List.of(200L))).thenReturn(List.of(record));
+        when(authorizationService.requireDoctorReadAccess(2L, session, 200L))
+                .thenReturn(authorization(100L, 200L));
+        when(healthRecordMapper.toResponse(record)).thenReturn(HealthRecordResponse.builder().id(200L).build());
+
+        var result = service.getScopedHealthRecords(2L, 100L, PageRequest.of(0, 10));
+
+        assertEquals(1, result.getContent().size());
+        verify(operationalEventService).record(argThat(command ->
+                command.eventType() == fit.iuh.se.hsoperations.entity.enums.BusinessEventType.HEALTH_RECORD_HISTORICAL_ACCESSED
+                        && Long.valueOf(200L).equals(command.healthRecordId())));
     }
 
     @Test

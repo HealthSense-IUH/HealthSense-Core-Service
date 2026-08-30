@@ -47,6 +47,8 @@ class ConsultationFinalSummaryServiceImplTest {
     UserAccountRepository userAccountRepository;
     @Mock
     FinalSummaryClosureService closureService;
+    @Mock
+    fit.iuh.se.hsoperations.service.OperationalEventService operationalEventService;
 
     ConsultationFinalSummaryServiceImpl service;
 
@@ -58,7 +60,8 @@ class ConsultationFinalSummaryServiceImplTest {
                 addendumRepository,
                 authorizationRepository,
                 userAccountRepository,
-                closureService);
+                closureService,
+                operationalEventService);
         lenient().when(userAccountRepository.findById(2L)).thenReturn(Optional.of(user(2L, UserRole.DOCTOR, AccountStatus.ACTIVE)));
     }
 
@@ -133,6 +136,9 @@ class ConsultationFinalSummaryServiceImplTest {
         assertNotNull(response.getFinalizedAt());
         verify(summaryRepository).save(draft);
         verify(closureService).onSummaryFinalized(eq(completed), any(Instant.class));
+        verify(operationalEventService).record(argThat(command ->
+                command.eventType() == fit.iuh.se.hsoperations.entity.enums.BusinessEventType.FINAL_SUMMARY_FINALIZED
+                        && Long.valueOf(2L).equals(command.actorUserId())));
     }
 
     @Test
@@ -198,6 +204,9 @@ class ConsultationFinalSummaryServiceImplTest {
         assertEquals(ConsultationFinalSummaryStatus.FINALIZED, finalized.getStatus());
         assertEquals(10L, result.getSummaryId());
         verify(summaryRepository, never()).save(finalized);
+        verify(operationalEventService).record(argThat(command ->
+                command.eventType() == fit.iuh.se.hsoperations.entity.enums.BusinessEventType.FINAL_SUMMARY_ADDENDUM_CREATED
+                        && Long.valueOf(100L).equals(command.sessionId())));
     }
 
     @Test

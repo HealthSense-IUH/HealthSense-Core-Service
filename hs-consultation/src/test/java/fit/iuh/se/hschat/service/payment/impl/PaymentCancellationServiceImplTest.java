@@ -27,13 +27,16 @@ class PaymentCancellationServiceImplTest {
     @Mock ConsultationPaymentRepository paymentRepository;
     @Mock PayOSPaymentGateway paymentGateway;
     @Mock ApplicationEventPublisher eventPublisher;
+    @Mock fit.iuh.se.hsoperations.service.OperationalEventService operationalEventService;
     PaymentCancellationServiceImpl service;
     PaymentProviderCancellationEventHandler eventHandler;
 
     @BeforeEach
     void setUp() {
-        service = new PaymentCancellationServiceImpl(paymentRepository, paymentGateway, eventPublisher);
-        eventHandler = new PaymentProviderCancellationEventHandler(paymentRepository, paymentGateway);
+        service = new PaymentCancellationServiceImpl(paymentRepository, paymentGateway, eventPublisher,
+                operationalEventService);
+        eventHandler = new PaymentProviderCancellationEventHandler(paymentRepository, paymentGateway,
+                operationalEventService);
     }
 
     @Test

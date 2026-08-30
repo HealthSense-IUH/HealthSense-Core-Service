@@ -30,13 +30,15 @@ class CareHistoryServiceImplTest {
     @Mock ConsultationFinalSummaryRepository summaryRepository;
     @Mock ConsultationFinalSummaryAddendumRepository addendumRepository;
     @Mock EpisodeHealthRecordAuthorizationService authorizationService;
+    @Mock fit.iuh.se.hsoperations.service.OperationalEventService operationalEventService;
 
     CareHistoryServiceImpl service;
 
     @BeforeEach
     void setUp() {
         service = new CareHistoryServiceImpl(
-                sessionRepository, summaryRepository, addendumRepository, authorizationService);
+                sessionRepository, summaryRepository, addendumRepository, authorizationService,
+                operationalEventService);
     }
 
     @Test
@@ -58,6 +60,10 @@ class CareHistoryServiceImplTest {
         assertEquals("finalized", result.getFirst().getFinalizedSummary().getSummary());
         assertEquals(Set.of(501L), result.getFirst().getFinalizedSummary().getReferencedHealthRecordIds());
         verifyNoInteractions(authorizationService);
+        verify(operationalEventService).record(argThat(command ->
+                command.eventType() == fit.iuh.se.hsoperations.entity.enums.BusinessEventType.CARE_CONTINUITY_ACCESSED
+                        && Long.valueOf(20L).equals(command.actorUserId())
+                        && Long.valueOf(200L).equals(command.sessionId())));
     }
 
     @Test

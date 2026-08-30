@@ -29,6 +29,12 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.context.ApplicationEventPublisher;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import fit.iuh.se.hsoperations.entity.*;
+import fit.iuh.se.hsoperations.repository.*;
+import fit.iuh.se.hsoperations.service.impl.NotificationProjector;
+import fit.iuh.se.hsoperations.service.impl.OperationalEventServiceImpl;
 import vn.payos.model.webhooks.Webhook;
 
 import java.math.BigDecimal;
@@ -41,6 +47,9 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -69,6 +78,8 @@ class ConsultationPaymentServiceImplTest {
     ConsultationRenewalService renewalService;
     @Mock
     RefundReviewCaseService refundReviewCaseService;
+    @Mock
+    fit.iuh.se.hsoperations.service.OperationalEventService operationalEventService;
 
     ConsultationPaymentServiceImpl service;
 
@@ -84,7 +95,8 @@ class ConsultationPaymentServiceImplTest {
                 agreementService,
                 authorizationService,
                 renewalService,
-                refundReviewCaseService
+                refundReviewCaseService,
+                operationalEventService
         );
         lenient().when(reservationService.revalidateBeforePayment(any())).thenReturn(true);
         lenient().when(reservationService.revalidateBeforeActivation(any())).thenReturn(true);
@@ -190,6 +202,7 @@ class ConsultationPaymentServiceImplTest {
         when(sessionRepository.saveAndFlush(any(ConsultationSession.class))).thenReturn(session);
 
         service.handlePayOSWebhook(new Webhook());
+        service.handlePayOSWebhook(new Webhook());
 
         assertEquals(ConsultationPaymentStatus.PAID, payment.getStatus());
         assertEquals(ConsultationRequestStatus.FULFILLED, request.getStatus());
@@ -201,6 +214,96 @@ class ConsultationPaymentServiceImplTest {
                         && "Asia/Ho_Chi_Minh".equals(created.getSupportTimezoneSnapshot())
                         && Integer.valueOf(3).equals(created.getPackageVersion())
         ));
+        ArgumentCaptor<fit.iuh.se.hsoperations.dto.command.OperationalEventCommand> events =
+                ArgumentCaptor.forClass(fit.iuh.se.hsoperations.dto.command.OperationalEventCommand.class);
+        verify(operationalEventService, times(3)).record(events.capture());
+        assertEquals(1, events.getAllValues().stream().filter(command ->
+                command.eventType() == fit.iuh.se.hsoperations.entity.enums.BusinessEventType.PAYMENT_VERIFIED
+                        && "PENDING".equals(command.previousState())
+                        && "PAID".equals(command.newState())).count());
+        assertEquals(1, events.getAllValues().stream().filter(command ->
+                command.eventType() == fit.iuh.se.hsoperations.entity.enums.BusinessEventType.SESSION_CREATED).count());
+        assertEquals(1, events.getAllValues().stream().filter(command ->
+                command.eventType() == fit.iuh.se.hsoperations.entity.enums.BusinessEventType.SESSION_ACTIVATED
+                        && command.notifications().size() == 2).count());
+    }
+
+    @Test
+    void duplicateWebhookAcrossAuditAndNotificationProjectionCreatesOneLogicalActivation() {
+        BusinessAuditEventRepository auditRepository = mock(BusinessAuditEventRepository.class);
+        NeedsActionItemRepository needsActionRepository = mock(NeedsActionItemRepository.class);
+        NotificationProjectionTaskRepository projectionRepository = mock(NotificationProjectionTaskRepository.class);
+        UserNotificationRepository notificationRepository = mock(UserNotificationRepository.class);
+        fit.iuh.se.hsuser.repository.UserAccountRepository accountRepository =
+                mock(fit.iuh.se.hsuser.repository.UserAccountRepository.class);
+        ApplicationEventPublisher publisher = mock(ApplicationEventPublisher.class);
+        ObjectMapper objectMapper = new ObjectMapper();
+        Map<String, BusinessAuditEvent> audits = new HashMap<>();
+        Map<Long, NotificationProjectionTask> tasks = new HashMap<>();
+        Map<String, UserNotification> notifications = new HashMap<>();
+        AtomicLong auditIds = new AtomicLong(1);
+        AtomicLong taskIds = new AtomicLong(1);
+
+        when(auditRepository.findByIdempotencyKey(anyString()))
+                .thenAnswer(invocation -> Optional.ofNullable(audits.get(invocation.getArgument(0))));
+        when(auditRepository.save(any())).thenAnswer(invocation -> {
+            BusinessAuditEvent event = invocation.getArgument(0);
+            ReflectionTestUtils.setField(event, "id", auditIds.getAndIncrement());
+            audits.put(event.getIdempotencyKey(), event);
+            return event;
+        });
+        when(projectionRepository.save(any())).thenAnswer(invocation -> {
+            NotificationProjectionTask task = invocation.getArgument(0);
+            if (task.getId() == null) task.setId(taskIds.getAndIncrement());
+            tasks.put(task.getId(), task);
+            return task;
+        });
+        when(projectionRepository.findById(anyLong()))
+                .thenAnswer(invocation -> Optional.ofNullable(tasks.get(invocation.getArgument(0))));
+        when(notificationRepository.existsByIdempotencyKey(anyString()))
+                .thenAnswer(invocation -> notifications.containsKey(invocation.getArgument(0)));
+        when(notificationRepository.save(any())).thenAnswer(invocation -> {
+            UserNotification notification = invocation.getArgument(0);
+            notifications.put(notification.getIdempotencyKey(), notification);
+            return notification;
+        });
+
+        var realOperations = new OperationalEventServiceImpl(auditRepository, needsActionRepository,
+                projectionRepository, objectMapper, publisher);
+        var integratedService = new ConsultationPaymentServiceImpl(paymentRepository, requestRepository,
+                sessionRepository, participantRepository, paymentGateway, reservationService, agreementService,
+                authorizationService, renewalService, refundReviewCaseService, realOperations);
+        ConsultationPayment payment = pendingPayment();
+        ConsultationRequest request = waitingPaymentRequest();
+        when(paymentGateway.verifyWebhook(any(Webhook.class))).thenReturn(verifiedPayment(payment));
+        when(paymentRepository.findByOrderCodeForUpdate(payment.getOrderCode())).thenReturn(Optional.of(payment));
+        when(requestRepository.findByIdForUpdate(payment.getRequestId())).thenReturn(Optional.of(request));
+        when(sessionRepository.findByRequestId(request.getId())).thenReturn(Optional.empty());
+        when(sessionRepository.saveAndFlush(any(ConsultationSession.class))).thenAnswer(invocation -> {
+            ConsultationSession created = invocation.getArgument(0);
+            created.setId(900L);
+            return created;
+        });
+
+        integratedService.handlePayOSWebhook(new Webhook());
+        integratedService.handlePayOSWebhook(new Webhook());
+        NotificationProjector projector = new NotificationProjector(projectionRepository, notificationRepository,
+                accountRepository, objectMapper);
+        tasks.keySet().forEach(taskId -> {
+            projector.project(taskId);
+            projector.project(taskId);
+        });
+
+        assertEquals(ConsultationPaymentStatus.PAID, payment.getStatus());
+        verify(sessionRepository, times(1)).saveAndFlush(any(ConsultationSession.class));
+        assertEquals(3, audits.size());
+        assertEquals(2, tasks.size());
+        assertEquals(3, notifications.size());
+        assertEquals(2, notifications.values().stream()
+                .filter(notification -> notification.getType()
+                        == fit.iuh.se.hsoperations.entity.enums.NotificationType.CARE_ACTIVATED)
+                .count());
+        verifyNoInteractions(needsActionRepository);
     }
 
     @Test
@@ -217,6 +320,9 @@ class ConsultationPaymentServiceImplTest {
         assertEquals(ConsultationPaymentStatus.REQUIRES_REVIEW, payment.getStatus());
         verify(sessionRepository, never()).saveAndFlush(any());
         verify(participantRepository, never()).save(any());
+        verify(operationalEventService).record(argThat(command ->
+                command.eventType() == fit.iuh.se.hsoperations.entity.enums.BusinessEventType.PAYMENT_REQUIRES_REVIEW
+                        && command.needsAction() != null));
     }
 
     @Test

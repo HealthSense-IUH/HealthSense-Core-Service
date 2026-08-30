@@ -32,13 +32,15 @@ class EpisodeHealthRecordAuthorizationServiceImplTest {
     @Mock ConsultationSessionRepository sessionRepository;
     @Mock HealthRecordRepository healthRecordRepository;
     @Mock UserAccountRepository userAccountRepository;
+    @Mock fit.iuh.se.hsoperations.service.OperationalEventService operationalEventService;
 
     EpisodeHealthRecordAuthorizationServiceImpl service;
 
     @BeforeEach
     void setUp() {
         service = new EpisodeHealthRecordAuthorizationServiceImpl(
-                authorizationRepository, sessionRepository, healthRecordRepository, userAccountRepository);
+                authorizationRepository, sessionRepository, healthRecordRepository, userAccountRepository,
+                operationalEventService);
         lenient().when(authorizationRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
         lenient().when(userAccountRepository.findById(anyLong())).thenAnswer(invocation ->
                 java.util.Optional.of(UserAccount.builder()

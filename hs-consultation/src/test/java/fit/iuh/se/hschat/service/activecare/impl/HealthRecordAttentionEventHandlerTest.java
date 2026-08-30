@@ -13,12 +13,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.ArgumentCaptor;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
 import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(MockitoExtension.class)
 class HealthRecordAttentionEventHandlerTest {
@@ -27,13 +30,16 @@ class HealthRecordAttentionEventHandlerTest {
     @Mock ConsultationHealthRecordAttentionRepository attentionRepository;
     @Mock HealthRecordRepository healthRecordRepository;
     @Mock EpisodeHealthRecordAuthorizationRepository authorizationRepository;
+    @Mock fit.iuh.se.hsoperations.service.OperationalEventService operationalEventService;
 
     HealthRecordAttentionEventHandler handler;
 
     @BeforeEach
     void setUp() {
         handler = new HealthRecordAttentionEventHandler(
-                sessionRepository, attentionRepository, healthRecordRepository, authorizationRepository);
+                sessionRepository, attentionRepository, healthRecordRepository, authorizationRepository,
+                operationalEventService);
+        lenient().when(attentionRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
     }
 
     @Test
@@ -48,6 +54,12 @@ class HealthRecordAttentionEventHandlerTest {
         handler.onHealthRecordAnalyzed(event(PredictionLabel.AFIB));
 
         verify(attentionRepository).save(any(ConsultationHealthRecordAttention.class));
+        ArgumentCaptor<fit.iuh.se.hsoperations.dto.command.OperationalEventCommand> event =
+                ArgumentCaptor.forClass(fit.iuh.se.hsoperations.dto.command.OperationalEventCommand.class);
+        verify(operationalEventService).record(event.capture());
+        String message = event.getValue().notifications().getFirst().message().toLowerCase();
+        assertTrue(message.contains("not an emergency response service"));
+        assertFalse(message.contains("immediate doctor response"));
     }
 
     @Test

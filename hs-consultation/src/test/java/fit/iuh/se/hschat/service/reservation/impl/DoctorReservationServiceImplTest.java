@@ -36,6 +36,7 @@ class DoctorReservationServiceImplTest {
     @Mock DoctorCareProfileRepository profileRepository;
     @Mock CareServicePackageRepository packageRepository;
     @Mock SupportScheduleValidator scheduleValidator;
+    @Mock fit.iuh.se.hsoperations.service.OperationalEventService operationalEventService;
 
     DoctorReservationServiceImpl service;
 
@@ -48,7 +49,8 @@ class DoctorReservationServiceImplTest {
                 userAccountRepository,
                 profileRepository,
                 packageRepository,
-                scheduleValidator
+                scheduleValidator,
+                operationalEventService
         );
     }
 
@@ -158,6 +160,11 @@ class DoctorReservationServiceImplTest {
         assertEquals(DoctorReservationReleaseReason.RESERVATION_EXPIRED, reservation.getReleaseReason());
         assertEquals(ConsultationRequestStatus.EXPIRED, request.getStatus());
         assertNull(request.getAssignedDoctorId());
+        verify(operationalEventService).record(argThat(command ->
+                command.eventType() == fit.iuh.se.hsoperations.entity.enums.BusinessEventType.RESERVATION_RELEASED
+                        && Long.valueOf(500L).equals(command.domainId())
+                        && "ACTIVE".equals(command.previousState())
+                        && "EXPIRED".equals(command.newState())));
     }
 
     @Test
@@ -176,6 +183,10 @@ class DoctorReservationServiceImplTest {
                 reservation.getReleaseReason());
         assertEquals(ConsultationRequestStatus.PENDING_REVIEW, request.getStatus());
         assertNull(request.getAssignedDoctorId());
+        verify(operationalEventService).record(argThat(command ->
+                command.eventType() == fit.iuh.se.hsoperations.entity.enums.BusinessEventType.DOCTOR_RECOORDINATED
+                        && command.notifications().stream().anyMatch(notification ->
+                        notification.recipientRole() == UserRole.CARE_COORDINATOR)));
     }
 
     @Test

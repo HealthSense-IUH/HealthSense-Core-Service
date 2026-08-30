@@ -87,6 +87,8 @@ class ConsultationRequestServiceImplTest {
     PaymentCancellationService paymentCancellationService;
     @Mock
     ConsultationMapper mapper;
+    @Mock
+    fit.iuh.se.hsoperations.service.OperationalEventService operationalEventService;
 
     ConsultationRequestServiceImpl service;
 
@@ -103,7 +105,8 @@ class ConsultationRequestServiceImplTest {
                 reservationService,
                 agreementService,
                 paymentCancellationService,
-                mapper
+                mapper,
+                operationalEventService
         );
         ReflectionTestUtils.setField(service, "paymentDeadlineMinutes", 30L);
         lenient().when(reservationService.reserve(any(), anyLong(), anyLong(), any(Instant.class)))
@@ -142,6 +145,10 @@ class ConsultationRequestServiceImplTest {
         assertEquals(3, saved.getPackageVersion());
         assertEquals(new BigDecimal("399000.00"), saved.getPackagePriceSnapshot());
         assertEquals(7, saved.getPackageDurationDaysSnapshot());
+        verify(operationalEventService).record(argThat(command ->
+                command.eventType() == fit.iuh.se.hsoperations.entity.enums.BusinessEventType.REQUEST_CREATED
+                        && Long.valueOf(1L).equals(command.actorUserId())
+                        && "PENDING_REVIEW".equals(command.newState())));
     }
 
     @Test

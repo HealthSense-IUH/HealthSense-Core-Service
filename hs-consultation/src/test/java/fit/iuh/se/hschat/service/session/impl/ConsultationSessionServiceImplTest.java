@@ -74,6 +74,8 @@ class ConsultationSessionServiceImplTest {
     ConsultationRenewalService renewalService;
     @Mock
     ConsultationMapper mapper;
+    @Mock
+    fit.iuh.se.hsoperations.service.OperationalEventService operationalEventService;
 
     ConsultationSessionServiceImpl service;
 
@@ -93,7 +95,8 @@ class ConsultationSessionServiceImplTest {
                 authorizationService,
                 finalSummaryClosureService,
                 renewalService,
-                mapper
+                mapper,
+                operationalEventService
         );
         ReflectionTestUtils.setField(service, "defaultDoctorMaxActiveSessions", 5);
     }
@@ -110,6 +113,7 @@ class ConsultationSessionServiceImplTest {
         when(sessionRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(overdue));
 
         service.expireOverdueSessions(UserRole.CARE_COORDINATOR);
+        service.expireOverdueSessions(UserRole.CARE_COORDINATOR);
 
         ArgumentCaptor<ConsultationSession> captor = ArgumentCaptor.forClass(ConsultationSession.class);
         verify(sessionRepository).save(captor.capture());
@@ -118,7 +122,11 @@ class ConsultationSessionServiceImplTest {
         assertEquals(ConsultationCompletionReason.PERIOD_ENDED, saved.getCompletionReason());
         assertNotNull(saved.getCompletedAt());
         verify(finalSummaryClosureService).onSessionCompleted(eq(overdue), any(Instant.class));
-        verify(finalSummaryClosureService).refreshOpenClosures(any(Instant.class));
+        verify(finalSummaryClosureService, times(2)).refreshOpenClosures(any(Instant.class));
+        verify(operationalEventService, times(1)).record(argThat(command ->
+                command.eventType() == fit.iuh.se.hsoperations.entity.enums.BusinessEventType.SESSION_COMPLETED
+                        && command.notifications().stream().anyMatch(notification ->
+                        notification.type() == fit.iuh.se.hsoperations.entity.enums.NotificationType.CARE_COMPLETED)));
     }
 
     @Test
@@ -225,6 +233,11 @@ class ConsultationSessionServiceImplTest {
         assertEquals(profile.getTimezone(), saved.getSupportTimezoneSnapshot());
         assertTrue(saved.getExceptionalOverride());
         assertEquals("Compensating care approved by Admin", saved.getOverrideReason());
+        verify(operationalEventService).record(argThat(command ->
+                command.eventType() == fit.iuh.se.hsoperations.entity.enums.BusinessEventType.SESSION_OVERRIDE_CREATED
+                        && Long.valueOf(9L).equals(command.actorUserId())
+                        && "ADMIN".equals(command.actorRole())
+                        && "Compensating care approved by Admin".equals(command.reason())));
     }
 
     @Test
@@ -244,6 +257,27 @@ class ConsultationSessionServiceImplTest {
         assertThrows(AppException.class,
                 () -> service.createSessionByAdmin(9L, UserRole.ADMIN, request));
         verify(sessionRepository, never()).save(any());
+    }
+
+    @Test
+    void endingSoonSessionsEmitStableMemberAndDoctorNotificationIntents() {
+        ConsultationSession ending = ConsultationSession.builder().id(1L).memberId(10L).doctorId(20L)
+                .status(ConsultationStatus.ACTIVE).endsAt(Instant.now().plusSeconds(3600)).build();
+        when(sessionRepository.findByStatusAndEndsAtBetween(eq(ConsultationStatus.ACTIVE), any(), any()))
+                .thenReturn(List.of(ending));
+
+        service.expireOverdueSessions(UserRole.CARE_COORDINATOR);
+        service.expireOverdueSessions(UserRole.CARE_COORDINATOR);
+
+        ArgumentCaptor<fit.iuh.se.hsoperations.dto.command.OperationalEventCommand> events =
+                ArgumentCaptor.forClass(fit.iuh.se.hsoperations.dto.command.OperationalEventCommand.class);
+        verify(operationalEventService, times(2)).record(events.capture());
+        assertTrue(events.getAllValues().stream().allMatch(command ->
+                command.eventType() == fit.iuh.se.hsoperations.entity.enums.BusinessEventType.SESSION_ENDING_SOON
+                        && command.idempotencyKey().equals("session:1:SESSION_ENDING_SOON:ACTIVE")
+                        && command.notifications().size() == 2
+                        && command.notifications().stream().allMatch(notification ->
+                        notification.type() == fit.iuh.se.hsoperations.entity.enums.NotificationType.CARE_ENDING)));
     }
 
     @Test

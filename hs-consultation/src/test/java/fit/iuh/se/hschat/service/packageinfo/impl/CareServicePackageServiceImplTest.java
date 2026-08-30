@@ -13,6 +13,7 @@ import fit.iuh.se.hschat.repository.CareServicePackageFamilyRepository;
 import fit.iuh.se.hschat.repository.CareServicePackageRepository;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
+import fit.iuh.se.hsoperations.dto.command.OperationalEventCommand;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -43,12 +44,14 @@ class CareServicePackageServiceImplTest {
     CareServicePackageFamilyRepository familyRepository;
     @Mock
     ConsultationMapper mapper;
+    @Mock
+    fit.iuh.se.hsoperations.service.OperationalEventService operationalEventService;
 
     CareServicePackageServiceImpl service;
 
     @BeforeEach
     void setUp() {
-        service = new CareServicePackageServiceImpl(packageRepository, familyRepository, mapper);
+        service = new CareServicePackageServiceImpl(packageRepository, familyRepository, mapper, operationalEventService);
     }
 
     @Test
@@ -128,6 +131,7 @@ class CareServicePackageServiceImplTest {
         });
 
         CareServicePackageResponse result = service.updatePackage(
+                99L,
                 UserRole.ADMIN,
                 10L,
                 updateRequest()
@@ -163,6 +167,9 @@ class CareServicePackageServiceImplTest {
         assertEquals(true, newVersion.getRenewable());
         assertEquals("terms:v2", newVersion.getTermsPolicyReference());
         assertNotEquals(active.getId(), newVersion.getId());
+        ArgumentCaptor<OperationalEventCommand> auditEvents = ArgumentCaptor.forClass(OperationalEventCommand.class);
+        verify(operationalEventService, org.mockito.Mockito.times(2)).record(auditEvents.capture());
+        auditEvents.getAllValues().forEach(event -> assertEquals(99L, event.actorUserId()));
 
         CareServicePackageResponse historical = service.getPackageForAdmin(UserRole.ADMIN, 10L);
         assertEquals(10L, historical.getId());
@@ -179,7 +186,7 @@ class CareServicePackageServiceImplTest {
         when(mapper.toCareServicePackageResponse(inactive))
                 .thenReturn(CareServicePackageResponse.builder().id(10L).version(1).build());
 
-        CareServicePackageResponse result = service.updatePackage(UserRole.ADMIN, 10L, updateRequest());
+        CareServicePackageResponse result = service.updatePackage(99L, UserRole.ADMIN, 10L, updateRequest());
 
         assertEquals(10L, result.getId());
         assertEquals(1, result.getVersion());
@@ -193,7 +200,7 @@ class CareServicePackageServiceImplTest {
 
         assertThrows(
                 AppException.class,
-                () -> service.updatePackage(UserRole.ADMIN, 10L, updateRequest())
+                () -> service.updatePackage(99L, UserRole.ADMIN, 10L, updateRequest())
         );
         verify(packageRepository, never()).save(any());
     }

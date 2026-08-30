@@ -27,13 +27,15 @@ class CareServiceAgreementServiceImplTest {
     @Mock CareServicePackageRepository packageRepository;
     @Mock DoctorCareProfileRepository profileRepository;
     @Mock ConsultationRenewalRepository renewalRepository;
+    @Mock fit.iuh.se.hsoperations.service.OperationalEventService operationalEventService;
 
     CareServiceAgreementServiceImpl service;
 
     @BeforeEach
     void setUp() {
         service = new CareServiceAgreementServiceImpl(
-                agreementRepository, requestRepository, packageRepository, profileRepository, renewalRepository);
+                agreementRepository, requestRepository, packageRepository, profileRepository, renewalRepository,
+                operationalEventService);
     }
 
     @Test
@@ -80,6 +82,11 @@ class CareServiceAgreementServiceImplTest {
         assertEquals(1L, agreement.getAcceptedByMember());
         assertNotNull(agreement.getAcceptedAt());
         assertEquals(ConsultationRequestStatus.WAITING_PAYMENT, request.getStatus());
+        verify(operationalEventService).record(argThat(command ->
+                command.eventType() == fit.iuh.se.hsoperations.entity.enums.BusinessEventType.AGREEMENT_ACCEPTED
+                        && Long.valueOf(1L).equals(command.actorUserId())
+                        && "MEMBER".equals(command.actorRole())
+                        && "ACCEPTED".equals(command.newState())));
 
         assertThrows(AppException.class, () -> service.accept(1L, 100L, 700L));
         assertEquals("Cardiac Care V1", agreement.getPackageName());
