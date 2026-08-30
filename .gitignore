@@ -51,5 +51,7 @@ id_ed25519
 *.sql
 
 docs/
+artifacts/
+tools/
 .m2repo/
 .m2/
