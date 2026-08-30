@@ -6,6 +6,7 @@ import fit.iuh.se.hshealthrecord.entity.enums.PredictionLabel;
 import fit.iuh.se.hshealthrecord.entity.enums.RecordStatus;
 import fit.iuh.se.hsshared.dto.response.PageResponse;
 import org.springframework.data.domain.Pageable;
+import fit.iuh.se.hsuser.entity.enums.UserRole;
 
 import java.time.Instant;
 
@@ -23,7 +24,7 @@ public interface AdminHealthRecordService {
             Pageable pageable
     );
 
-    HealthRecordResponse getRecord(Long id);
+    HealthRecordResponse getRecord(Long adminId, UserRole actorRole, Long id);
 
     Object getSystemStatistics(Instant fromDate, Instant toDate);
 }
