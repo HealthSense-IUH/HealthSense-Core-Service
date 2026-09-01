@@ -133,7 +133,11 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     }
 
     private void authorizeSubscribe(StompHeaderAccessor accessor) {
-        Long sessionId = extractConsultationSessionId(accessor.getDestination());
+        String destination = accessor.getDestination();
+
+        authorizeNotificationSubscribe(accessor, destination);
+
+        Long sessionId = extractConsultationSessionId(destination);
         if (sessionId == null)
             return;
 
@@ -145,6 +149,32 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
         if (!participant)
             throw new AccessDeniedException("You are not allowed to subscribe to this consultation session");
+    }
+
+    /**
+     * Kênh ping thông báo realtime: mỗi người chỉ được nghe queue của chính
+     * mình, và chỉ được nghe topic role trùng với vai của mình.
+     */
+    private void authorizeNotificationSubscribe(StompHeaderAccessor accessor, String destination) {
+        if (destination == null)
+            return;
+
+        String userQueuePrefix = queuePrefix + "/notifications/";
+        if (destination.startsWith(userQueuePrefix)) {
+            UserAuthentication user = extractCurrentUser(accessor);
+            String requestedId = destination.substring(userQueuePrefix.length());
+            if (!String.valueOf(user.getUserId()).equals(requestedId))
+                throw new AccessDeniedException("You may only subscribe to your own notification queue");
+            return;
+        }
+
+        String roleTopicPrefix = topicPrefix + "/notifications/roles/";
+        if (destination.startsWith(roleTopicPrefix)) {
+            UserAuthentication user = extractCurrentUser(accessor);
+            String requestedRole = destination.substring(roleTopicPrefix.length());
+            if (!user.getRole().name().equals(requestedRole))
+                throw new AccessDeniedException("You may only subscribe to your own role's notification topic");
+        }
     }
 
     private UserAuthentication extractCurrentUser(StompHeaderAccessor accessor) {
