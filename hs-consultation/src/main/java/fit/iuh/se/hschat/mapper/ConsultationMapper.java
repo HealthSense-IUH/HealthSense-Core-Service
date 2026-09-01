@@ -24,6 +24,8 @@ import java.util.Objects;
 public interface ConsultationMapper {
 
     @Mapping(target = "unreadCount", ignore = true)
+    @Mapping(target = "memberDisplayName", ignore = true)
+    @Mapping(target = "doctorDisplayName", ignore = true)
     ConsultationSessionResponse toSessionResponse(ConsultationSession session);
 
     @Mapping(target = "selectedHealthRecords", ignore = true)

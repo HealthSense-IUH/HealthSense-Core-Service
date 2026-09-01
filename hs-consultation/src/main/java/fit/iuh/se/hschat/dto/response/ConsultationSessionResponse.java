@@ -22,7 +22,9 @@ public class ConsultationSessionResponse {
 
     Long id;
     Long memberId;
+    String memberDisplayName;
     Long doctorId;
+    String doctorDisplayName;
     Boolean exceptionalOverride;
     String overrideReason;
     String overrideServiceScope;
