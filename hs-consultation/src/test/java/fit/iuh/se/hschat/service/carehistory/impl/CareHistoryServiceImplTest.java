@@ -77,6 +77,45 @@ class CareHistoryServiceImplTest {
     }
 
     @Test
+    void completedCurrentSessionCanReadContinuityForClinicalClosure() {
+        ConsultationSession completed = session(200L, 1L, 20L, ConsultationStatus.COMPLETED);
+        when(sessionRepository.findByIdAndDoctorId(200L, 20L)).thenReturn(Optional.of(completed));
+        when(sessionRepository.findByMemberIdAndIdNotAndActivatedAtIsNotNullOrderByStartedAtDesc(1L, 200L))
+                .thenReturn(List.of());
+
+        var result = service.getContinuitySummaries(20L, 200L);
+
+        assertTrue(result.isEmpty());
+        verify(OperationalEventPublisher).record(argThat(command ->
+                "CLINICAL_CLOSURE_CONTINUITY".equals(command.metadata().get("accessContext"))));
+    }
+
+    @Test
+    void cancelledMeaningfulCareSessionCanReadContinuityForClinicalClosure() {
+        ConsultationSession cancelled = session(200L, 1L, 20L, ConsultationStatus.CANCELLED);
+        cancelled.setMeaningfulCareOccurred(true);
+        when(sessionRepository.findByIdAndDoctorId(200L, 20L)).thenReturn(Optional.of(cancelled));
+        when(sessionRepository.findByMemberIdAndIdNotAndActivatedAtIsNotNullOrderByStartedAtDesc(1L, 200L))
+                .thenReturn(List.of());
+
+        var result = service.getContinuitySummaries(20L, 200L);
+
+        assertTrue(result.isEmpty());
+        verify(OperationalEventPublisher).record(argThat(command ->
+                "CLINICAL_CLOSURE_CONTINUITY".equals(command.metadata().get("accessContext"))));
+    }
+
+    @Test
+    void cancelledWithoutMeaningfulCareCannotReadContinuity() {
+        ConsultationSession cancelled = session(200L, 1L, 20L, ConsultationStatus.CANCELLED);
+        cancelled.setMeaningfulCareOccurred(false);
+        when(sessionRepository.findByIdAndDoctorId(200L, 20L)).thenReturn(Optional.of(cancelled));
+
+        assertThrows(AppException.class, () -> service.getContinuitySummaries(20L, 200L));
+        verify(summaryRepository, never()).findBySessionIdInAndStatus(any(), any());
+    }
+
+    @Test
     void memberCareHistoryCannotExposeAnotherMembersEpisode() {
         ConsultationSession otherMember = session(100L, 2L, 10L, ConsultationStatus.COMPLETED);
         when(sessionRepository.findById(100L)).thenReturn(Optional.of(otherMember));
