@@ -25,6 +25,7 @@ import fit.iuh.se.hschat.service.renewal.ConsultationRenewalService;
 import fit.iuh.se.hshealthrecord.repository.HealthRecordRepository;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsuser.entity.UserAccount;
+import fit.iuh.se.hsuser.entity.UserProfile;
 import fit.iuh.se.hsuser.entity.enums.AccountStatus;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
 import fit.iuh.se.hsuser.repository.UserAccountRepository;
@@ -183,6 +184,34 @@ class ConsultationSessionServiceImplTest {
         when(participantRepository.findBySessionIdAndUserId(1L, 2L)).thenReturn(Optional.empty());
 
         assertNull(service.getSessionById(2L, 1L).getHealthRecordId());
+    }
+
+    @Test
+    void sessionResponseIncludesParticipantDisplayNames() {
+        ConsultationSession session = ConsultationSession.builder()
+                .id(1L)
+                .memberId(10L)
+                .doctorId(20L)
+                .status(ConsultationStatus.ACTIVE)
+                .build();
+        var response = fit.iuh.se.hschat.dto.response.ConsultationSessionResponse.builder()
+                .id(1L)
+                .memberId(10L)
+                .doctorId(20L)
+                .build();
+        when(participantRepository.existsBySessionIdAndUserIdAndActiveTrue(1L, 10L)).thenReturn(true);
+        when(sessionRepository.findById(1L)).thenReturn(Optional.of(session));
+        when(mapper.toSessionResponse(session)).thenReturn(response);
+        when(participantRepository.findBySessionIdAndUserId(1L, 10L)).thenReturn(Optional.empty());
+        when(userAccountRepository.findByIdIn(anyCollection())).thenReturn(List.of(
+                userWithDisplayName(10L, UserRole.MEMBER, "Nguyen Van A"),
+                userWithDisplayName(20L, UserRole.DOCTOR, "BS. Le Van B")
+        ));
+
+        fit.iuh.se.hschat.dto.response.ConsultationSessionResponse actual = service.getSessionById(10L, 1L);
+
+        assertEquals("Nguyen Van A", actual.getMemberDisplayName());
+        assertEquals("BS. Le Van B", actual.getDoctorDisplayName());
     }
 
     @Test
@@ -398,6 +427,14 @@ class ConsultationSessionServiceImplTest {
                 .role(role)
                 .status(AccountStatus.ACTIVE)
                 .build();
+    }
+
+    private UserAccount userWithDisplayName(Long id, UserRole role, String displayName) {
+        UserAccount user = user(id, role);
+        user.setProfile(UserProfile.builder()
+                .displayName(displayName)
+                .build());
+        return user;
     }
 
     private DoctorCareProfile doctorProfile() {

@@ -47,13 +47,19 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -162,7 +168,7 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
         auditSession(session, BusinessEventType.SESSION_OVERRIDE_CREATED, actorId, actorRole, null, status,
                 request.getOverrideReason(), null, status == ConsultationStatus.ACTIVE ? NotificationType.CARE_ACTIVATED : null);
 
-        return mapper.toSessionResponse(session);
+        return toSessionResponse(session);
     }
 
     @Override
@@ -172,7 +178,10 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
 
         ConsultationSession session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_NOT_FOUND));
-        return toSessionResponse(session, userId);
+        ConsultationSessionResponse response = toSessionResponse(session, userId);
+        if (response != null)
+            enrichParticipantDisplayNames(List.of(response));
+        return response;
     }
 
     @Override
@@ -180,7 +189,7 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
         Page<ConsultationSessionResponse> page = sessionRepository
                 .findByMemberIdOrderByLastMessageAtDesc(userId, pageable)
                 .map(session -> toSessionResponse(session, userId));
-        return new PageResponse<>(page);
+        return toPageResponse(page, pageable);
     }
 
     @Override
@@ -188,7 +197,7 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
         Page<ConsultationSessionResponse> page = sessionRepository
                 .findByDoctorIdOrderByLastMessageAtDesc(doctorId, pageable)
                 .map(session -> toSessionResponse(session, doctorId));
-        return new PageResponse<>(page);
+        return toPageResponse(page, pageable);
     }
 
     @Override
@@ -197,7 +206,7 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
         Page<ConsultationSessionResponse> page = sessionRepository
                 .findAll(pageable)
                 .map(mapper::toSessionResponse);
-        return new PageResponse<>(page);
+        return toPageResponse(page, pageable);
     }
 
     @Override
@@ -243,7 +252,7 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
             finalSummaryClosureService.onSessionCompleted(session, now);
         auditSession(session, BusinessEventType.SESSION_CANCELLED, actorId, actorRole, ConsultationStatus.ACTIVE,
                 ConsultationStatus.CANCELLED, request.getCloseReason(), null, NotificationType.CARE_CANCELLED);
-        return mapper.toSessionResponse(session);
+        return toSessionResponse(session);
     }
 
     @Override
@@ -279,7 +288,7 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
                         BusinessDomainType.SESSION, session.getId(), UserRole.CARE_COORDINATOR.name(),
                         "session:" + session.getId() + ":termination-review"),
                 NotificationType.CARE_TERMINATION_REQUESTED);
-        return mapper.toSessionResponse(session);
+        return toSessionResponse(session);
     }
 
     @Override
@@ -414,6 +423,56 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
         participantRepository.findBySessionIdAndUserId(session.getId(), userId)
                 .ifPresent(participant -> response.setUnreadCount(safeCountUnreadMessages(session.getId(), userId, participant.getLastReadAt())));
         return response;
+    }
+
+    private ConsultationSessionResponse toSessionResponse(ConsultationSession session) {
+        ConsultationSessionResponse response = mapper.toSessionResponse(session);
+        if (response != null)
+            enrichParticipantDisplayNames(List.of(response));
+        return response;
+    }
+
+    private PageResponse<ConsultationSessionResponse> toPageResponse(
+            Page<ConsultationSessionResponse> page,
+            Pageable pageable
+    ) {
+        List<ConsultationSessionResponse> responses = page.getContent();
+        enrichParticipantDisplayNames(responses);
+        return new PageResponse<>(new PageImpl<>(responses, pageable, page.getTotalElements()));
+    }
+
+    private void enrichParticipantDisplayNames(Collection<ConsultationSessionResponse> responses) {
+        Set<Long> userIds = new HashSet<>();
+        for (ConsultationSessionResponse response : responses) {
+            if (response == null)
+                continue;
+            if (response.getMemberId() != null)
+                userIds.add(response.getMemberId());
+            if (response.getDoctorId() != null)
+                userIds.add(response.getDoctorId());
+        }
+        if (userIds.isEmpty())
+            return;
+
+        List<UserAccount> users = userAccountRepository.findByIdIn(userIds);
+        if (users == null || users.isEmpty())
+            return;
+
+        Map<Long, String> displayNamesById = new HashMap<>();
+        for (UserAccount user : users) {
+            if (user != null)
+                displayNamesById.put(user.getId(), displayNameOf(user));
+        }
+        for (ConsultationSessionResponse response : responses) {
+            if (response == null)
+                continue;
+            response.setMemberDisplayName(displayNamesById.get(response.getMemberId()));
+            response.setDoctorDisplayName(displayNamesById.get(response.getDoctorId()));
+        }
+    }
+
+    private String displayNameOf(UserAccount user) {
+        return user.getProfile() == null ? null : user.getProfile().getDisplayName();
     }
 
     private long safeCountUnreadMessages(Long sessionId, Long userId, Instant lastReadAt) {

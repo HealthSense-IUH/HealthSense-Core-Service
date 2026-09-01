@@ -16,6 +16,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 import java.util.List;
+import java.util.Collection;
 
 @Repository
 public interface UserAccountRepository extends JpaRepository<UserAccount, Long> {
@@ -72,6 +73,9 @@ public interface UserAccountRepository extends JpaRepository<UserAccount, Long> 
 
     @EntityGraph(attributePaths = "profile")
     Optional<UserAccount> findByIdAndStatusNot(Long id, AccountStatus status);
+
+    @EntityGraph(attributePaths = "profile")
+    List<UserAccount> findByIdIn(Collection<Long> ids);
 
     @EntityGraph(attributePaths = "profile")
     @Query("""
