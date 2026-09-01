@@ -30,14 +30,14 @@ class FinalSummaryClosureServiceImplTest {
     @Mock ConsultationSessionRepository sessionRepository;
     @Mock ConsultationFinalSummaryRepository summaryRepository;
     @Mock UserAccountRepository userAccountRepository;
-    @Mock fit.iuh.se.hsoperations.service.OperationalEventService operationalEventService;
+    @Mock fit.iuh.se.hsoperations.event.OperationalEventPublisher OperationalEventPublisher;
 
     FinalSummaryClosureServiceImpl service;
 
     @BeforeEach
     void setUp() {
         service = new FinalSummaryClosureServiceImpl(
-                sessionRepository, summaryRepository, userAccountRepository, operationalEventService);
+                sessionRepository, summaryRepository, userAccountRepository, OperationalEventPublisher);
         ReflectionTestUtils.setField(service, "summaryDueHours", 24L);
     }
 
@@ -52,7 +52,7 @@ class FinalSummaryClosureServiceImplTest {
 
         assertEquals(FinalSummaryClosureStatus.SUMMARY_PENDING, session.getSummaryClosureStatus());
         assertEquals(completedAt.plusSeconds(24 * 3600), session.getSummaryDueAt());
-        verify(operationalEventService, never()).resolveNeedsAction(anyString(), anyString());
+        verify(OperationalEventPublisher, never()).resolveNeedsAction(anyString(), anyString());
     }
 
     @Test
@@ -79,7 +79,7 @@ class FinalSummaryClosureServiceImplTest {
 
         assertEquals(FinalSummaryClosureStatus.SUMMARY_OVERDUE, session.getSummaryClosureStatus());
         verify(sessionRepository).save(session);
-        verify(operationalEventService, never()).resolveNeedsAction(anyString(), anyString());
+        verify(OperationalEventPublisher, never()).resolveNeedsAction(anyString(), anyString());
     }
 
     @Test
@@ -109,7 +109,7 @@ class FinalSummaryClosureServiceImplTest {
         assertEquals(FinalSummaryClosureStatus.SUMMARY_FINALIZED, session.getSummaryClosureStatus());
         assertNull(session.getSummaryEscalatedAt());
         assertNull(session.getSummaryEscalationReason());
-        verify(operationalEventService, times(3)).resolveNeedsAction(anyString(), eq("Final summary finalized"));
+        verify(OperationalEventPublisher, times(3)).resolveNeedsAction(anyString(), eq("Final summary finalized"));
     }
 
     private void activeDoctor() {

@@ -6,7 +6,7 @@ import fit.iuh.se.hschat.repository.*;
 import fit.iuh.se.hschat.service.refund.RefundReviewCaseService;
 import fit.iuh.se.hsoperations.dto.command.*;
 import fit.iuh.se.hsoperations.entity.enums.*;
-import fit.iuh.se.hsoperations.service.OperationalEventService;
+import fit.iuh.se.hsoperations.event.OperationalEventPublisher;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +23,7 @@ public class RefundReviewCaseServiceImpl implements RefundReviewCaseService {
     CareServiceAgreementRepository agreementRepository;
     ConsultationRequestRepository requestRepository;
     ConsultationRenewalRepository renewalRepository;
-    OperationalEventService operationalEventService;
+    OperationalEventPublisher OperationalEventPublisher;
 
     @Override
     @Transactional(propagation = Propagation.MANDATORY)
@@ -44,7 +44,7 @@ public class RefundReviewCaseServiceImpl implements RefundReviewCaseService {
                 .provider(payment.getProvider())
                 .status(ConsultationRefundStatus.REVIEW_REQUIRED)
                 .build());
-        operationalEventService.record(OperationalEventCommand.builder()
+        OperationalEventPublisher.record(OperationalEventCommand.builder()
                 .domainType(BusinessDomainType.REFUND).domainId(refund.getId())
                 .eventType(BusinessEventType.REFUND_REVIEW_REQUIRED).actorType(BusinessActorType.SYSTEM)
                 .requestId(refund.getRequestId()).paymentId(refund.getPaymentId()).refundId(refund.getId())

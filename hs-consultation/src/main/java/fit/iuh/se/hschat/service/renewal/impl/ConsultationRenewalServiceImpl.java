@@ -18,7 +18,7 @@ import fit.iuh.se.hsuser.entity.enums.UserRole;
 import fit.iuh.se.hsuser.repository.UserAccountRepository;
 import fit.iuh.se.hsoperations.dto.command.*;
 import fit.iuh.se.hsoperations.entity.enums.*;
-import fit.iuh.se.hsoperations.service.OperationalEventService;
+import fit.iuh.se.hsoperations.event.OperationalEventPublisher;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -63,7 +63,7 @@ public class ConsultationRenewalServiceImpl implements ConsultationRenewalServic
     ConsultationPaymentRepository paymentRepository;
     CareServiceAgreementService agreementService;
     SupportScheduleValidator scheduleValidator;
-    OperationalEventService operationalEventService;
+    OperationalEventPublisher OperationalEventPublisher;
 
     @NonFinal
     @Value("${app.consultation.renewal-payment-window-minutes:30}")
@@ -306,7 +306,7 @@ public class ConsultationRenewalServiceImpl implements ConsultationRenewalServic
         payment.setStatus(ConsultationPaymentStatus.PAID);
         payment.setPaidAt(now);
         paymentRepository.save(payment);
-        operationalEventService.record(OperationalEventCommand.builder()
+        OperationalEventPublisher.record(OperationalEventCommand.builder()
                 .domainType(BusinessDomainType.RENEWAL).domainId(renewal.getId())
                 .eventType(BusinessEventType.RENEWAL_PAYMENT_VERIFIED).actorType(BusinessActorType.SYSTEM)
                 .renewalId(renewal.getId()).sessionId(session.getId()).agreementId(agreement.getId())
@@ -346,7 +346,7 @@ public class ConsultationRenewalServiceImpl implements ConsultationRenewalServic
         renewal.setAppliedAt(now);
         renewal.setStatus(ConsultationRenewalStatus.APPLIED);
         renewalRepository.save(renewal);
-        operationalEventService.record(OperationalEventCommand.builder()
+        OperationalEventPublisher.record(OperationalEventCommand.builder()
                 .domainType(BusinessDomainType.RENEWAL).domainId(renewal.getId())
                 .eventType(BusinessEventType.RENEWAL_EXTENSION_APPLIED).actorType(BusinessActorType.SYSTEM)
                 .renewalId(renewal.getId()).sessionId(session.getId()).agreementId(agreement.getId())
@@ -472,7 +472,7 @@ public class ConsultationRenewalServiceImpl implements ConsultationRenewalServic
     private void auditRenewal(ConsultationRenewal renewal, BusinessEventType eventType, Long actorId,
             UserRole actorRole, ConsultationRenewalStatus previous, ConsultationRenewalStatus next, String reason) {
         String key = "renewal:" + renewal.getId() + ":" + eventType + ":" + next;
-        operationalEventService.record(OperationalEventCommand.builder()
+        OperationalEventPublisher.record(OperationalEventCommand.builder()
                 .domainType(BusinessDomainType.RENEWAL).domainId(renewal.getId()).eventType(eventType)
                 .actorType(actorId == null ? BusinessActorType.SYSTEM : BusinessActorType.USER)
                 .actorUserId(actorId).actorRole(actorRole == null ? null : actorRole.name())

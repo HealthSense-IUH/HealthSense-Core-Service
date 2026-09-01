@@ -13,7 +13,7 @@ import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
 import fit.iuh.se.hsoperations.dto.command.*;
 import fit.iuh.se.hsoperations.entity.enums.*;
-import fit.iuh.se.hsoperations.service.OperationalEventService;
+import fit.iuh.se.hsoperations.event.OperationalEventPublisher;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -34,7 +34,7 @@ public class ConsultationRefundServiceImpl implements ConsultationRefundService 
     ConsultationRequestRepository requestRepository;
     ConsultationRenewalRepository renewalRepository;
     PayOSPaymentGateway paymentGateway;
-    OperationalEventService operationalEventService;
+    OperationalEventPublisher OperationalEventPublisher;
 
     @Override
     @Transactional
@@ -262,7 +262,7 @@ public class ConsultationRefundServiceImpl implements ConsultationRefundService 
     private void auditRefund(ConsultationRefund refund, BusinessEventType eventType, Long actorId, UserRole actorRole,
             ConsultationRefundStatus previous, ConsultationRefundStatus next, String reason, NeedsActionIntent needsAction) {
         String key = "refund:" + refund.getId() + ":" + eventType + ":" + refund.getExecutionAttempts();
-        operationalEventService.record(OperationalEventCommand.builder()
+        OperationalEventPublisher.record(OperationalEventCommand.builder()
                 .domainType(BusinessDomainType.REFUND).domainId(refund.getId()).eventType(eventType)
                 .actorType(BusinessActorType.USER).actorUserId(actorId).actorRole(actorRole.name())
                 .requestId(refund.getRequestId()).paymentId(refund.getPaymentId()).agreementId(refund.getAgreementId())

@@ -17,7 +17,7 @@ import fit.iuh.se.hsuser.entity.enums.UserRole;
 import fit.iuh.se.hsuser.repository.UserAccountRepository;
 import fit.iuh.se.hsoperations.dto.command.OperationalEventCommand;
 import fit.iuh.se.hsoperations.entity.enums.*;
-import fit.iuh.se.hsoperations.service.OperationalEventService;
+import fit.iuh.se.hsoperations.event.OperationalEventPublisher;
 import jakarta.persistence.criteria.Predicate;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -44,7 +44,7 @@ public class AdminHealthRecordServiceImpl implements AdminHealthRecordService {
     HealthRecordMapper mapper;
     UserAccountRepository userAccountRepository;
     DailyHealthStatisticRepository dailyHealthStatisticRepository;
-    OperationalEventService operationalEventService;
+    OperationalEventPublisher OperationalEventPublisher;
 
     @Override
     @Transactional
@@ -107,7 +107,7 @@ public class AdminHealthRecordServiceImpl implements AdminHealthRecordService {
     public HealthRecordResponse getRecord(Long adminId, UserRole actorRole, Long id) {
         HealthRecord record = findRecord(id);
         Instant now = Instant.now();
-        operationalEventService.record(OperationalEventCommand.builder()
+        OperationalEventPublisher.record(OperationalEventCommand.builder()
                 .domainType(BusinessDomainType.HEALTH_RECORD).domainId(record.getId())
                 .eventType(BusinessEventType.ADMIN_CLINICAL_RECORD_ACCESSED).actorType(BusinessActorType.USER)
                 .actorUserId(adminId).actorRole(actorRole.name()).healthRecordId(record.getId())

@@ -30,7 +30,7 @@ import fit.iuh.se.hsuser.repository.UserAccountRepository;
 import fit.iuh.se.hsoperations.dto.command.NotificationIntent;
 import fit.iuh.se.hsoperations.dto.command.OperationalEventCommand;
 import fit.iuh.se.hsoperations.entity.enums.*;
-import fit.iuh.se.hsoperations.service.OperationalEventService;
+import fit.iuh.se.hsoperations.event.OperationalEventPublisher;
 import jakarta.persistence.criteria.Predicate;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -83,7 +83,7 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
     CareServiceAgreementService agreementService;
     PaymentCancellationService paymentCancellationService;
     ConsultationMapper mapper;
-    OperationalEventService operationalEventService;
+    OperationalEventPublisher OperationalEventPublisher;
 
     @NonFinal
     @Value("${app.consultation.payment-deadline-minutes:30}")
@@ -425,7 +425,7 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
                     eventType == BusinessEventType.REQUEST_CREATED ? "New care request" : "Care request resubmitted",
                     "A care request is ready for coordinator review.", BusinessDomainType.REQUEST, request.getId(),
                     "request:" + request.getId() + ":" + eventType + ":coordinators"));
-        operationalEventService.record(OperationalEventCommand.builder()
+        OperationalEventPublisher.record(OperationalEventCommand.builder()
                 .domainType(BusinessDomainType.REQUEST).domainId(request.getId()).eventType(eventType)
                 .actorType(actorId == null ? BusinessActorType.SYSTEM : BusinessActorType.USER)
                 .actorUserId(actorId).actorRole(actorRole == null ? null : actorRole.name())

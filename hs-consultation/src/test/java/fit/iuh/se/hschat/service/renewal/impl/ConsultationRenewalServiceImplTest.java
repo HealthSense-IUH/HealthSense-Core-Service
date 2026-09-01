@@ -43,7 +43,7 @@ class ConsultationRenewalServiceImplTest {
     @Mock ConsultationPaymentRepository paymentRepository;
     @Mock CareServiceAgreementService agreementService;
     @Mock SupportScheduleValidator scheduleValidator;
-    @Mock fit.iuh.se.hsoperations.service.OperationalEventService operationalEventService;
+    @Mock fit.iuh.se.hsoperations.event.OperationalEventPublisher OperationalEventPublisher;
 
     ConsultationRenewalServiceImpl service;
 
@@ -52,7 +52,7 @@ class ConsultationRenewalServiceImplTest {
         service = new ConsultationRenewalServiceImpl(
                 renewalRepository, extensionRepository, sessionRepository, packageRepository,
                 profileRepository, reservationRepository, userAccountRepository, paymentRepository,
-                agreementService, scheduleValidator, operationalEventService);
+                agreementService, scheduleValidator, OperationalEventPublisher);
         ReflectionTestUtils.setField(service, "paymentWindowMinutes", 30L);
         lenient().when(renewalRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
         lenient().when(renewalRepository.saveAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));
@@ -192,7 +192,7 @@ class ConsultationRenewalServiceImplTest {
         assertEquals(ConsultationRenewalStatus.APPLIED, renewal.getStatus());
         assertEquals(ConsultationPaymentStatus.PAID, payment.getStatus());
         verify(agreementService).consume(agreement);
-        verify(operationalEventService).record(argThat(command ->
+        verify(OperationalEventPublisher).record(argThat(command ->
                 command.eventType() == fit.iuh.se.hsoperations.entity.enums.BusinessEventType.RENEWAL_EXTENSION_APPLIED
                         && renewal.getPreviousEndsAt().toString().equals(command.metadata().get("previousEndsAt"))
                         && renewal.getProposedNewEndsAt().toString().equals(command.metadata().get("newEndsAt"))));

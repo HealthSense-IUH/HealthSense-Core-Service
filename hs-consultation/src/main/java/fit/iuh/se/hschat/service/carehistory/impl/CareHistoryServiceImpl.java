@@ -16,7 +16,7 @@ import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsshared.dto.response.PageResponse;
 import fit.iuh.se.hsoperations.dto.command.OperationalEventCommand;
 import fit.iuh.se.hsoperations.entity.enums.*;
-import fit.iuh.se.hsoperations.service.OperationalEventService;
+import fit.iuh.se.hsoperations.event.OperationalEventPublisher;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -42,7 +42,7 @@ public class CareHistoryServiceImpl implements CareHistoryService {
     ConsultationFinalSummaryRepository summaryRepository;
     ConsultationFinalSummaryAddendumRepository addendumRepository;
     EpisodeHealthRecordAuthorizationService authorizationService;
-    OperationalEventService operationalEventService;
+    OperationalEventPublisher OperationalEventPublisher;
 
     @Override
     @Transactional(readOnly = true)
@@ -98,7 +98,7 @@ public class CareHistoryServiceImpl implements CareHistoryService {
                         .build())
                 .toList();
         Instant bucket = Instant.now().truncatedTo(ChronoUnit.HOURS);
-        operationalEventService.record(OperationalEventCommand.builder()
+        OperationalEventPublisher.record(OperationalEventCommand.builder()
                 .domainType(BusinessDomainType.SESSION).domainId(current.getId())
                 .eventType(BusinessEventType.CARE_CONTINUITY_ACCESSED)
                 .actorType(BusinessActorType.USER).actorUserId(doctorId).actorRole(UserRole.DOCTOR.name())

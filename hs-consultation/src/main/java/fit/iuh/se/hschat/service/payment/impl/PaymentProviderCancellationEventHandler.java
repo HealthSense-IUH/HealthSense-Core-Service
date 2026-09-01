@@ -7,7 +7,7 @@ import fit.iuh.se.hschat.repository.ConsultationPaymentRepository;
 import fit.iuh.se.hschat.service.payment.PayOSPaymentGateway;
 import fit.iuh.se.hsoperations.dto.command.*;
 import fit.iuh.se.hsoperations.entity.enums.*;
-import fit.iuh.se.hsoperations.service.OperationalEventService;
+import fit.iuh.se.hsoperations.event.OperationalEventPublisher;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +27,7 @@ import java.time.Instant;
 public class PaymentProviderCancellationEventHandler {
     ConsultationPaymentRepository paymentRepository;
     PayOSPaymentGateway paymentGateway;
-    OperationalEventService operationalEventService;
+    OperationalEventPublisher OperationalEventPublisher;
 
     @Async
     @EventListener
@@ -60,8 +60,8 @@ public class PaymentProviderCancellationEventHandler {
     private void recordResult(ConsultationPayment payment, Long actorId, UserRole role) {
         boolean failed = payment.getProviderCancellationStatus() == PaymentProviderCancellationStatus.FAILED;
         String actionKey = "payment:" + payment.getId() + ":provider-cancellation-failure";
-        if (!failed) operationalEventService.resolveNeedsAction(actionKey, "Provider payment link cancellation succeeded");
-        operationalEventService.record(OperationalEventCommand.builder()
+        if (!failed) OperationalEventPublisher.resolveNeedsAction(actionKey, "Provider payment link cancellation succeeded");
+        OperationalEventPublisher.record(OperationalEventCommand.builder()
                 .domainType(BusinessDomainType.PAYMENT).domainId(payment.getId())
                 .eventType(failed ? BusinessEventType.PAYMENT_PROVIDER_CANCELLATION_FAILED
                         : BusinessEventType.PAYMENT_PROVIDER_CANCELLATION_SUCCEEDED)

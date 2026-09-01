@@ -45,13 +45,13 @@ class CareServicePackageServiceImplTest {
     @Mock
     ConsultationMapper mapper;
     @Mock
-    fit.iuh.se.hsoperations.service.OperationalEventService operationalEventService;
+    fit.iuh.se.hsoperations.event.OperationalEventPublisher OperationalEventPublisher;
 
     CareServicePackageServiceImpl service;
 
     @BeforeEach
     void setUp() {
-        service = new CareServicePackageServiceImpl(packageRepository, familyRepository, mapper, operationalEventService);
+        service = new CareServicePackageServiceImpl(packageRepository, familyRepository, mapper, OperationalEventPublisher);
     }
 
     @Test
@@ -168,7 +168,7 @@ class CareServicePackageServiceImplTest {
         assertEquals("terms:v2", newVersion.getTermsPolicyReference());
         assertNotEquals(active.getId(), newVersion.getId());
         ArgumentCaptor<OperationalEventCommand> auditEvents = ArgumentCaptor.forClass(OperationalEventCommand.class);
-        verify(operationalEventService, org.mockito.Mockito.times(2)).record(auditEvents.capture());
+        verify(OperationalEventPublisher, org.mockito.Mockito.times(2)).record(auditEvents.capture());
         auditEvents.getAllValues().forEach(event -> assertEquals(99L, event.actorUserId()));
 
         CareServicePackageResponse historical = service.getPackageForAdmin(UserRole.ADMIN, 10L);

@@ -23,7 +23,7 @@ import fit.iuh.se.hsuser.repository.UserAccountRepository;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
 import fit.iuh.se.hsoperations.dto.command.*;
 import fit.iuh.se.hsoperations.entity.enums.*;
-import fit.iuh.se.hsoperations.service.OperationalEventService;
+import fit.iuh.se.hsoperations.event.OperationalEventPublisher;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -48,7 +48,7 @@ public class ConsultationMessageServiceImpl implements ConsultationMessageServic
     ConsultationMapper mapper;
     SupportHoursPolicy supportHoursPolicy;
     UserAccountRepository userAccountRepository;
-    OperationalEventService operationalEventService;
+    OperationalEventPublisher OperationalEventPublisher;
 
     @Override
     @Transactional
@@ -166,7 +166,7 @@ public class ConsultationMessageServiceImpl implements ConsultationMessageServic
         UserRole senderRole = participant.getRole() == fit.iuh.se.hschat.entity.enums.ConsultationParticipantRole.MEMBER
                 ? UserRole.MEMBER : UserRole.DOCTOR;
         String key = "message:" + message.getId() + ":sent";
-        operationalEventService.record(OperationalEventCommand.builder()
+        OperationalEventPublisher.record(OperationalEventCommand.builder()
                 .domainType(BusinessDomainType.SESSION).domainId(session.getId()).eventType(BusinessEventType.MESSAGE_SENT)
                 .actorType(BusinessActorType.USER).actorUserId(participant.getUserId()).actorRole(senderRole.name())
                 .sessionId(session.getId()).memberId(session.getMemberId()).doctorId(session.getDoctorId())

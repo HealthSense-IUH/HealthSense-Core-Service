@@ -22,7 +22,7 @@ import fit.iuh.se.hsuser.entity.enums.UserRole;
 import fit.iuh.se.hsuser.repository.UserAccountRepository;
 import fit.iuh.se.hsoperations.dto.command.*;
 import fit.iuh.se.hsoperations.entity.enums.*;
-import fit.iuh.se.hsoperations.service.OperationalEventService;
+import fit.iuh.se.hsoperations.event.OperationalEventPublisher;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -45,7 +45,7 @@ public class ConsultationFinalSummaryServiceImpl implements ConsultationFinalSum
     EpisodeHealthRecordAuthorizationRepository authorizationRepository;
     UserAccountRepository userAccountRepository;
     FinalSummaryClosureService closureService;
-    OperationalEventService operationalEventService;
+    OperationalEventPublisher OperationalEventPublisher;
 
     @Override
     @Transactional(readOnly = true)
@@ -146,7 +146,7 @@ public class ConsultationFinalSummaryServiceImpl implements ConsultationFinalSum
                         .content(request.getContent().trim())
                         .authoredAt(Instant.now())
                         .build());
-        operationalEventService.record(OperationalEventCommand.builder()
+        OperationalEventPublisher.record(OperationalEventCommand.builder()
                 .domainType(BusinessDomainType.FINAL_SUMMARY).domainId(summary.getId())
                 .eventType(BusinessEventType.FINAL_SUMMARY_ADDENDUM_CREATED).actorType(BusinessActorType.USER)
                 .actorUserId(doctorId).actorRole(UserRole.DOCTOR.name()).sessionId(session.getId())
@@ -187,7 +187,7 @@ public class ConsultationFinalSummaryServiceImpl implements ConsultationFinalSum
 
     private void auditSummary(ConsultationFinalSummary summary, ConsultationSession session,
             BusinessEventType eventType, Long doctorId, NotificationIntent notification) {
-        operationalEventService.record(OperationalEventCommand.builder()
+        OperationalEventPublisher.record(OperationalEventCommand.builder()
                 .domainType(BusinessDomainType.FINAL_SUMMARY).domainId(summary.getId()).eventType(eventType)
                 .actorType(BusinessActorType.USER).actorUserId(doctorId).actorRole(UserRole.DOCTOR.name())
                 .sessionId(session.getId()).summaryId(summary.getId()).memberId(session.getMemberId()).doctorId(doctorId)

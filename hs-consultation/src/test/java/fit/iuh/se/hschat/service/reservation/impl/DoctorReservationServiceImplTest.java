@@ -36,7 +36,7 @@ class DoctorReservationServiceImplTest {
     @Mock DoctorCareProfileRepository profileRepository;
     @Mock CareServicePackageRepository packageRepository;
     @Mock SupportScheduleValidator scheduleValidator;
-    @Mock fit.iuh.se.hsoperations.service.OperationalEventService operationalEventService;
+    @Mock fit.iuh.se.hsoperations.event.OperationalEventPublisher OperationalEventPublisher;
 
     DoctorReservationServiceImpl service;
 
@@ -50,7 +50,7 @@ class DoctorReservationServiceImplTest {
                 profileRepository,
                 packageRepository,
                 scheduleValidator,
-                operationalEventService
+                OperationalEventPublisher
         );
     }
 
@@ -160,7 +160,7 @@ class DoctorReservationServiceImplTest {
         assertEquals(DoctorReservationReleaseReason.RESERVATION_EXPIRED, reservation.getReleaseReason());
         assertEquals(ConsultationRequestStatus.EXPIRED, request.getStatus());
         assertNull(request.getAssignedDoctorId());
-        verify(operationalEventService).record(argThat(command ->
+        verify(OperationalEventPublisher).record(argThat(command ->
                 command.eventType() == fit.iuh.se.hsoperations.entity.enums.BusinessEventType.RESERVATION_RELEASED
                         && Long.valueOf(500L).equals(command.domainId())
                         && "ACTIVE".equals(command.previousState())
@@ -183,7 +183,7 @@ class DoctorReservationServiceImplTest {
                 reservation.getReleaseReason());
         assertEquals(ConsultationRequestStatus.PENDING_REVIEW, request.getStatus());
         assertNull(request.getAssignedDoctorId());
-        verify(operationalEventService).record(argThat(command ->
+        verify(OperationalEventPublisher).record(argThat(command ->
                 command.eventType() == fit.iuh.se.hsoperations.entity.enums.BusinessEventType.DOCTOR_RECOORDINATED
                         && command.notifications().stream().anyMatch(notification ->
                         notification.recipientRole() == UserRole.CARE_COORDINATOR)));

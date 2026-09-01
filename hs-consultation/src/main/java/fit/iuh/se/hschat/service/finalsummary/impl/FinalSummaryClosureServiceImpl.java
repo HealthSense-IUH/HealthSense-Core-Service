@@ -12,7 +12,7 @@ import fit.iuh.se.hsuser.entity.enums.UserRole;
 import fit.iuh.se.hsuser.repository.UserAccountRepository;
 import fit.iuh.se.hsoperations.dto.command.*;
 import fit.iuh.se.hsoperations.entity.enums.*;
-import fit.iuh.se.hsoperations.service.OperationalEventService;
+import fit.iuh.se.hsoperations.event.OperationalEventPublisher;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -36,7 +36,7 @@ public class FinalSummaryClosureServiceImpl implements FinalSummaryClosureServic
     ConsultationSessionRepository sessionRepository;
     ConsultationFinalSummaryRepository summaryRepository;
     UserAccountRepository userAccountRepository;
-    OperationalEventService operationalEventService;
+    OperationalEventPublisher OperationalEventPublisher;
 
     @NonFinal
     @Value("${app.consultation.final-summary-due-hours:24}")
@@ -69,9 +69,9 @@ public class FinalSummaryClosureServiceImpl implements FinalSummaryClosureServic
     public void onSummaryFinalized(ConsultationSession session, Instant finalizedAt) {
         markFinalized(session);
         sessionRepository.save(session);
-        operationalEventService.resolveNeedsAction(summaryKey(session, "pending"), "Final summary finalized");
-        operationalEventService.resolveNeedsAction(summaryKey(session, "overdue"), "Final summary finalized");
-        operationalEventService.resolveNeedsAction(summaryKey(session, "escalated"), "Final summary finalized");
+        OperationalEventPublisher.resolveNeedsAction(summaryKey(session, "pending"), "Final summary finalized");
+        OperationalEventPublisher.resolveNeedsAction(summaryKey(session, "overdue"), "Final summary finalized");
+        OperationalEventPublisher.resolveNeedsAction(summaryKey(session, "escalated"), "Final summary finalized");
         recordClosure(session, BusinessEventType.SUMMARY_FINALIZED);
     }
 
@@ -134,7 +134,7 @@ public class FinalSummaryClosureServiceImpl implements FinalSummaryClosureServic
                         BusinessDomainType.FINAL_SUMMARY, session.getId(), UserRole.CARE_COORDINATOR.name(),
                         summaryKey(session, suffix));
         String eventKey = "summary-closure:" + session.getId() + ":" + suffix;
-        operationalEventService.record(OperationalEventCommand.builder()
+        OperationalEventPublisher.record(OperationalEventCommand.builder()
                 .domainType(BusinessDomainType.FINAL_SUMMARY).domainId(session.getId()).eventType(eventType)
                 .actorType(BusinessActorType.SYSTEM).sessionId(session.getId()).memberId(session.getMemberId())
                 .doctorId(session.getDoctorId()).newState(session.getSummaryClosureStatus().name())

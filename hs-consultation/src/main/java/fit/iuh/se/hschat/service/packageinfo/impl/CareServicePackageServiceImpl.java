@@ -18,7 +18,7 @@ import fit.iuh.se.hsshared.dto.response.PageResponse;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
 import fit.iuh.se.hsoperations.dto.command.OperationalEventCommand;
 import fit.iuh.se.hsoperations.entity.enums.*;
-import fit.iuh.se.hsoperations.service.OperationalEventService;
+import fit.iuh.se.hsoperations.event.OperationalEventPublisher;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -51,7 +51,7 @@ public class CareServicePackageServiceImpl implements CareServicePackageService 
     CareServicePackageRepository packageRepository;
     CareServicePackageFamilyRepository familyRepository;
     ConsultationMapper mapper;
-    OperationalEventService operationalEventService;
+    OperationalEventPublisher OperationalEventPublisher;
 
     @Override
     @Transactional(readOnly = true)
@@ -232,7 +232,7 @@ public class CareServicePackageServiceImpl implements CareServicePackageService 
 
     private void auditPackage(CareServicePackage carePackage, BusinessEventType eventType, Long actorId, UserRole actorRole,
             CareServicePackageStatus previous, CareServicePackageStatus next) {
-        operationalEventService.record(OperationalEventCommand.builder()
+        OperationalEventPublisher.record(OperationalEventCommand.builder()
                 .domainType(BusinessDomainType.PACKAGE).domainId(carePackage.getId()).eventType(eventType)
                 .actorType(BusinessActorType.USER).actorUserId(actorId).actorRole(actorRole.name())
                 .previousState(previous == null ? null : previous.name()).newState(next == null ? null : next.name())

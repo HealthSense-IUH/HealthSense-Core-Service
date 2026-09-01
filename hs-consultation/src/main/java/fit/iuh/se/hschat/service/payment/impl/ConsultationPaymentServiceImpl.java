@@ -26,7 +26,7 @@ import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsoperations.dto.command.*;
 import fit.iuh.se.hsoperations.entity.enums.*;
-import fit.iuh.se.hsoperations.service.OperationalEventService;
+import fit.iuh.se.hsoperations.event.OperationalEventPublisher;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -67,7 +67,7 @@ public class ConsultationPaymentServiceImpl implements ConsultationPaymentServic
     EpisodeHealthRecordAuthorizationService authorizationService;
     ConsultationRenewalService renewalService;
     RefundReviewCaseService refundReviewCaseService;
-    OperationalEventService operationalEventService;
+    OperationalEventPublisher OperationalEventPublisher;
 
     @NonFinal
     @Value("${app.payment.return-url:http://localhost:5173/payment/result}")
@@ -388,7 +388,7 @@ public class ConsultationPaymentServiceImpl implements ConsultationPaymentServic
         agreementService.consume(agreement);
         reservationService.release(request, DoctorReservationReleaseReason.ACTIVATED);
 
-        operationalEventService.record(OperationalEventCommand.builder()
+        OperationalEventPublisher.record(OperationalEventCommand.builder()
                 .domainType(BusinessDomainType.SESSION).domainId(session.getId())
                 .eventType(BusinessEventType.SESSION_CREATED).actorType(BusinessActorType.SYSTEM)
                 .requestId(request.getId()).paymentId(payment.getId()).agreementId(agreement.getId())
@@ -403,7 +403,7 @@ public class ConsultationPaymentServiceImpl implements ConsultationPaymentServic
         paymentRepository.save(payment);
         auditPayment(payment, BusinessEventType.PAYMENT_VERIFIED, BusinessActorType.SYSTEM, null,
                 previousPaymentStatus, ConsultationPaymentStatus.PAID, null, NotificationType.PAYMENT_CONFIRMED, null);
-        operationalEventService.record(OperationalEventCommand.builder()
+        OperationalEventPublisher.record(OperationalEventCommand.builder()
                 .domainType(BusinessDomainType.SESSION).domainId(session.getId())
                 .eventType(BusinessEventType.SESSION_ACTIVATED).actorType(BusinessActorType.SYSTEM)
                 .requestId(request.getId()).paymentId(payment.getId()).agreementId(agreement.getId())
@@ -617,7 +617,7 @@ public class ConsultationPaymentServiceImpl implements ConsultationPaymentServic
                     NotificationType.OPERATIONAL_REVIEW_REQUIRED, "Payment requires review",
                     "Verified payment evidence requires coordinator review and did not activate care.",
                     BusinessDomainType.PAYMENT, payment.getId(), key + ":coordinators"));
-        operationalEventService.record(OperationalEventCommand.builder()
+        OperationalEventPublisher.record(OperationalEventCommand.builder()
                 .domainType(BusinessDomainType.PAYMENT).domainId(payment.getId()).eventType(eventType)
                 .actorType(actorType).actorUserId(actorId)
                 .actorRole(actorId == null ? null : UserRole.MEMBER.name())

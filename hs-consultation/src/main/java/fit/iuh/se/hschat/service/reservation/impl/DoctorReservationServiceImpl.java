@@ -17,7 +17,7 @@ import fit.iuh.se.hsuser.repository.UserAccountRepository;
 import fit.iuh.se.hsoperations.dto.command.OperationalEventCommand;
 import fit.iuh.se.hsoperations.dto.command.NotificationIntent;
 import fit.iuh.se.hsoperations.entity.enums.*;
-import fit.iuh.se.hsoperations.service.OperationalEventService;
+import fit.iuh.se.hsoperations.event.OperationalEventPublisher;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -46,7 +46,7 @@ public class DoctorReservationServiceImpl implements DoctorReservationService {
     DoctorCareProfileRepository doctorCareProfileRepository;
     CareServicePackageRepository packageRepository;
     SupportScheduleValidator scheduleValidator;
-    OperationalEventService operationalEventService;
+    OperationalEventPublisher OperationalEventPublisher;
 
     @Override
     @Transactional
@@ -81,7 +81,7 @@ public class DoctorReservationServiceImpl implements DoctorReservationService {
                 .status(DoctorReservationStatus.ACTIVE)
                 .build();
         reservation = reservationRepository.saveAndFlush(reservation);
-        operationalEventService.record(OperationalEventCommand.builder()
+        OperationalEventPublisher.record(OperationalEventCommand.builder()
                 .domainType(BusinessDomainType.RESERVATION).domainId(reservation.getId())
                 .eventType(BusinessEventType.DOCTOR_RESERVED).actorType(BusinessActorType.USER)
                 .actorUserId(coordinatorId).actorRole(UserRole.CARE_COORDINATOR.name())
@@ -227,7 +227,7 @@ public class DoctorReservationServiceImpl implements DoctorReservationService {
         reservation.setReleaseReason(reason);
         reservation.setReleasedAt(now);
         reservationRepository.save(reservation);
-        operationalEventService.record(OperationalEventCommand.builder()
+        OperationalEventPublisher.record(OperationalEventCommand.builder()
                 .domainType(BusinessDomainType.RESERVATION).domainId(reservation.getId())
                 .eventType(BusinessEventType.RESERVATION_RELEASED).actorType(BusinessActorType.SYSTEM)
                 .requestId(reservation.getRequestId()).doctorId(reservation.getDoctorId())
@@ -244,7 +244,7 @@ public class DoctorReservationServiceImpl implements DoctorReservationService {
         request.setStatus(ConsultationRequestStatus.PENDING_REVIEW);
         clearCurrentAssignment(request);
         requestRepository.save(request);
-        operationalEventService.record(OperationalEventCommand.builder()
+        OperationalEventPublisher.record(OperationalEventCommand.builder()
                 .domainType(BusinessDomainType.REQUEST).domainId(request.getId())
                 .eventType(BusinessEventType.DOCTOR_RECOORDINATED).actorType(BusinessActorType.SYSTEM)
                 .requestId(request.getId()).memberId(request.getMemberId()).doctorId(previousDoctorId)

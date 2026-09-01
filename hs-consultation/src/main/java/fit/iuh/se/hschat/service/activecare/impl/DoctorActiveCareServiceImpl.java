@@ -27,7 +27,7 @@ import fit.iuh.se.hsuser.entity.enums.AccountStatus;
 import fit.iuh.se.hsuser.repository.UserAccountRepository;
 import fit.iuh.se.hsoperations.dto.command.OperationalEventCommand;
 import fit.iuh.se.hsoperations.entity.enums.*;
-import fit.iuh.se.hsoperations.service.OperationalEventService;
+import fit.iuh.se.hsoperations.event.OperationalEventPublisher;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -67,7 +67,7 @@ public class DoctorActiveCareServiceImpl implements DoctorActiveCareService {
     ConsultationMapper consultationMapper;
     HealthRecordMapper healthRecordMapper;
     S3Service s3Service;
-    OperationalEventService operationalEventService;
+    OperationalEventPublisher OperationalEventPublisher;
 
     @Override
     @Transactional(readOnly = true)
@@ -176,7 +176,7 @@ public class DoctorActiveCareServiceImpl implements DoctorActiveCareService {
     private void auditRecordAccess(Long doctorId, ConsultationSession session, Long recordId,
             BusinessEventType eventType) {
         Instant bucket = Instant.now().truncatedTo(ChronoUnit.HOURS);
-        operationalEventService.record(OperationalEventCommand.builder()
+        OperationalEventPublisher.record(OperationalEventCommand.builder()
                 .domainType(BusinessDomainType.HEALTH_RECORD).domainId(recordId).eventType(eventType)
                 .actorType(BusinessActorType.USER).actorUserId(doctorId).actorRole(UserRole.DOCTOR.name())
                 .sessionId(session.getId()).healthRecordId(recordId).memberId(session.getMemberId()).doctorId(doctorId)

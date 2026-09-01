@@ -43,7 +43,7 @@ class DoctorActiveCareServiceImplTest {
     @Mock ConsultationMapper consultationMapper;
     @Mock HealthRecordMapper healthRecordMapper;
     @Mock S3Service s3Service;
-    @Mock fit.iuh.se.hsoperations.service.OperationalEventService operationalEventService;
+    @Mock fit.iuh.se.hsoperations.event.OperationalEventPublisher OperationalEventPublisher;
 
     DoctorActiveCareServiceImpl service;
 
@@ -52,7 +52,7 @@ class DoctorActiveCareServiceImplTest {
         service = new DoctorActiveCareServiceImpl(
                 sessionRepository, participantRepository, messageRepository, attentionRepository,
                 healthRecordRepository, authorizationService, userAccountRepository,
-                consultationMapper, healthRecordMapper, s3Service, operationalEventService
+                consultationMapper, healthRecordMapper, s3Service, OperationalEventPublisher
         );
         lenient().when(userAccountRepository.findById(2L)).thenReturn(Optional.of(
                 UserAccount.builder().id(2L).status(fit.iuh.se.hsuser.entity.enums.AccountStatus.ACTIVE).build()));
@@ -121,7 +121,7 @@ class DoctorActiveCareServiceImplTest {
         when(healthRecordMapper.toResponse(record)).thenReturn(HealthRecordResponse.builder().id(200L).build());
 
         assertNotNull(service.getScopedHealthRecord(2L, 100L, 200L));
-        verify(operationalEventService).record(argThat(command ->
+        verify(OperationalEventPublisher).record(argThat(command ->
                 command.eventType() == fit.iuh.se.hsoperations.entity.enums.BusinessEventType.HEALTH_RECORD_HISTORICAL_ACCESSED
                         && Long.valueOf(100L).equals(command.sessionId())
                         && Long.valueOf(200L).equals(command.healthRecordId())
@@ -146,7 +146,7 @@ class DoctorActiveCareServiceImplTest {
         var result = service.getScopedHealthRecords(2L, 100L, PageRequest.of(0, 10));
 
         assertEquals(1, result.getContent().size());
-        verify(operationalEventService).record(argThat(command ->
+        verify(OperationalEventPublisher).record(argThat(command ->
                 command.eventType() == fit.iuh.se.hsoperations.entity.enums.BusinessEventType.HEALTH_RECORD_HISTORICAL_ACCESSED
                         && Long.valueOf(200L).equals(command.healthRecordId())));
     }

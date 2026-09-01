@@ -33,6 +33,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import fit.iuh.se.hsoperations.entity.*;
 import fit.iuh.se.hsoperations.repository.*;
+import fit.iuh.se.hsoperations.event.OperationalEventPublisher;
 import fit.iuh.se.hsoperations.service.impl.NotificationProjector;
 import fit.iuh.se.hsoperations.service.impl.OperationalEventServiceImpl;
 import vn.payos.model.webhooks.Webhook;
@@ -79,7 +80,7 @@ class ConsultationPaymentServiceImplTest {
     @Mock
     RefundReviewCaseService refundReviewCaseService;
     @Mock
-    fit.iuh.se.hsoperations.service.OperationalEventService operationalEventService;
+    fit.iuh.se.hsoperations.event.OperationalEventPublisher OperationalEventPublisher;
 
     ConsultationPaymentServiceImpl service;
 
@@ -96,7 +97,7 @@ class ConsultationPaymentServiceImplTest {
                 authorizationService,
                 renewalService,
                 refundReviewCaseService,
-                operationalEventService
+                OperationalEventPublisher
         );
         lenient().when(reservationService.revalidateBeforePayment(any())).thenReturn(true);
         lenient().when(reservationService.revalidateBeforeActivation(any())).thenReturn(true);
@@ -216,7 +217,7 @@ class ConsultationPaymentServiceImplTest {
         ));
         ArgumentCaptor<fit.iuh.se.hsoperations.dto.command.OperationalEventCommand> events =
                 ArgumentCaptor.forClass(fit.iuh.se.hsoperations.dto.command.OperationalEventCommand.class);
-        verify(operationalEventService, times(3)).record(events.capture());
+        verify(OperationalEventPublisher, times(3)).record(events.capture());
         assertEquals(1, events.getAllValues().stream().filter(command ->
                 command.eventType() == fit.iuh.se.hsoperations.entity.enums.BusinessEventType.PAYMENT_VERIFIED
                         && "PENDING".equals(command.previousState())
@@ -270,9 +271,17 @@ class ConsultationPaymentServiceImplTest {
 
         var realOperations = new OperationalEventServiceImpl(auditRepository, needsActionRepository,
                 projectionRepository, objectMapper, publisher);
+        // Mô phỏng đúng luồng production: publisher -> application event -> relay (đồng bộ) -> service
+        var relay = new fit.iuh.se.hsoperations.event.OperationalEventRelay(realOperations);
+        var realOperationalEvents = new OperationalEventPublisher(event -> {
+            if (event instanceof fit.iuh.se.hsoperations.event.OperationalEventRequested requested)
+                relay.on(requested);
+            else if (event instanceof fit.iuh.se.hsoperations.event.NeedsActionResolutionRequested resolution)
+                relay.on(resolution);
+        });
         var integratedService = new ConsultationPaymentServiceImpl(paymentRepository, requestRepository,
                 sessionRepository, participantRepository, paymentGateway, reservationService, agreementService,
-                authorizationService, renewalService, refundReviewCaseService, realOperations);
+                authorizationService, renewalService, refundReviewCaseService, realOperationalEvents);
         ConsultationPayment payment = pendingPayment();
         ConsultationRequest request = waitingPaymentRequest();
         when(paymentGateway.verifyWebhook(any(Webhook.class))).thenReturn(verifiedPayment(payment));
@@ -320,7 +329,7 @@ class ConsultationPaymentServiceImplTest {
         assertEquals(ConsultationPaymentStatus.REQUIRES_REVIEW, payment.getStatus());
         verify(sessionRepository, never()).saveAndFlush(any());
         verify(participantRepository, never()).save(any());
-        verify(operationalEventService).record(argThat(command ->
+        verify(OperationalEventPublisher).record(argThat(command ->
                 command.eventType() == fit.iuh.se.hsoperations.entity.enums.BusinessEventType.PAYMENT_REQUIRES_REVIEW
                         && command.needsAction() != null));
     }

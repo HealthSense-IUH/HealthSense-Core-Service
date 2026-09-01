@@ -29,13 +29,13 @@ class ConsultationRefundServiceImplTest {
     @Mock ConsultationRequestRepository requestRepository;
     @Mock ConsultationRenewalRepository renewalRepository;
     @Mock PayOSPaymentGateway paymentGateway;
-    @Mock fit.iuh.se.hsoperations.service.OperationalEventService operationalEventService;
+    @Mock fit.iuh.se.hsoperations.event.OperationalEventPublisher OperationalEventPublisher;
     ConsultationRefundServiceImpl service;
 
     @BeforeEach
     void setUp() {
         service = new ConsultationRefundServiceImpl(refundRepository, paymentRepository,
-                agreementRepository, requestRepository, renewalRepository, paymentGateway, operationalEventService);
+                agreementRepository, requestRepository, renewalRepository, paymentGateway, OperationalEventPublisher);
         lenient().when(refundRepository.save(any())).thenAnswer(invocation -> {
             ConsultationRefund refund = invocation.getArgument(0);
             if (refund.getId() == null) refund.setId(800L);
@@ -86,9 +86,9 @@ class ConsultationRefundServiceImplTest {
         assertEquals(ConsultationRefundStatus.SUCCEEDED, response.getStatus());
         assertEquals("rf_1", response.getProviderRefundId());
         assertEquals(ConsultationPaymentStatus.PAID, payment.getStatus());
-        verify(operationalEventService).record(argThat(command ->
+        verify(OperationalEventPublisher).record(argThat(command ->
                 command.eventType() == fit.iuh.se.hsoperations.entity.enums.BusinessEventType.REFUND_APPROVED));
-        verify(operationalEventService).record(argThat(command ->
+        verify(OperationalEventPublisher).record(argThat(command ->
                 command.eventType() == fit.iuh.se.hsoperations.entity.enums.BusinessEventType.REFUND_SUCCEEDED));
     }
 
@@ -108,7 +108,7 @@ class ConsultationRefundServiceImplTest {
         assertEquals(ConsultationRefundStatus.FAILED, response.getStatus());
         assertEquals(ConsultationPaymentStatus.PAID, payment.getStatus());
         assertEquals(1, response.getExecutionAttempts());
-        verify(operationalEventService).record(argThat(command ->
+        verify(OperationalEventPublisher).record(argThat(command ->
                 command.eventType() == fit.iuh.se.hsoperations.entity.enums.BusinessEventType.REFUND_FAILED
                         && command.needsAction() != null));
     }
@@ -126,7 +126,7 @@ class ConsultationRefundServiceImplTest {
         assertEquals(ConsultationRefundStatus.REJECTED,
                 service.decide(10L, UserRole.ADMIN, 800L, reject).getStatus());
         verify(paymentGateway, never()).refundPayment(anyLong(), any(), anyString(), anyString(), anyString());
-        verify(operationalEventService).record(argThat(command ->
+        verify(OperationalEventPublisher).record(argThat(command ->
                 command.eventType() == fit.iuh.se.hsoperations.entity.enums.BusinessEventType.REFUND_REJECTED));
     }
 

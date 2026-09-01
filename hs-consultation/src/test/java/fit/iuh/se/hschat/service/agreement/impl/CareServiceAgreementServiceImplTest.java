@@ -27,7 +27,7 @@ class CareServiceAgreementServiceImplTest {
     @Mock CareServicePackageRepository packageRepository;
     @Mock DoctorCareProfileRepository profileRepository;
     @Mock ConsultationRenewalRepository renewalRepository;
-    @Mock fit.iuh.se.hsoperations.service.OperationalEventService operationalEventService;
+    @Mock fit.iuh.se.hsoperations.event.OperationalEventPublisher OperationalEventPublisher;
 
     CareServiceAgreementServiceImpl service;
 
@@ -35,7 +35,7 @@ class CareServiceAgreementServiceImplTest {
     void setUp() {
         service = new CareServiceAgreementServiceImpl(
                 agreementRepository, requestRepository, packageRepository, profileRepository, renewalRepository,
-                operationalEventService);
+                OperationalEventPublisher);
     }
 
     @Test
@@ -82,7 +82,7 @@ class CareServiceAgreementServiceImplTest {
         assertEquals(1L, agreement.getAcceptedByMember());
         assertNotNull(agreement.getAcceptedAt());
         assertEquals(ConsultationRequestStatus.WAITING_PAYMENT, request.getStatus());
-        verify(operationalEventService).record(argThat(command ->
+        verify(OperationalEventPublisher).record(argThat(command ->
                 command.eventType() == fit.iuh.se.hsoperations.entity.enums.BusinessEventType.AGREEMENT_ACCEPTED
                         && Long.valueOf(1L).equals(command.actorUserId())
                         && "MEMBER".equals(command.actorRole())

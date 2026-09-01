@@ -75,7 +75,7 @@ class ConsultationSessionServiceImplTest {
     @Mock
     ConsultationMapper mapper;
     @Mock
-    fit.iuh.se.hsoperations.service.OperationalEventService operationalEventService;
+    fit.iuh.se.hsoperations.event.OperationalEventPublisher OperationalEventPublisher;
 
     ConsultationSessionServiceImpl service;
 
@@ -96,7 +96,7 @@ class ConsultationSessionServiceImplTest {
                 finalSummaryClosureService,
                 renewalService,
                 mapper,
-                operationalEventService
+                OperationalEventPublisher
         );
         ReflectionTestUtils.setField(service, "defaultDoctorMaxActiveSessions", 5);
     }
@@ -123,7 +123,7 @@ class ConsultationSessionServiceImplTest {
         assertNotNull(saved.getCompletedAt());
         verify(finalSummaryClosureService).onSessionCompleted(eq(overdue), any(Instant.class));
         verify(finalSummaryClosureService, times(2)).refreshOpenClosures(any(Instant.class));
-        verify(operationalEventService, times(1)).record(argThat(command ->
+        verify(OperationalEventPublisher, times(1)).record(argThat(command ->
                 command.eventType() == fit.iuh.se.hsoperations.entity.enums.BusinessEventType.SESSION_COMPLETED
                         && command.notifications().stream().anyMatch(notification ->
                         notification.type() == fit.iuh.se.hsoperations.entity.enums.NotificationType.CARE_COMPLETED)));
@@ -233,7 +233,7 @@ class ConsultationSessionServiceImplTest {
         assertEquals(profile.getTimezone(), saved.getSupportTimezoneSnapshot());
         assertTrue(saved.getExceptionalOverride());
         assertEquals("Compensating care approved by Admin", saved.getOverrideReason());
-        verify(operationalEventService).record(argThat(command ->
+        verify(OperationalEventPublisher).record(argThat(command ->
                 command.eventType() == fit.iuh.se.hsoperations.entity.enums.BusinessEventType.SESSION_OVERRIDE_CREATED
                         && Long.valueOf(9L).equals(command.actorUserId())
                         && "ADMIN".equals(command.actorRole())
@@ -271,7 +271,7 @@ class ConsultationSessionServiceImplTest {
 
         ArgumentCaptor<fit.iuh.se.hsoperations.dto.command.OperationalEventCommand> events =
                 ArgumentCaptor.forClass(fit.iuh.se.hsoperations.dto.command.OperationalEventCommand.class);
-        verify(operationalEventService, times(2)).record(events.capture());
+        verify(OperationalEventPublisher, times(2)).record(events.capture());
         assertTrue(events.getAllValues().stream().allMatch(command ->
                 command.eventType() == fit.iuh.se.hsoperations.entity.enums.BusinessEventType.SESSION_ENDING_SOON
                         && command.idempotencyKey().equals("session:1:SESSION_ENDING_SOON:ACTIVE")

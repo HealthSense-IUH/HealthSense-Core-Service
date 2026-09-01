@@ -9,7 +9,7 @@ import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsoperations.dto.command.*;
 import fit.iuh.se.hsoperations.entity.enums.*;
-import fit.iuh.se.hsoperations.service.OperationalEventService;
+import fit.iuh.se.hsoperations.event.OperationalEventPublisher;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -49,7 +49,7 @@ public class CareServiceAgreementServiceImpl implements CareServiceAgreementServ
     CareServicePackageRepository packageRepository;
     DoctorCareProfileRepository profileRepository;
     ConsultationRenewalRepository renewalRepository;
-    OperationalEventService operationalEventService;
+    OperationalEventPublisher OperationalEventPublisher;
 
     @Override
     @Transactional
@@ -301,7 +301,7 @@ public class CareServiceAgreementServiceImpl implements CareServiceAgreementServ
             UserRole actorRole, CareServiceAgreementStatus previous, CareServiceAgreementStatus next,
             String reason, NotificationType notificationType) {
         String transitionKey = "agreement:" + agreement.getId() + ":" + eventType;
-        operationalEventService.record(OperationalEventCommand.builder()
+        OperationalEventPublisher.record(OperationalEventCommand.builder()
                 .domainType(BusinessDomainType.AGREEMENT).domainId(agreement.getId()).eventType(eventType)
                 .actorType(actorId == null ? BusinessActorType.SYSTEM : BusinessActorType.USER)
                 .actorUserId(actorId).actorRole(actorRole == null ? null : actorRole.name())

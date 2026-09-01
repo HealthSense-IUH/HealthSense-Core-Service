@@ -14,7 +14,7 @@ import fit.iuh.se.hshealthrecord.event.HealthRecordAnalyzedEvent;
 import fit.iuh.se.hshealthrecord.repository.HealthRecordRepository;
 import fit.iuh.se.hsoperations.dto.command.*;
 import fit.iuh.se.hsoperations.entity.enums.*;
-import fit.iuh.se.hsoperations.service.OperationalEventService;
+import fit.iuh.se.hsoperations.event.OperationalEventPublisher;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -34,7 +34,7 @@ public class HealthRecordAttentionEventHandler {
     ConsultationHealthRecordAttentionRepository attentionRepository;
     HealthRecordRepository healthRecordRepository;
     EpisodeHealthRecordAuthorizationRepository authorizationRepository;
-    OperationalEventService operationalEventService;
+    OperationalEventPublisher OperationalEventPublisher;
 
     @EventListener
     @Transactional
@@ -65,7 +65,7 @@ public class HealthRecordAttentionEventHandler {
                     .reason(ConsultationAttentionReason.AFIB)
                     .build());
             String key = "health-attention:" + session.getId() + ":" + record.getId();
-            operationalEventService.record(OperationalEventCommand.builder()
+            OperationalEventPublisher.record(OperationalEventCommand.builder()
                     .domainType(BusinessDomainType.HEALTH_RECORD).domainId(record.getId())
                     .eventType(BusinessEventType.HEALTH_ATTENTION_REQUIRED).actorType(BusinessActorType.SYSTEM)
                     .sessionId(session.getId()).healthRecordId(record.getId()).memberId(session.getMemberId())

@@ -30,7 +30,7 @@ class HealthRecordAttentionEventHandlerTest {
     @Mock ConsultationHealthRecordAttentionRepository attentionRepository;
     @Mock HealthRecordRepository healthRecordRepository;
     @Mock EpisodeHealthRecordAuthorizationRepository authorizationRepository;
-    @Mock fit.iuh.se.hsoperations.service.OperationalEventService operationalEventService;
+    @Mock fit.iuh.se.hsoperations.event.OperationalEventPublisher OperationalEventPublisher;
 
     HealthRecordAttentionEventHandler handler;
 
@@ -38,7 +38,7 @@ class HealthRecordAttentionEventHandlerTest {
     void setUp() {
         handler = new HealthRecordAttentionEventHandler(
                 sessionRepository, attentionRepository, healthRecordRepository, authorizationRepository,
-                operationalEventService);
+                OperationalEventPublisher);
         lenient().when(attentionRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
     }
 
@@ -56,7 +56,7 @@ class HealthRecordAttentionEventHandlerTest {
         verify(attentionRepository).save(any(ConsultationHealthRecordAttention.class));
         ArgumentCaptor<fit.iuh.se.hsoperations.dto.command.OperationalEventCommand> event =
                 ArgumentCaptor.forClass(fit.iuh.se.hsoperations.dto.command.OperationalEventCommand.class);
-        verify(operationalEventService).record(event.capture());
+        verify(OperationalEventPublisher).record(event.capture());
         String message = event.getValue().notifications().getFirst().message().toLowerCase();
         assertTrue(message.contains("not an emergency response service"));
         assertFalse(message.contains("immediate doctor response"));

@@ -15,7 +15,7 @@ import fit.iuh.se.hsuser.repository.UserAccountRepository;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
 import fit.iuh.se.hsoperations.dto.command.*;
 import fit.iuh.se.hsoperations.entity.enums.*;
-import fit.iuh.se.hsoperations.service.OperationalEventService;
+import fit.iuh.se.hsoperations.event.OperationalEventPublisher;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -37,7 +37,7 @@ public class EpisodeHealthRecordAuthorizationServiceImpl
     ConsultationSessionRepository sessionRepository;
     HealthRecordRepository healthRecordRepository;
     UserAccountRepository userAccountRepository;
-    OperationalEventService operationalEventService;
+    OperationalEventPublisher OperationalEventPublisher;
 
     @Override
     @Transactional
@@ -166,7 +166,7 @@ public class EpisodeHealthRecordAuthorizationServiceImpl
                 .build());
         BusinessActorType actorType = authorizedByType == EpisodeHealthRecordAuthorizedByType.SYSTEM
                 ? BusinessActorType.SYSTEM : BusinessActorType.USER;
-        operationalEventService.record(OperationalEventCommand.builder()
+        OperationalEventPublisher.record(OperationalEventCommand.builder()
                 .domainType(BusinessDomainType.HEALTH_RECORD).domainId(healthRecordId)
                 .eventType(BusinessEventType.HEALTH_RECORD_AUTHORIZED).actorType(actorType)
                 .actorUserId(actorType == BusinessActorType.USER ? authorizedBy : null)
