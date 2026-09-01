@@ -72,7 +72,7 @@ public class CareHistoryServiceImpl implements CareHistoryService {
             Long doctorId, Long currentSessionId) {
         ConsultationSession current = sessionRepository.findByIdAndDoctorId(currentSessionId, doctorId)
                 .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_ACCESS_DENIED));
-        if (current.getStatus() != ConsultationStatus.ACTIVE || current.getActivatedAt() == null)
+        if (!canAccessContinuityForClinicalClosure(current))
             throw new AppException(ErrorCode.CONSULTATION_NOT_ACTIVE);
 
         List<ConsultationSession> previous = sessionRepository
@@ -103,10 +103,23 @@ public class CareHistoryServiceImpl implements CareHistoryService {
                 .eventType(BusinessEventType.CARE_CONTINUITY_ACCESSED)
                 .actorType(BusinessActorType.USER).actorUserId(doctorId).actorRole(UserRole.DOCTOR.name())
                 .sessionId(current.getId()).memberId(current.getMemberId()).doctorId(doctorId)
-                .metadata(Map.of("accessContext", "ACTIVE_CARE_CONTINUITY", "summaryCount", String.valueOf(result.size())))
+                .metadata(Map.of(
+                        "accessContext", current.getStatus() == ConsultationStatus.ACTIVE
+                                ? "ACTIVE_CARE_CONTINUITY" : "CLINICAL_CLOSURE_CONTINUITY",
+                        "summaryCount", String.valueOf(result.size())))
                 .idempotencyKey("care-continuity:" + doctorId + ":" + current.getId() + ":" + bucket)
                 .build());
         return result;
+    }
+
+    private boolean canAccessContinuityForClinicalClosure(ConsultationSession session) {
+        if (session.getActivatedAt() == null)
+            return false;
+        if (session.getStatus() == ConsultationStatus.ACTIVE
+                || session.getStatus() == ConsultationStatus.COMPLETED)
+            return true;
+        return session.getStatus() == ConsultationStatus.CANCELLED
+                && Boolean.TRUE.equals(session.getMeaningfulCareOccurred());
     }
 
     private CareHistoryEpisodeResponse toMemberEpisode(ConsultationSession session) {
