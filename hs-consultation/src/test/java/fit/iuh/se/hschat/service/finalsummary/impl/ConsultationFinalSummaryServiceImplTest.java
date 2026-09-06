@@ -6,13 +6,18 @@ import fit.iuh.se.hschat.dto.response.ConsultationFinalSummaryResponse;
 import fit.iuh.se.hschat.entity.ConsultationFinalSummary;
 import fit.iuh.se.hschat.entity.ConsultationSession;
 import fit.iuh.se.hschat.entity.ConsultationFinalSummaryAddendum;
+import fit.iuh.se.hschat.entity.DoctorCareProfile;
 import fit.iuh.se.hschat.entity.enums.ConsultationFinalSummaryStatus;
 import fit.iuh.se.hschat.entity.enums.ConsultationStatus;
+import fit.iuh.se.hschat.entity.enums.ConsultationFlowType;
+import fit.iuh.se.hschat.entity.enums.DoctorDispatchStatus;
 import fit.iuh.se.hschat.repository.ConsultationFinalSummaryRepository;
 import fit.iuh.se.hschat.repository.ConsultationSessionRepository;
 import fit.iuh.se.hschat.repository.ConsultationFinalSummaryAddendumRepository;
 import fit.iuh.se.hschat.repository.EpisodeHealthRecordAuthorizationRepository;
 import fit.iuh.se.hschat.service.finalsummary.FinalSummaryClosureService;
+import fit.iuh.se.hschat.service.finalsummary.QueueFinalSummaryLifecycleService;
+import fit.iuh.se.hschat.repository.DoctorCareProfileRepository;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
 import fit.iuh.se.hsuser.entity.enums.AccountStatus;
@@ -48,6 +53,10 @@ class ConsultationFinalSummaryServiceImplTest {
     @Mock
     FinalSummaryClosureService closureService;
     @Mock
+    QueueFinalSummaryLifecycleService queueLifecycleService;
+    @Mock
+    DoctorCareProfileRepository doctorCareProfileRepository;
+    @Mock
     fit.iuh.se.hsoperations.event.OperationalEventPublisher OperationalEventPublisher;
 
     ConsultationFinalSummaryServiceImpl service;
@@ -61,8 +70,11 @@ class ConsultationFinalSummaryServiceImplTest {
                 authorizationRepository,
                 userAccountRepository,
                 closureService,
+                queueLifecycleService,
+                doctorCareProfileRepository,
                 OperationalEventPublisher);
         lenient().when(userAccountRepository.findById(2L)).thenReturn(Optional.of(user(2L, UserRole.DOCTOR, AccountStatus.ACTIVE)));
+        lenient().when(userAccountRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(user(2L, UserRole.DOCTOR, AccountStatus.ACTIVE)));
     }
 
     @Test
@@ -116,7 +128,7 @@ class ConsultationFinalSummaryServiceImplTest {
 
     @Test
     void canFinalizeOnlyWhenSessionCompleted() {
-        when(sessionRepository.findByIdAndDoctorId(100L, 2L)).thenReturn(Optional.of(session(ConsultationStatus.ACTIVE)));
+        when(sessionRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(session(ConsultationStatus.ACTIVE)));
 
         assertThrows(AppException.class, () -> service.finalizeSummary(2L, 100L));
         verify(summaryRepository, never()).save(any());
@@ -126,7 +138,7 @@ class ConsultationFinalSummaryServiceImplTest {
     void finalizeLocksDraftForCompletedSession() {
         ConsultationFinalSummary draft = draft();
         ConsultationSession completed = session(ConsultationStatus.COMPLETED);
-        when(sessionRepository.findByIdAndDoctorId(100L, 2L)).thenReturn(Optional.of(completed));
+        when(sessionRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(completed));
         when(summaryRepository.findBySessionIdForUpdate(100L)).thenReturn(Optional.of(draft));
         when(summaryRepository.save(any(ConsultationFinalSummary.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -139,6 +151,50 @@ class ConsultationFinalSummaryServiceImplTest {
         verify(OperationalEventPublisher).record(argThat(command ->
                 command.eventType() == fit.iuh.se.hsoperations.entity.enums.BusinessEventType.FINAL_SUMMARY_FINALIZED
                         && Long.valueOf(2L).equals(command.actorUserId())));
+    }
+
+    @Test
+    void queueFinalizeUsesSessionAccountProfileSummaryLockOrderAndQueueLifecycle() {
+        ConsultationSession completed = session(ConsultationStatus.COMPLETED);
+        completed.setFlowType(ConsultationFlowType.QUEUE_DISPATCH_V1);
+        ConsultationFinalSummary draft = draft();
+        DoctorCareProfile profile = DoctorCareProfile.builder().doctorId(2L)
+                .dispatchStatus(DoctorDispatchStatus.BUSY).busySessionId(100L).build();
+        UserAccount doctor = user(2L, UserRole.DOCTOR, AccountStatus.ACTIVE);
+        when(sessionRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(completed));
+        when(userAccountRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(doctor));
+        when(doctorCareProfileRepository.findByDoctorIdForUpdate(2L)).thenReturn(Optional.of(profile));
+        when(summaryRepository.findBySessionIdForUpdate(100L)).thenReturn(Optional.of(draft));
+        when(summaryRepository.save(draft)).thenReturn(draft);
+
+        service.finalizeSummary(2L, 100L);
+
+        var order = inOrder(sessionRepository, userAccountRepository,
+                doctorCareProfileRepository, summaryRepository, queueLifecycleService);
+        order.verify(sessionRepository).findByIdForUpdate(100L);
+        order.verify(userAccountRepository).findByIdForUpdate(2L);
+        order.verify(doctorCareProfileRepository).findByDoctorIdForUpdate(2L);
+        order.verify(summaryRepository).findBySessionIdForUpdate(100L);
+        order.verify(queueLifecycleService).onSummaryFinalized(
+                eq(completed), eq(profile), eq(doctor), eq(draft), any(Instant.class));
+        verify(closureService, never()).onSummaryFinalized(any(), any());
+    }
+
+    @Test
+    void queueDraftDoesNotReleaseDoctorOrResetPersistedDeadline() {
+        ConsultationSession completed = session(ConsultationStatus.COMPLETED);
+        completed.setFlowType(ConsultationFlowType.QUEUE_DISPATCH_V1);
+        completed.setSummaryDueAt(Instant.parse("2026-08-17T08:10:00Z"));
+        Instant originalDueAt = completed.getSummaryDueAt();
+        when(sessionRepository.findByIdAndDoctorId(100L, 2L)).thenReturn(Optional.of(completed));
+        when(summaryRepository.findBySessionIdForUpdate(100L)).thenReturn(Optional.of(draft()));
+        when(summaryRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.upsertDraft(2L, 100L, request("Draft near deadline"));
+
+        assertEquals(originalDueAt, completed.getSummaryDueAt());
+        verify(queueLifecycleService, never()).onSummaryFinalized(any(), any(), any(), any(), any());
+        verify(doctorCareProfileRepository, never()).save(any());
     }
 
     @Test
@@ -160,7 +216,7 @@ class ConsultationFinalSummaryServiceImplTest {
     void followUpRecommendationIsOptionalAtFinalization() {
         ConsultationFinalSummary draft = draft();
         draft.setFollowUpRecommendation(null);
-        when(sessionRepository.findByIdAndDoctorId(100L, 2L))
+        when(sessionRepository.findByIdForUpdate(100L))
                 .thenReturn(Optional.of(session(ConsultationStatus.COMPLETED)));
         when(summaryRepository.findBySessionIdForUpdate(100L)).thenReturn(Optional.of(draft));
         when(summaryRepository.save(draft)).thenReturn(draft);
@@ -225,7 +281,9 @@ class ConsultationFinalSummaryServiceImplTest {
 
     @Test
     void disabledDoctorCannotFinalizeOrBeImpersonated() {
-        when(userAccountRepository.findById(2L))
+        when(sessionRepository.findByIdForUpdate(100L))
+                .thenReturn(Optional.of(session(ConsultationStatus.COMPLETED)));
+        when(userAccountRepository.findByIdForUpdate(2L))
                 .thenReturn(Optional.of(user(2L, UserRole.DOCTOR, AccountStatus.INACTIVE)));
 
         assertThrows(AppException.class, () -> service.finalizeSummary(2L, 100L));
@@ -234,7 +292,10 @@ class ConsultationFinalSummaryServiceImplTest {
 
     @Test
     void administratorCannotFinalizeAsDoctor() {
-        when(userAccountRepository.findById(9L))
+        ConsultationSession assigned = session(ConsultationStatus.COMPLETED);
+        assigned.setDoctorId(9L);
+        when(sessionRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(assigned));
+        when(userAccountRepository.findByIdForUpdate(9L))
                 .thenReturn(Optional.of(user(9L, UserRole.ADMIN, AccountStatus.ACTIVE)));
 
         assertThrows(AppException.class, () -> service.finalizeSummary(9L, 100L));
@@ -322,7 +383,7 @@ class ConsultationFinalSummaryServiceImplTest {
         draft.setSummary(summary);
         draft.setObservations(observations);
         draft.setRecommendations(recommendations);
-        when(sessionRepository.findByIdAndDoctorId(100L, 2L))
+        when(sessionRepository.findByIdForUpdate(100L))
                 .thenReturn(Optional.of(session(ConsultationStatus.COMPLETED)));
         when(summaryRepository.findBySessionIdForUpdate(100L)).thenReturn(Optional.of(draft));
 
