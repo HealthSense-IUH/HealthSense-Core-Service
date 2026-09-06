@@ -30,6 +30,11 @@ public interface ConsultationMapper {
 
     @Mapping(target = "selectedHealthRecords", ignore = true)
     @Mapping(target = "moreInfoHistory", ignore = true)
+    @Mapping(target = "queueEntryId", ignore = true)
+    @Mapping(target = "queueNumber", ignore = true)
+    @Mapping(target = "queueDate", ignore = true)
+    @Mapping(target = "queueStatus", ignore = true)
+    @Mapping(target = "queuedAt", ignore = true)
     ConsultationRequestResponse toRequestResponse(ConsultationRequest request);
 
     @Mapping(target = "version", source = "versionNumber")
