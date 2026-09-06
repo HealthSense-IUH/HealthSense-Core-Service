@@ -2,6 +2,7 @@ package fit.iuh.se.hschat.dto.response;
 
 import fit.iuh.se.hschat.entity.enums.ConsultationSourceType;
 import fit.iuh.se.hschat.entity.enums.ConsultationStatus;
+import fit.iuh.se.hschat.entity.enums.ConsultationFlowType;
 import fit.iuh.se.hschat.entity.enums.FinalSummaryClosureStatus;
 import fit.iuh.se.hschat.entity.enums.CareOperationalReviewReason;
 import fit.iuh.se.hschat.entity.enums.CareTerminationReason;
@@ -25,6 +26,7 @@ public class ConsultationSessionResponse {
     String memberDisplayName;
     Long doctorId;
     String doctorDisplayName;
+    ConsultationFlowType flowType;
     Boolean exceptionalOverride;
     String overrideReason;
     String overrideServiceScope;
@@ -42,6 +44,8 @@ public class ConsultationSessionResponse {
     BigDecimal packagePriceSnapshot;
     Integer packageDurationDaysSnapshot;
     Instant completedAt;
+    Integer continuationRound;
+    Instant blockStartedAt;
     FinalSummaryClosureStatus summaryClosureStatus;
     Instant summaryDueAt;
     Instant summaryEscalatedAt;
