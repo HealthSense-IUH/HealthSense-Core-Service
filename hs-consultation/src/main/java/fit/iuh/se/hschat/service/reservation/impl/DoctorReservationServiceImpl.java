@@ -8,6 +8,7 @@ import fit.iuh.se.hschat.entity.enums.*;
 import fit.iuh.se.hschat.repository.*;
 import fit.iuh.se.hschat.service.doctor.SupportScheduleValidator;
 import fit.iuh.se.hschat.service.reservation.DoctorReservationService;
+import fit.iuh.se.hschat.service.ConsultationFlowGuard;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsuser.entity.UserAccount;
@@ -56,6 +57,7 @@ public class DoctorReservationServiceImpl implements DoctorReservationService {
             Long doctorId,
             Instant expiresAt
     ) {
+        ConsultationFlowGuard.requireLegacy(request);
         if (request.getStatus() != ConsultationRequestStatus.PENDING_REVIEW)
             throw new AppException(ErrorCode.INVALID_CONSULTATION_STATUS);
         if (reservationRepository.findByRequestIdAndStatusForUpdate(
@@ -188,6 +190,7 @@ public class DoctorReservationServiceImpl implements DoctorReservationService {
             DoctorReservationReleaseReason failureReason,
             boolean requireNoMemberSession
     ) {
+        ConsultationFlowGuard.requireLegacy(request);
         DoctorReservation reservation = reservationRepository
                 .findByRequestIdAndStatusForUpdate(request.getId(), DoctorReservationStatus.ACTIVE)
                 .orElse(null);

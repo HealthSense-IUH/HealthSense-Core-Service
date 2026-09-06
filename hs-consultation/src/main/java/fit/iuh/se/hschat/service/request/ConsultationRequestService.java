@@ -8,6 +8,8 @@ import fit.iuh.se.hschat.dto.request.SubmitConsultationMoreInfoRequest;
 import fit.iuh.se.hschat.dto.response.ConsultationRequestReviewResponse;
 import fit.iuh.se.hschat.dto.response.DoctorCandidateResponse;
 import fit.iuh.se.hschat.dto.response.ConsultationRequestResponse;
+import fit.iuh.se.hschat.dto.response.CurrentQueueStateResponse;
+import fit.iuh.se.hschat.dto.response.ConsultationQueueStatisticsResponse;
 import fit.iuh.se.hschat.entity.enums.ConsultationRequestStatus;
 import fit.iuh.se.hschat.entity.enums.DoctorSpecialty;
 import fit.iuh.se.hsshared.dto.response.PageResponse;
@@ -29,6 +31,10 @@ public interface ConsultationRequestService {
     ConsultationRequestResponse submitMoreInfo(Long memberId, Long requestId, SubmitConsultationMoreInfoRequest request);
 
     ConsultationRequestResponse cancelMyRequest(Long memberId, Long requestId);
+
+    CurrentQueueStateResponse getCurrentQueueState(Long memberId);
+
+    ConsultationQueueStatisticsResponse getQueueStatistics(Long memberId);
 
     ConsultationRequestResponse getMyRequestById(Long memberId, Long requestId);
 

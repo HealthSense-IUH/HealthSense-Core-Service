@@ -15,6 +15,7 @@ import fit.iuh.se.hschat.repository.ConsultationPaymentRepository;
 import fit.iuh.se.hschat.repository.ConsultationRequestRepository;
 import fit.iuh.se.hschat.repository.ConsultationSessionRepository;
 import fit.iuh.se.hschat.service.payment.ConsultationPaymentService;
+import fit.iuh.se.hschat.service.ConsultationFlowGuard;
 import fit.iuh.se.hschat.service.payment.PayOSPaymentGateway;
 import fit.iuh.se.hschat.service.agreement.CareServiceAgreementService;
 import fit.iuh.se.hschat.service.authorization.EpisodeHealthRecordAuthorizationService;
@@ -82,6 +83,7 @@ public class ConsultationPaymentServiceImpl implements ConsultationPaymentServic
     public ConsultationPaymentResponse createPayment(Long memberId, Long requestId) {
         ConsultationRequest request = requestRepository.findByIdForUpdate(requestId)
                 .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_REQUEST_NOT_FOUND));
+        ConsultationFlowGuard.requireLegacy(request);
         validateMemberOwnsRequest(memberId, request);
 
         validateRequestReadyForPayment(request);
@@ -338,6 +340,10 @@ public class ConsultationPaymentServiceImpl implements ConsultationPaymentServic
     }
 
     private void activatePaidPayment(ConsultationPayment payment, ConsultationRequest request, Instant now) {
+        if (request.getFlowType() != ConsultationFlowType.LEGACY_V3) {
+            markRequiresReview(payment, now);
+            return;
+        }
         if (request.getStatus() == ConsultationRequestStatus.EXPIRED
                 || request.getStatus() == ConsultationRequestStatus.CANCELLED) {
             markRequiresReview(payment, now);
@@ -430,6 +436,7 @@ public class ConsultationPaymentServiceImpl implements ConsultationPaymentServic
         ConsultationSession session = ConsultationSession.builder()
                 .memberId(request.getMemberId())
                 .doctorId(request.getAssignedDoctorId())
+                .flowType(ConsultationFlowType.LEGACY_V3)
                 .sourceType(ConsultationSourceType.MEMBER_REQUEST)
                 .status(ConsultationStatus.ACTIVE)
                 .startedAt(now)
