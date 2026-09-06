@@ -5,6 +5,7 @@ import fit.iuh.se.hschat.entity.*;
 import fit.iuh.se.hschat.entity.enums.*;
 import fit.iuh.se.hschat.repository.*;
 import fit.iuh.se.hschat.service.agreement.CareServiceAgreementService;
+import fit.iuh.se.hschat.service.ConsultationFlowGuard;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsoperations.dto.command.*;
@@ -54,6 +55,7 @@ public class CareServiceAgreementServiceImpl implements CareServiceAgreementServ
     @Override
     @Transactional
     public CareServiceAgreement createForReservation(ConsultationRequest request) {
+        ConsultationFlowGuard.requireLegacy(request);
         invalidateCurrent(request.getId(), "Replaced by a new Doctor reservation or material offer snapshot");
         CareServicePackage carePackage = packageRepository.findById(request.getPackageId())
                 .orElseThrow(() -> new AppException(ErrorCode.CARE_SERVICE_PACKAGE_NOT_FOUND));
@@ -114,6 +116,7 @@ public class CareServiceAgreementServiceImpl implements CareServiceAgreementServ
     public CareServiceAgreementResponse accept(Long memberId, Long requestId, Long agreementId) {
         ConsultationRequest request = requestRepository.findByIdForUpdate(requestId)
                 .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_REQUEST_NOT_FOUND));
+        ConsultationFlowGuard.requireLegacy(request);
         validateOwner(memberId, request);
         if (request.getStatus() != ConsultationRequestStatus.WAITING_ACCEPTANCE)
             throw new AppException(ErrorCode.INVALID_CONSULTATION_STATUS);
@@ -143,6 +146,7 @@ public class CareServiceAgreementServiceImpl implements CareServiceAgreementServ
     @Override
     @Transactional
     public CareServiceAgreement requireAcceptedForUpdate(ConsultationRequest request) {
+        ConsultationFlowGuard.requireLegacy(request);
         CareServiceAgreement agreement = agreementRepository
                 .findFirstByRequestIdAndStatusInOrderByCreatedAtDesc(
                         request.getId(), List.of(CareServiceAgreementStatus.ACCEPTED))

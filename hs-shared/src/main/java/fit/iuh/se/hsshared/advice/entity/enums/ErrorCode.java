@@ -60,7 +60,17 @@ public enum ErrorCode {
     PAYMENT_PROVIDER_ERROR(4021, "Payment provider error", HttpStatus.BAD_GATEWAY),
     INVALID_PAYMENT_WEBHOOK(4022, "Invalid payment webhook", HttpStatus.BAD_REQUEST),
     CONSULTATION_REFUND_NOT_FOUND(4023, "Consultation refund not found", HttpStatus.NOT_FOUND),
-    INVALID_REFUND_STATUS(4024, "Invalid refund status", HttpStatus.CONFLICT);
+    INVALID_REFUND_STATUS(4024, "Invalid refund status", HttpStatus.CONFLICT),
+    INVALID_DOCTOR_DISPATCH_STATUS(4025, "Invalid doctor dispatch status transition", HttpStatus.CONFLICT),
+    CONSULTATION_OFFER_NOT_FOUND(4026, "Consultation offer not found", HttpStatus.NOT_FOUND),
+    CONSULTATION_OFFER_STALE(4027, "Consultation offer is stale or no longer active", HttpStatus.CONFLICT),
+    CONSULTATION_OFFER_EXPIRED(4028, "Consultation offer has expired", HttpStatus.CONFLICT),
+    CONSULTATION_OFFER_ALREADY_ACCEPTED(4029, "Consultation offer was already accepted", HttpStatus.CONFLICT),
+    DISPATCH_TEMPORARILY_UNAVAILABLE(4030, "Consultation dispatch is temporarily unavailable", HttpStatus.SERVICE_UNAVAILABLE),
+    CONTINUATION_NOT_OPEN(4031, "Consultation continuation is not open", HttpStatus.CONFLICT),
+    CONTINUATION_EXPIRED(4032, "Consultation continuation grace period has expired", HttpStatus.CONFLICT),
+    CONTINUATION_DECISION_CONFLICT(4033, "Continuation decision cannot be changed", HttpStatus.CONFLICT),
+    CONTINUATION_ROUND_STALE(4034, "Consultation continuation round is stale", HttpStatus.CONFLICT);
 
     private final int code;
     private final String message;

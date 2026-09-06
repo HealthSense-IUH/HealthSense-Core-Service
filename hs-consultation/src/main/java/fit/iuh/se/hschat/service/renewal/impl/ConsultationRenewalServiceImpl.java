@@ -10,6 +10,7 @@ import fit.iuh.se.hschat.repository.*;
 import fit.iuh.se.hschat.service.agreement.CareServiceAgreementService;
 import fit.iuh.se.hschat.service.doctor.SupportScheduleValidator;
 import fit.iuh.se.hschat.service.renewal.ConsultationRenewalService;
+import fit.iuh.se.hschat.service.ConsultationFlowGuard;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsuser.entity.UserAccount;
@@ -75,6 +76,7 @@ public class ConsultationRenewalServiceImpl implements ConsultationRenewalServic
             Long memberId, Long sessionId, RequestConsultationRenewalRequest request) {
         ConsultationSession session = sessionRepository.findByIdForUpdate(sessionId)
                 .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_NOT_FOUND));
+        ConsultationFlowGuard.requireLegacy(session);
         requireOwnedActiveSession(memberId, session);
         CareServicePackage originalPackage = packageRepository.findById(session.getPackageId())
                 .orElseThrow(() -> new AppException(ErrorCode.CARE_SERVICE_PACKAGE_NOT_FOUND));
@@ -513,6 +515,7 @@ public class ConsultationRenewalServiceImpl implements ConsultationRenewalServic
     }
 
     private void requireStillSameActiveEpisode(ConsultationRenewal renewal, ConsultationSession session) {
+        ConsultationFlowGuard.requireLegacy(session);
         if (session.getStatus() != ConsultationStatus.ACTIVE
                 || !Objects.equals(session.getMemberId(), renewal.getMemberId())
                 || !Objects.equals(session.getDoctorId(), renewal.getDoctorId()))

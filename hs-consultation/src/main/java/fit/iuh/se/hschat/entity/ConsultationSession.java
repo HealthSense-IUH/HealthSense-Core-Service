@@ -6,6 +6,8 @@ import fit.iuh.se.hschat.entity.enums.ConsultationStatus;
 import fit.iuh.se.hschat.entity.enums.FinalSummaryClosureStatus;
 import fit.iuh.se.hschat.entity.enums.CareOperationalReviewReason;
 import fit.iuh.se.hschat.entity.enums.CareTerminationReason;
+import fit.iuh.se.hschat.entity.enums.ConsultationFlowType;
+import fit.iuh.se.hschat.entity.enums.DoctorReleaseReason;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
 import fit.iuh.se.hsshared.generator.SnowflakeGenerated;
 import fit.iuh.se.hsuser.entity.BaseEntity;
@@ -48,6 +50,11 @@ public class ConsultationSession extends BaseEntity {
 
     @Column(name = "doctor_id", nullable = false)
     Long doctorId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "flow_type", nullable = false, length = 30)
+    @Builder.Default
+    ConsultationFlowType flowType = ConsultationFlowType.LEGACY_V3;
 
     @Column(name = "created_by_admin_id")
     Long createdByAdminId;
@@ -102,6 +109,20 @@ public class ConsultationSession extends BaseEntity {
 
     @Column(name = "completed_at")
     Instant completedAt;
+
+    @Column(name = "continuation_round", nullable = false)
+    @Builder.Default
+    Integer continuationRound = 0;
+
+    @Column(name = "block_started_at")
+    Instant blockStartedAt;
+
+    @Column(name = "doctor_released_at")
+    Instant doctorReleasedAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "doctor_release_reason", length = 40)
+    DoctorReleaseReason doctorReleaseReason;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "summary_closure_status", length = 40)
@@ -179,4 +200,8 @@ public class ConsultationSession extends BaseEntity {
 
     @Column(name = "last_message_at")
     Instant lastMessageAt;
+
+    @Version
+    @Column(nullable = false)
+    long version;
 }

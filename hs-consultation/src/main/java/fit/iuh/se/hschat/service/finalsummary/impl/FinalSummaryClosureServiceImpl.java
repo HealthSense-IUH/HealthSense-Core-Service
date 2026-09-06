@@ -3,6 +3,7 @@ package fit.iuh.se.hschat.service.finalsummary.impl;
 import fit.iuh.se.hschat.entity.ConsultationSession;
 import fit.iuh.se.hschat.entity.enums.ConsultationFinalSummaryStatus;
 import fit.iuh.se.hschat.entity.enums.FinalSummaryClosureStatus;
+import fit.iuh.se.hschat.entity.enums.ConsultationFlowType;
 import fit.iuh.se.hschat.repository.ConsultationFinalSummaryRepository;
 import fit.iuh.se.hschat.repository.ConsultationSessionRepository;
 import fit.iuh.se.hschat.service.finalsummary.FinalSummaryClosureService;
@@ -82,6 +83,7 @@ public class FinalSummaryClosureServiceImpl implements FinalSummaryClosureServic
                 FinalSummaryClosureStatus.SUMMARY_PENDING,
                 FinalSummaryClosureStatus.SUMMARY_OVERDUE));
         sessions.forEach(session -> {
+            if (session.getFlowType() != ConsultationFlowType.LEGACY_V3) return;
             if (!isActiveDoctor(session.getDoctorId())) {
                 markEscalated(session, now);
                 sessionRepository.save(session);

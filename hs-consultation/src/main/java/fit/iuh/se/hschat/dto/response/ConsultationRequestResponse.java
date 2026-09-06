@@ -1,11 +1,14 @@
 package fit.iuh.se.hschat.dto.response;
 
 import fit.iuh.se.hschat.entity.enums.ConsultationRequestStatus;
+import fit.iuh.se.hschat.entity.enums.ConsultationFlowType;
+import fit.iuh.se.hschat.entity.enums.ConsultationQueueStatus;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 
 @NoArgsConstructor
@@ -18,6 +21,7 @@ public class ConsultationRequestResponse {
 
     Long id;
     Long memberId;
+    ConsultationFlowType flowType;
     Long healthRecordId;
     Long packageId;
     Integer packageVersion;
@@ -48,4 +52,9 @@ public class ConsultationRequestResponse {
     Instant expiredAt;
     Instant createdAt;
     Instant updatedAt;
+    Long queueEntryId;
+    Long queueNumber;
+    LocalDate queueDate;
+    ConsultationQueueStatus queueStatus;
+    Instant queuedAt;
 }

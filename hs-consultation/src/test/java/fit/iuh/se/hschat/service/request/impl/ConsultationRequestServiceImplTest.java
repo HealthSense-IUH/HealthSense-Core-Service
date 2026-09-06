@@ -7,13 +7,23 @@ import fit.iuh.se.hschat.dto.request.RejectConsultationRequest;
 import fit.iuh.se.hschat.dto.request.SubmitConsultationMoreInfoRequest;
 import fit.iuh.se.hschat.dto.response.ConsultationRequestResponse;
 import fit.iuh.se.hschat.dto.response.DoctorCandidateResponse;
+import fit.iuh.se.hschat.dto.response.CurrentQueueStateResponse;
 import fit.iuh.se.hschat.entity.CareServicePackage;
 import fit.iuh.se.hschat.entity.ConsultationMoreInfoCycle;
 import fit.iuh.se.hschat.entity.ConsultationRequest;
+import fit.iuh.se.hschat.entity.ConsultationSession;
 import fit.iuh.se.hschat.entity.DoctorCareProfile;
 import fit.iuh.se.hschat.entity.DoctorReservation;
+import fit.iuh.se.hschat.entity.ConsultationQueueCounter;
+import fit.iuh.se.hschat.entity.ConsultationQueueEntry;
+import fit.iuh.se.hschat.entity.ConsultationDispatchState;
 import fit.iuh.se.hschat.entity.enums.CareServicePackageStatus;
 import fit.iuh.se.hschat.entity.enums.ConsultationRequestStatus;
+import fit.iuh.se.hschat.entity.enums.ConsultationFlowType;
+import fit.iuh.se.hschat.entity.enums.ConsultationQueueStatus;
+import fit.iuh.se.hschat.entity.enums.ConsultationStatus;
+import fit.iuh.se.hschat.entity.enums.CurrentConsultationPhase;
+import fit.iuh.se.hschat.entity.enums.DoctorDispatchStatus;
 import fit.iuh.se.hschat.entity.enums.DoctorIneligibilityReason;
 import fit.iuh.se.hschat.entity.enums.DoctorSpecialty;
 import fit.iuh.se.hschat.entity.enums.DoctorReservationReleaseReason;
@@ -23,6 +33,9 @@ import fit.iuh.se.hschat.repository.ConsultationMoreInfoCycleRepository;
 import fit.iuh.se.hschat.repository.ConsultationRequestRepository;
 import fit.iuh.se.hschat.repository.ConsultationSessionRepository;
 import fit.iuh.se.hschat.repository.DoctorCareProfileRepository;
+import fit.iuh.se.hschat.repository.ConsultationQueueEntryRepository;
+import fit.iuh.se.hschat.repository.ConsultationQueueCounterRepository;
+import fit.iuh.se.hschat.repository.ConsultationDispatchStateRepository;
 import fit.iuh.se.hschat.service.reservation.DoctorReservationService;
 import fit.iuh.se.hschat.service.agreement.CareServiceAgreementService;
 import fit.iuh.se.hschat.service.payment.PaymentCancellationService;
@@ -34,6 +47,9 @@ import fit.iuh.se.hsuser.entity.UserAccount;
 import fit.iuh.se.hsuser.entity.enums.AccountStatus;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
 import fit.iuh.se.hsuser.repository.UserAccountRepository;
+import fit.iuh.se.hschat.service.dispatch.DoctorDispatchSelectionService;
+import fit.iuh.se.hschat.service.dispatch.offer.DoctorOfferStore;
+import org.springframework.context.ApplicationEventPublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -50,9 +66,14 @@ import jakarta.validation.Validator;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.Clock;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.Optional;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -80,6 +101,12 @@ class ConsultationRequestServiceImplTest {
     @Mock
     DoctorCareProfileRepository doctorCareProfileRepository;
     @Mock
+    ConsultationQueueEntryRepository queueEntryRepository;
+    @Mock
+    ConsultationQueueCounterRepository queueCounterRepository;
+    @Mock
+    ConsultationDispatchStateRepository dispatchStateRepository;
+    @Mock
     DoctorReservationService reservationService;
     @Mock
     CareServiceAgreementService agreementService;
@@ -89,6 +116,9 @@ class ConsultationRequestServiceImplTest {
     ConsultationMapper mapper;
     @Mock
     fit.iuh.se.hsoperations.event.OperationalEventPublisher OperationalEventPublisher;
+    @Mock DoctorOfferStore doctorOfferStore;
+    @Mock DoctorDispatchSelectionService doctorDispatchSelectionService;
+    @Mock ApplicationEventPublisher applicationEventPublisher;
 
     ConsultationRequestServiceImpl service;
 
@@ -102,13 +132,36 @@ class ConsultationRequestServiceImplTest {
                 userAccountRepository,
                 packageRepository,
                 doctorCareProfileRepository,
+                queueEntryRepository,
+                queueCounterRepository,
+                dispatchStateRepository,
                 reservationService,
                 agreementService,
                 paymentCancellationService,
                 mapper,
-                OperationalEventPublisher
+                OperationalEventPublisher,
+                doctorOfferStore,
+                doctorDispatchSelectionService,
+                applicationEventPublisher
         );
         ReflectionTestUtils.setField(service, "paymentDeadlineMinutes", 30L);
+        ReflectionTestUtils.setField(service, "businessTimezone", "Asia/Ho_Chi_Minh");
+        lenient().when(dispatchStateRepository.findSingletonForUpdate()).thenReturn(Optional.of(
+                ConsultationDispatchState.builder().id(ConsultationDispatchState.SINGLETON_ID).build()));
+        lenient().when(queueCounterRepository.findByQueueDateForUpdate(any())).thenReturn(Optional.of(
+                ConsultationQueueCounter.builder().lastNumber(0L).build()));
+        lenient().when(requestRepository.saveAndFlush(any())).thenAnswer(invocation -> {
+            ConsultationRequest saved = invocation.getArgument(0);
+            if (saved.getId() == null)
+                saved.setId(100L);
+            return saved;
+        });
+        lenient().when(queueEntryRepository.save(any())).thenAnswer(invocation -> {
+            ConsultationQueueEntry saved = invocation.getArgument(0);
+            if (saved.getId() == null)
+                saved.setId(200L);
+            return saved;
+        });
         lenient().when(reservationService.reserve(any(), anyLong(), anyLong(), any(Instant.class)))
                 .thenAnswer(invocation -> DoctorReservation.builder()
                         .requestId(((ConsultationRequest) invocation.getArgument(0)).getId())
@@ -119,16 +172,12 @@ class ConsultationRequestServiceImplTest {
     }
 
     @Test
-    void createRequestStoresPackageSnapshotAndPendingReview() {
+    void createRequestCreatesQueueAdmissionWithoutCommercialDependencies() {
         when(userAccountRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(user(1L, UserRole.MEMBER)));
         when(sessionRepository.existsByMemberIdAndStatusIn(eq(1L), anyCollection())).thenReturn(false);
         when(requestRepository.existsByMemberIdAndStatusIn(eq(1L), anyCollection())).thenReturn(false);
-        when(packageRepository.findByIdAndStatus(10L, CareServicePackageStatus.ACTIVE))
-                .thenReturn(Optional.of(carePackage()));
-        when(requestRepository.save(any(ConsultationRequest.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
         when(mapper.toRequestResponse(any(ConsultationRequest.class)))
-                .thenReturn(ConsultationRequestResponse.builder().status(ConsultationRequestStatus.PENDING_REVIEW).build());
+                .thenReturn(ConsultationRequestResponse.builder().status(ConsultationRequestStatus.QUEUED).build());
 
         CreateConsultationRequest request = new CreateConsultationRequest();
         request.setPackageId(10L);
@@ -138,17 +187,248 @@ class ConsultationRequestServiceImplTest {
         service.createRequest(1L, request);
 
         ArgumentCaptor<ConsultationRequest> captor = ArgumentCaptor.forClass(ConsultationRequest.class);
-        verify(requestRepository).save(captor.capture());
+        verify(requestRepository).saveAndFlush(captor.capture());
         ConsultationRequest saved = captor.getValue();
-        assertEquals(ConsultationRequestStatus.PENDING_REVIEW, saved.getStatus());
-        assertEquals(10L, saved.getPackageId());
-        assertEquals(3, saved.getPackageVersion());
-        assertEquals(new BigDecimal("399000.00"), saved.getPackagePriceSnapshot());
-        assertEquals(7, saved.getPackageDurationDaysSnapshot());
+        assertEquals(ConsultationRequestStatus.QUEUED, saved.getStatus());
+        assertEquals(ConsultationFlowType.QUEUE_DISPATCH_V1, saved.getFlowType());
+        assertNull(saved.getPackageId());
+        assertNull(saved.getPreferredDoctorId());
+        verify(queueEntryRepository).save(argThat(entry -> entry.getStatus() == ConsultationQueueStatus.WAITING
+                && entry.getQueueNumber() == 1L && entry.getRequestId() == 100L));
+        verifyNoInteractions(reservationService, agreementService, paymentCancellationService);
         verify(OperationalEventPublisher).record(argThat(command ->
-                command.eventType() == fit.iuh.se.hsoperations.entity.enums.BusinessEventType.REQUEST_CREATED
+                command.eventType() == fit.iuh.se.hsoperations.entity.enums.BusinessEventType.REQUEST_QUEUED
                         && Long.valueOf(1L).equals(command.actorUserId())
-                        && "PENDING_REVIEW".equals(command.newState())));
+                        && "QUEUED".equals(command.newState())));
+    }
+
+    @Test
+    void packageAndPreferredDoctorAreOptionalAndIgnoredForQueueAdmission() {
+        Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
+        CreateConsultationRequest request = new CreateConsultationRequest();
+        request.setReasonForCare("Need monitoring");
+        request.setCurrentConcern("Recurring palpitations");
+        assertTrue(validator.validate(request).isEmpty());
+
+        stubSuccessfulCreate();
+        request.setPreferredDoctorId(999L);
+        service.createRequest(1L, request);
+
+        verify(packageRepository, never()).findByIdAndStatus(anyLong(), any());
+        verify(requestRepository).saveAndFlush(argThat(saved -> saved.getPackageId() == null
+                && saved.getPreferredDoctorId() == null));
+    }
+
+    @Test
+    void queueNumbersAreSequentialPerBusinessDateAndResetForNextDate() {
+        when(userAccountRepository.findByIdForUpdate(anyLong()))
+                .thenAnswer(invocation -> Optional.of(user(invocation.getArgument(0), UserRole.MEMBER)));
+        when(sessionRepository.existsByMemberIdAndStatusIn(anyLong(), anyCollection())).thenReturn(false);
+        when(requestRepository.existsByMemberIdAndStatusIn(anyLong(), anyCollection())).thenReturn(false);
+        lenient().when(mapper.toRequestResponse(any())).thenReturn(ConsultationRequestResponse.builder().build());
+        Map<LocalDate, ConsultationQueueCounter> counters = new HashMap<>();
+        when(queueCounterRepository.findByQueueDateForUpdate(any()))
+                .thenAnswer(invocation -> Optional.ofNullable(counters.get(invocation.getArgument(0))));
+        when(queueCounterRepository.save(any())).thenAnswer(invocation -> {
+            ConsultationQueueCounter counter = invocation.getArgument(0);
+            counters.put(counter.getQueueDate(), counter);
+            return counter;
+        });
+        Clock firstDay = Clock.fixed(Instant.parse("2026-09-05T03:00:00Z"), ZoneOffset.UTC);
+        ReflectionTestUtils.setField(service, "clock", firstDay);
+
+        service.createRequest(1L, validCreateRequest());
+        service.createRequest(2L, validCreateRequest());
+        ReflectionTestUtils.setField(service, "clock", Clock.fixed(
+                Instant.parse("2026-09-06T03:00:00Z"), ZoneOffset.UTC));
+        service.createRequest(3L, validCreateRequest());
+
+        ArgumentCaptor<ConsultationQueueEntry> entries = ArgumentCaptor.forClass(ConsultationQueueEntry.class);
+        verify(queueEntryRepository, times(3)).save(entries.capture());
+        assertEquals(List.of(1L, 2L, 1L), entries.getAllValues().stream()
+                .map(ConsultationQueueEntry::getQueueNumber).toList());
+        assertEquals(2, counters.size());
+    }
+
+    @Test
+    void duplicateUnresolvedQueueEntryBlocksAdmissionBeforeCounterAllocation() {
+        when(userAccountRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(user(1L, UserRole.MEMBER)));
+        when(queueEntryRepository.existsByMemberIdAndStatusIn(eq(1L), anyCollection())).thenReturn(true);
+
+        assertThrows(AppException.class, () -> service.createRequest(1L, validCreateRequest()));
+
+        verify(dispatchStateRepository, never()).findSingletonForUpdate();
+        verify(requestRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void queuePersistenceFailureStopsAdmissionBeforeAudit() {
+        stubSuccessfulCreate();
+        doThrow(new RuntimeException("queue insert failed")).when(queueEntryRepository).save(any());
+
+        assertThrows(RuntimeException.class, () -> service.createRequest(1L, validCreateRequest()));
+
+        verify(OperationalEventPublisher, never()).record(any());
+    }
+
+    @Test
+    void currentQueueStateUsesActualAheadCountAndPersistedDoctorStatuses() {
+        ConsultationQueueEntry entry = ConsultationQueueEntry.builder()
+                .id(200L).requestId(100L).memberId(1L)
+                .queueDate(LocalDate.of(2026, 9, 5)).queueNumber(8L)
+                .status(ConsultationQueueStatus.WAITING).queuedAt(Instant.parse("2026-09-05T03:00:00Z"))
+                .build();
+        ConsultationRequest request = ConsultationRequest.builder()
+                .id(100L).memberId(1L).flowType(ConsultationFlowType.QUEUE_DISPATCH_V1)
+                .status(ConsultationRequestStatus.QUEUED).build();
+        when(userAccountRepository.findById(1L)).thenReturn(Optional.of(user(1L, UserRole.MEMBER)));
+        when(queueEntryRepository.findFirstByMemberIdAndStatusInOrderByQueueDateAscQueueNumberAsc(
+                eq(1L), anyCollection())).thenReturn(Optional.of(entry));
+        when(requestRepository.findById(100L)).thenReturn(Optional.of(request));
+        when(queueEntryRepository.countUnresolvedAhead(anyCollection(), eq(entry.getQueueDate()), eq(8L)))
+                .thenReturn(3L);
+        when(doctorCareProfileRepository.countByDispatchStatus(DoctorDispatchStatus.AVAILABLE)).thenReturn(2L);
+        when(doctorDispatchSelectionService.countEffectivelyDispatchableDoctors()).thenReturn(2L);
+        when(doctorCareProfileRepository.countByDispatchStatus(DoctorDispatchStatus.BUSY)).thenReturn(4L);
+
+        CurrentQueueStateResponse response = service.getCurrentQueueState(1L);
+
+        assertEquals(3L, response.peopleAhead());
+        assertEquals(2L, response.availableDoctors());
+        assertEquals(4L, response.busyDoctors());
+        assertEquals(6L, response.doctorsOnDuty());
+        verify(queueEntryRepository).countUnresolvedAhead(
+                eq(ConsultationRequestServiceImpl.UNRESOLVED_QUEUE_STATUSES), eq(entry.getQueueDate()), eq(8L));
+    }
+
+    @Test
+    void currentQueueStateReturnsActiveQueueSessionBoundary() {
+        ConsultationSession session = ConsultationSession.builder().id(500L).requestId(100L)
+                .memberId(1L).doctorId(20L).flowType(ConsultationFlowType.QUEUE_DISPATCH_V1)
+                .status(ConsultationStatus.ACTIVE).startedAt(Instant.parse("2026-09-05T03:00:00Z"))
+                .endsAt(Instant.parse("2026-09-05T03:15:00Z")).build();
+        ConsultationRequest request = ConsultationRequest.builder().id(100L).memberId(1L)
+                .flowType(ConsultationFlowType.QUEUE_DISPATCH_V1)
+                .status(ConsultationRequestStatus.FULFILLED).build();
+        ConsultationQueueEntry entry = ConsultationQueueEntry.builder().id(200L).requestId(100L).memberId(1L)
+                .queueDate(LocalDate.of(2026, 9, 5)).queueNumber(8L).queuedAt(Instant.parse("2026-09-05T02:00:00Z"))
+                .status(ConsultationQueueStatus.FULFILLED).build();
+        when(userAccountRepository.findById(1L)).thenReturn(Optional.of(user(1L, UserRole.MEMBER)));
+        when(sessionRepository.findByMemberIdAndFlowTypeAndStatus(
+                1L, ConsultationFlowType.QUEUE_DISPATCH_V1, ConsultationStatus.ACTIVE)).thenReturn(Optional.of(session));
+        when(requestRepository.findById(100L)).thenReturn(Optional.of(request));
+        when(queueEntryRepository.findByRequestId(100L)).thenReturn(Optional.of(entry));
+
+        CurrentQueueStateResponse response = service.getCurrentQueueState(1L);
+
+        assertEquals(CurrentConsultationPhase.ACTIVE_SESSION, response.phase());
+        assertEquals(500L, response.sessionId());
+        assertEquals(ConsultationStatus.ACTIVE, response.sessionStatus());
+        assertEquals(session.getEndsAt(), response.sessionEndsAt());
+        assertEquals(ConsultationQueueStatus.FULFILLED, response.queueStatus());
+        verify(queueEntryRepository, never())
+                .findFirstByMemberIdAndStatusInOrderByQueueDateAscQueueNumberAsc(anyLong(), anyCollection());
+    }
+
+    @Test
+    void queueStatisticsCountsAllUnresolvedMembersAndAllowsZeroAvailableDoctors() {
+        when(userAccountRepository.findById(1L)).thenReturn(Optional.of(user(1L, UserRole.MEMBER)));
+        when(doctorCareProfileRepository.countByDispatchStatus(DoctorDispatchStatus.AVAILABLE)).thenReturn(0L);
+        when(doctorCareProfileRepository.countByDispatchStatus(DoctorDispatchStatus.BUSY)).thenReturn(2L);
+        when(queueEntryRepository.countByStatusIn(ConsultationRequestServiceImpl.UNRESOLVED_QUEUE_STATUSES))
+                .thenReturn(7L);
+
+        var response = service.getQueueStatistics(1L);
+
+        assertEquals(0L, response.availableDoctors());
+        assertEquals(2L, response.busyDoctors());
+        assertEquals(2L, response.doctorsOnDuty());
+        assertEquals(7L, response.waitingMembers());
+    }
+
+    @Test
+    void heldAvailableDoctorStaysOnDutyButIsNotAvailable() {
+        when(userAccountRepository.findById(1L)).thenReturn(Optional.of(user(1L, UserRole.MEMBER)));
+        when(doctorCareProfileRepository.countByDispatchStatus(DoctorDispatchStatus.AVAILABLE)).thenReturn(2L);
+        when(doctorCareProfileRepository.countByDispatchStatus(DoctorDispatchStatus.BUSY)).thenReturn(1L);
+        when(doctorDispatchSelectionService.countEffectivelyDispatchableDoctors()).thenReturn(1L);
+
+        var response = service.getQueueStatistics(1L);
+
+        assertEquals(3L, response.doctorsOnDuty());
+        assertEquals(1L, response.availableDoctors());
+        assertEquals(1L, response.busyDoctors());
+    }
+
+    @Test
+    void memberCancelsWaitingQueueAtomicallyAndRepeatedCancellationIsIdempotent() {
+        ConsultationRequest request = ConsultationRequest.builder()
+                .id(100L).memberId(1L).flowType(ConsultationFlowType.QUEUE_DISPATCH_V1)
+                .status(ConsultationRequestStatus.QUEUED).build();
+        ConsultationQueueEntry entry = ConsultationQueueEntry.builder()
+                .id(200L).requestId(100L).memberId(1L).queueDate(LocalDate.of(2026, 9, 5))
+                .queueNumber(5L).status(ConsultationQueueStatus.WAITING).queuedAt(Instant.now()).build();
+        when(requestRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(request));
+        when(queueEntryRepository.findByRequestIdForUpdate(100L)).thenReturn(Optional.of(entry));
+        when(requestRepository.save(request)).thenReturn(request);
+        when(mapper.toRequestResponse(request)).thenReturn(ConsultationRequestResponse.builder().build());
+
+        service.cancelMyRequest(1L, 100L);
+        service.cancelMyRequest(1L, 100L);
+
+        assertEquals(ConsultationRequestStatus.CANCELLED, request.getStatus());
+        assertEquals(ConsultationQueueStatus.CANCELLED, entry.getStatus());
+        assertEquals(5L, entry.getQueueNumber());
+        assertNotNull(request.getCancelledAt());
+        assertEquals(request.getCancelledAt(), entry.getCancelledAt());
+        verify(requestRepository, times(1)).save(request);
+        verify(queueEntryRepository, times(1)).save(entry);
+        verifyNoInteractions(reservationService, agreementService, paymentCancellationService);
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = ConsultationQueueStatus.class, names = {
+            "OFFERING_DOCTOR", "WAITING_MEMBER_CONFIRMATION"})
+    void memberCancellationReleasesActiveOfferWithoutPenalizingDoctor(ConsultationQueueStatus status) {
+        ConsultationRequest request = ConsultationRequest.builder()
+                .id(100L).memberId(1L).flowType(ConsultationFlowType.QUEUE_DISPATCH_V1)
+                .status(ConsultationRequestStatus.QUEUED).build();
+        ConsultationQueueEntry entry = ConsultationQueueEntry.builder()
+                .id(200L).requestId(100L).memberId(1L).queueDate(LocalDate.of(2026, 9, 5))
+                .queueNumber(5L).status(status).queuedAt(Instant.now()).build();
+        var offer = new fit.iuh.se.hschat.service.dispatch.offer.DoctorOffer(
+                "offer-a", 200L, 100L, 1L, 20L,
+                status == ConsultationQueueStatus.OFFERING_DOCTOR
+                        ? fit.iuh.se.hschat.service.dispatch.offer.DoctorOfferState.OFFERED_TO_DOCTOR
+                        : fit.iuh.se.hschat.service.dispatch.offer.DoctorOfferState.WAITING_MEMBER_CONFIRMATION,
+                Instant.now(), Instant.now().plusSeconds(300),
+                status == ConsultationQueueStatus.WAITING_MEMBER_CONFIRMATION ? Instant.now() : null,
+                status == ConsultationQueueStatus.WAITING_MEMBER_CONFIRMATION ? Instant.now().plusSeconds(900) : null);
+        when(requestRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(request));
+        when(queueEntryRepository.findByRequestIdForUpdate(100L)).thenReturn(Optional.of(entry));
+        when(doctorOfferStore.findByQueueEntryId(200L)).thenReturn(Optional.of(offer));
+        when(doctorOfferStore.release(offer)).thenReturn(true);
+        when(requestRepository.save(request)).thenReturn(request);
+        when(mapper.toRequestResponse(request)).thenReturn(ConsultationRequestResponse.builder().build());
+
+        service.cancelMyRequest(1L, 100L);
+
+        assertEquals(ConsultationRequestStatus.CANCELLED, request.getStatus());
+        assertEquals(ConsultationQueueStatus.CANCELLED, entry.getStatus());
+        verify(doctorOfferStore).release(offer);
+        verify(doctorCareProfileRepository, never()).save(any());
+    }
+
+    @Test
+    void anotherMemberCannotCancelQueueRequest() {
+        ConsultationRequest request = ConsultationRequest.builder()
+                .id(100L).memberId(1L).flowType(ConsultationFlowType.QUEUE_DISPATCH_V1)
+                .status(ConsultationRequestStatus.QUEUED).build();
+        when(requestRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(request));
+
+        assertThrows(AppException.class, () -> service.cancelMyRequest(2L, 100L));
+
+        verify(queueEntryRepository, never()).findByRequestIdForUpdate(anyLong());
     }
 
     @Test
@@ -481,7 +761,7 @@ class ConsultationRequestServiceImplTest {
         service.createRequest(1L, request);
 
         ArgumentCaptor<ConsultationRequest> captor = ArgumentCaptor.forClass(ConsultationRequest.class);
-        verify(requestRepository).save(captor.capture());
+        verify(requestRepository).saveAndFlush(captor.capture());
         assertEquals(List.of(11L, 12L), captor.getValue().getSelectedHealthRecordIds());
         assertEquals(11L, captor.getValue().getHealthRecordId());
     }
@@ -489,8 +769,6 @@ class ConsultationRequestServiceImplTest {
     @Test
     void createRequestRejectsSelectedRecordOwnedByAnotherMember() {
         when(userAccountRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(user(1L, UserRole.MEMBER)));
-        when(packageRepository.findByIdAndStatus(10L, CareServicePackageStatus.ACTIVE))
-                .thenReturn(Optional.of(carePackage()));
         when(healthRecordRepository.findByIdAndUserId(11L, 1L)).thenReturn(Optional.empty());
         CreateConsultationRequest request = validCreateRequest();
         request.setSelectedHealthRecordIds(List.of(11L));
@@ -606,7 +884,7 @@ class ConsultationRequestServiceImplTest {
 
         service.createRequest(1L, validCreateRequest());
 
-        verify(requestRepository).save(any(ConsultationRequest.class));
+        verify(requestRepository).saveAndFlush(any(ConsultationRequest.class));
     }
 
     @Test
@@ -618,19 +896,19 @@ class ConsultationRequestServiceImplTest {
             return Optional.of(user(1L, UserRole.MEMBER));
         });
         when(sessionRepository.existsByMemberIdAndStatusIn(eq(1L), anyCollection())).thenReturn(false);
-        when(requestRepository.existsByMemberIdAndStatusIn(eq(1L), anyCollection())).thenAnswer(invocation -> {
+        when(queueEntryRepository.existsByMemberIdAndStatusIn(eq(1L), anyCollection())).thenAnswer(invocation -> {
             boolean exists = unresolvedExists.get();
             if (exists)
                 memberTransactionLock.unlock();
             return exists;
         });
-        when(packageRepository.findByIdAndStatus(10L, CareServicePackageStatus.ACTIVE))
-                .thenReturn(Optional.of(carePackage()));
-        when(requestRepository.save(any())).thenAnswer(invocation -> {
+        doAnswer(invocation -> {
             unresolvedExists.set(true);
             memberTransactionLock.unlock();
-            return invocation.getArgument(0);
-        });
+            ConsultationQueueEntry entry = invocation.getArgument(0);
+            entry.setId(200L);
+            return entry;
+        }).when(queueEntryRepository).save(any());
         when(mapper.toRequestResponse(any())).thenReturn(ConsultationRequestResponse.builder().build());
         ExecutorService executor = Executors.newFixedThreadPool(2);
         CountDownLatch start = new CountDownLatch(1);
@@ -652,7 +930,7 @@ class ConsultationRequestServiceImplTest {
         executor.shutdownNow();
 
         assertEquals(1, successes);
-        verify(requestRepository, times(1)).save(any(ConsultationRequest.class));
+        verify(requestRepository, times(1)).saveAndFlush(any(ConsultationRequest.class));
     }
 
     private void requestAndSubmitMoreInfo(ConsultationRequest request, String coordinatorMessage, String response) {
@@ -679,10 +957,7 @@ class ConsultationRequestServiceImplTest {
         when(userAccountRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(user(1L, UserRole.MEMBER)));
         when(sessionRepository.existsByMemberIdAndStatusIn(eq(1L), anyCollection())).thenReturn(false);
         when(requestRepository.existsByMemberIdAndStatusIn(eq(1L), anyCollection())).thenReturn(false);
-        when(packageRepository.findByIdAndStatus(10L, CareServicePackageStatus.ACTIVE))
-                .thenReturn(Optional.of(carePackage()));
-        when(requestRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
-        when(mapper.toRequestResponse(any())).thenReturn(ConsultationRequestResponse.builder().build());
+        lenient().when(mapper.toRequestResponse(any())).thenReturn(ConsultationRequestResponse.builder().build());
     }
 
     private CreateConsultationRequest validCreateRequest() {

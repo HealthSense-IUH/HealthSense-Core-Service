@@ -13,6 +13,7 @@ import fit.iuh.se.hschat.entity.enums.CareServicePackageStatus;
 import fit.iuh.se.hschat.entity.enums.CareOperationalReviewReason;
 import fit.iuh.se.hschat.entity.enums.CareTerminationReason;
 import fit.iuh.se.hschat.entity.enums.ConsultationCompletionReason;
+import fit.iuh.se.hschat.entity.enums.ConsultationFlowType;
 import fit.iuh.se.hschat.entity.enums.ConsultationParticipantRole;
 import fit.iuh.se.hschat.entity.enums.ConsultationSourceType;
 import fit.iuh.se.hschat.entity.enums.ConsultationStatus;
@@ -28,6 +29,7 @@ import fit.iuh.se.hschat.service.authorization.EpisodeHealthRecordAuthorizationS
 import fit.iuh.se.hschat.service.reservation.DoctorReservationService;
 import fit.iuh.se.hschat.service.finalsummary.FinalSummaryClosureService;
 import fit.iuh.se.hschat.service.session.ConsultationSessionService;
+import fit.iuh.se.hschat.service.ConsultationFlowGuard;
 import fit.iuh.se.hschat.service.renewal.ConsultationRenewalService;
 import fit.iuh.se.hshealthrecord.repository.HealthRecordRepository;
 import fit.iuh.se.hsshared.advice.entity.AppException;
@@ -125,6 +127,7 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
         ConsultationSession session = ConsultationSession.builder()
                 .memberId(request.getMemberId())
                 .doctorId(request.getDoctorId())
+                .flowType(ConsultationFlowType.LEGACY_V3)
                 .createdByAdminId(actorId)
                 .exceptionalOverride(true)
                 .overrideReason(request.getOverrideReason().trim())
@@ -222,6 +225,7 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
         validateConsultationManager(actorRole);
         ConsultationSession session = sessionRepository.findByIdForUpdate(sessionId)
                 .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_NOT_FOUND));
+        ConsultationFlowGuard.requireLegacy(session);
 
         if (session.getStatus() != ConsultationStatus.ACTIVE
                 && session.getStatus() != ConsultationStatus.SCHEDULED)
@@ -264,6 +268,7 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
                     "Only the assigned Member or Doctor may request care termination");
         ConsultationSession session = sessionRepository.findByIdForUpdate(sessionId)
                 .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_NOT_FOUND));
+        ConsultationFlowGuard.requireLegacy(session);
         boolean assigned = actorRole == UserRole.MEMBER
                 ? session.getMemberId().equals(actorId) : session.getDoctorId().equals(actorId);
         if (!assigned) throw new AppException(ErrorCode.CONSULTATION_ACCESS_DENIED);
@@ -297,7 +302,8 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
         validateConsultationManager(actorRole);
         sessionRepository.findByStatusOrderByCreatedAtDesc(ConsultationStatus.ACTIVE, Pageable.unpaged())
                 .forEach(candidate -> sessionRepository.findByIdForUpdate(candidate.getId()).ifPresent(session -> {
-                    if (session.getStatus() != ConsultationStatus.ACTIVE) return;
+                    if (session.getFlowType() != ConsultationFlowType.LEGACY_V3
+                            || session.getStatus() != ConsultationStatus.ACTIVE) return;
                     AccountStatus doctorStatus = userAccountRepository.findById(session.getDoctorId())
                             .map(UserAccount::getStatus).orElse(AccountStatus.INACTIVE);
                     AccountStatus memberStatus = userAccountRepository.findById(session.getMemberId())
@@ -328,14 +334,18 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
     public void expireOverdueSessions(UserRole actorRole) {
         validateConsultationManager(actorRole);
         Instant now = Instant.now();
-        sessionRepository.findByStatusAndEndsAtBetween(
-                        ConsultationStatus.ACTIVE, now, now.plus(24, ChronoUnit.HOURS))
+        sessionRepository.findByFlowTypeAndStatusAndEndsAtBetween(
+                        ConsultationFlowType.LEGACY_V3, ConsultationStatus.ACTIVE,
+                        now, now.plus(24, ChronoUnit.HOURS))
+                .stream()
                 .forEach(session -> auditSession(session, BusinessEventType.SESSION_ENDING_SOON, null, null,
                         ConsultationStatus.ACTIVE, ConsultationStatus.ACTIVE, null, null,
                         NotificationType.CARE_ENDING));
-        sessionRepository.findByStatusAndEndsAtBefore(ConsultationStatus.ACTIVE, now)
+        sessionRepository.findByFlowTypeAndStatusAndEndsAtBefore(
+                        ConsultationFlowType.LEGACY_V3, ConsultationStatus.ACTIVE, now)
                 .forEach(candidate -> sessionRepository.findByIdForUpdate(candidate.getId()).ifPresent(session -> {
-                    if (session.getStatus() != ConsultationStatus.ACTIVE
+                    if (session.getFlowType() != ConsultationFlowType.LEGACY_V3
+                            || session.getStatus() != ConsultationStatus.ACTIVE
                             || session.getEndsAt() == null || session.getEndsAt().isAfter(now))
                         return;
                     session.setStatus(ConsultationStatus.COMPLETED);
@@ -343,6 +353,9 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
                     session.setCompletionReason(ConsultationCompletionReason.PERIOD_ENDED);
                     session.setCloseReason("Consultation session completed automatically because the care period ended");
                     sessionRepository.save(session);
+                    log.info("[LEGACY_SESSION_COMPLETED] pid={} sessionId={} flowType={} completedAt={} endsAt={} reason={}",
+                            ProcessHandle.current().pid(), session.getId(), session.getFlowType(), now,
+                            session.getEndsAt(), session.getCompletionReason());
                     finalSummaryClosureService.onSessionCompleted(session, now);
                     auditSession(session, BusinessEventType.SESSION_COMPLETED, null, null,
                             ConsultationStatus.ACTIVE, ConsultationStatus.COMPLETED, session.getCloseReason(),
@@ -357,6 +370,8 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
         validateConsultationManager(actorRole);
         Instant now = Instant.now();
         sessionRepository.findByStatusAndStartedAtBefore(ConsultationStatus.SCHEDULED, now)
+                .stream()
+                .filter(session -> session.getFlowType() == ConsultationFlowType.LEGACY_V3)
                 .forEach(session -> {
                     session.setStatus(ConsultationStatus.ACTIVE);
                     session.setActivatedAt(now);

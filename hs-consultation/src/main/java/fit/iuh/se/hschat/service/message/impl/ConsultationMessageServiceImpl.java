@@ -187,7 +187,8 @@ public class ConsultationMessageServiceImpl implements ConsultationMessageServic
             throw new AppException(ErrorCode.CONSULTATION_NOT_ACTIVE);
 
         Instant supportEndsAt = session.getSupportEndsAt() == null ? session.getEndsAt() : session.getSupportEndsAt();
-        if (supportEndsAt != null && supportEndsAt.isBefore(Instant.now()))
+        if (session.getFlowType() != fit.iuh.se.hschat.entity.enums.ConsultationFlowType.QUEUE_DISPATCH_V1
+                && supportEndsAt != null && supportEndsAt.isBefore(Instant.now()))
             throw new AppException(ErrorCode.CONSULTATION_NOT_ACTIVE);
 
         return session;

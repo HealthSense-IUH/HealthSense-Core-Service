@@ -6,6 +6,7 @@ import fit.iuh.se.hschat.dto.request.RequestSessionTerminationRequest;
 import fit.iuh.se.hschat.entity.DoctorCareProfile;
 import fit.iuh.se.hschat.entity.ConsultationSession;
 import fit.iuh.se.hschat.entity.enums.ConsultationCompletionReason;
+import fit.iuh.se.hschat.entity.enums.ConsultationFlowType;
 import fit.iuh.se.hschat.entity.enums.ConsultationStatus;
 import fit.iuh.se.hschat.entity.enums.CareOperationalReviewReason;
 import fit.iuh.se.hschat.entity.enums.CareTerminationReason;
@@ -109,7 +110,8 @@ class ConsultationSessionServiceImplTest {
                 .status(ConsultationStatus.ACTIVE)
                 .endsAt(Instant.now().minusSeconds(60))
                 .build();
-        when(sessionRepository.findByStatusAndEndsAtBefore(eq(ConsultationStatus.ACTIVE), any(Instant.class)))
+        when(sessionRepository.findByFlowTypeAndStatusAndEndsAtBefore(
+                eq(ConsultationFlowType.LEGACY_V3), eq(ConsultationStatus.ACTIVE), any(Instant.class)))
                 .thenReturn(List.of(overdue));
         when(sessionRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(overdue));
 
@@ -136,7 +138,8 @@ class ConsultationSessionServiceImplTest {
                 .status(ConsultationStatus.ACTIVE).endsAt(Instant.now().minusSeconds(60)).build();
         ConsultationSession renewedLockedSession = ConsultationSession.builder().id(1L)
                 .status(ConsultationStatus.ACTIVE).endsAt(Instant.now().plusSeconds(86400)).build();
-        when(sessionRepository.findByStatusAndEndsAtBefore(eq(ConsultationStatus.ACTIVE), any()))
+        when(sessionRepository.findByFlowTypeAndStatusAndEndsAtBefore(
+                eq(ConsultationFlowType.LEGACY_V3), eq(ConsultationStatus.ACTIVE), any()))
                 .thenReturn(List.of(staleCandidate));
         when(sessionRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(renewedLockedSession));
 
@@ -292,7 +295,8 @@ class ConsultationSessionServiceImplTest {
     void endingSoonSessionsEmitStableMemberAndDoctorNotificationIntents() {
         ConsultationSession ending = ConsultationSession.builder().id(1L).memberId(10L).doctorId(20L)
                 .status(ConsultationStatus.ACTIVE).endsAt(Instant.now().plusSeconds(3600)).build();
-        when(sessionRepository.findByStatusAndEndsAtBetween(eq(ConsultationStatus.ACTIVE), any(), any()))
+        when(sessionRepository.findByFlowTypeAndStatusAndEndsAtBetween(
+                eq(ConsultationFlowType.LEGACY_V3), eq(ConsultationStatus.ACTIVE), any(), any()))
                 .thenReturn(List.of(ending));
 
         service.expireOverdueSessions(UserRole.CARE_COORDINATOR);

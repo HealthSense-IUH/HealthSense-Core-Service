@@ -5,8 +5,10 @@ public enum ConsultationRequestStatus {
     NEED_MORE_INFO,
     WAITING_ACCEPTANCE,
     WAITING_PAYMENT,
+    QUEUED,
     FULFILLED,
     REJECTED,
     CANCELLED,
-    EXPIRED
+    EXPIRED,
+    TIMED_OUT
 }

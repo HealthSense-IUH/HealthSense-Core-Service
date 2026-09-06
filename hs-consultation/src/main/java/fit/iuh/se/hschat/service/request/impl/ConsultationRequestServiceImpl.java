@@ -5,6 +5,10 @@ import fit.iuh.se.hschat.dto.response.*;
 import fit.iuh.se.hschat.entity.CareServicePackage;
 import fit.iuh.se.hschat.entity.ConsultationMoreInfoCycle;
 import fit.iuh.se.hschat.entity.ConsultationRequest;
+import fit.iuh.se.hschat.entity.ConsultationQueueCounter;
+import fit.iuh.se.hschat.entity.ConsultationQueueEntry;
+import fit.iuh.se.hschat.entity.ConsultationSession;
+import fit.iuh.se.hschat.entity.ConsultationDispatchState;
 import fit.iuh.se.hschat.entity.DoctorCareProfile;
 import fit.iuh.se.hschat.entity.enums.*;
 import fit.iuh.se.hschat.mapper.ConsultationMapper;
@@ -13,7 +17,16 @@ import fit.iuh.se.hschat.repository.ConsultationMoreInfoCycleRepository;
 import fit.iuh.se.hschat.repository.ConsultationRequestRepository;
 import fit.iuh.se.hschat.repository.ConsultationSessionRepository;
 import fit.iuh.se.hschat.repository.DoctorCareProfileRepository;
+import fit.iuh.se.hschat.repository.ConsultationQueueCounterRepository;
+import fit.iuh.se.hschat.repository.ConsultationQueueEntryRepository;
+import fit.iuh.se.hschat.repository.ConsultationDispatchStateRepository;
 import fit.iuh.se.hschat.service.request.ConsultationRequestService;
+import fit.iuh.se.hschat.service.ConsultationFlowGuard;
+import fit.iuh.se.hschat.service.dispatch.DoctorDispatchSelectionService;
+import fit.iuh.se.hschat.service.dispatch.event.DispatchRequested;
+import fit.iuh.se.hschat.service.dispatch.offer.DoctorOffer;
+import fit.iuh.se.hschat.service.dispatch.offer.DoctorOfferState;
+import fit.iuh.se.hschat.service.dispatch.offer.DoctorOfferStore;
 import fit.iuh.se.hschat.service.reservation.DoctorReservationService;
 import fit.iuh.se.hschat.service.agreement.CareServiceAgreementService;
 import fit.iuh.se.hschat.service.payment.PaymentCancellationService;
@@ -43,9 +56,13 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.Clock;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.function.Function;
@@ -71,6 +88,11 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
             ConsultationStatus.SCHEDULED,
             ConsultationStatus.ACTIVE
     );
+    static final List<ConsultationQueueStatus> UNRESOLVED_QUEUE_STATUSES = List.of(
+            ConsultationQueueStatus.WAITING,
+            ConsultationQueueStatus.OFFERING_DOCTOR,
+            ConsultationQueueStatus.WAITING_MEMBER_CONFIRMATION
+    );
 
     ConsultationRequestRepository requestRepository;
     ConsultationMoreInfoCycleRepository moreInfoCycleRepository;
@@ -79,15 +101,28 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
     UserAccountRepository userAccountRepository;
     CareServicePackageRepository packageRepository;
     DoctorCareProfileRepository doctorCareProfileRepository;
+    ConsultationQueueEntryRepository queueEntryRepository;
+    ConsultationQueueCounterRepository queueCounterRepository;
+    ConsultationDispatchStateRepository dispatchStateRepository;
     DoctorReservationService reservationService;
     CareServiceAgreementService agreementService;
     PaymentCancellationService paymentCancellationService;
     ConsultationMapper mapper;
     OperationalEventPublisher OperationalEventPublisher;
+    DoctorOfferStore doctorOfferStore;
+    DoctorDispatchSelectionService doctorDispatchSelectionService;
+    ApplicationEventPublisher applicationEventPublisher;
 
     @NonFinal
     @Value("${app.consultation.payment-deadline-minutes:30}")
     long paymentDeadlineMinutes;
+
+    @NonFinal
+    @Value("${app.consultation.business-timezone:Asia/Ho_Chi_Minh}")
+    String businessTimezone;
+
+    @NonFinal
+    Clock clock = Clock.systemUTC();
 
     @Override
     @Transactional
@@ -102,23 +137,37 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
         if (sessionRepository.existsByMemberIdAndStatusIn(memberId, MEMBER_BUSY_SESSION_STATUSES))
             throw new AppException(ErrorCode.MEMBER_ALREADY_HAS_ACTIVE_CONSULTATION);
 
-        if (requestRepository.existsByMemberIdAndStatusIn(memberId, UNRESOLVED_REQUEST_STATUSES))
+        if (queueEntryRepository.existsByMemberIdAndStatusIn(memberId, UNRESOLVED_QUEUE_STATUSES)
+                || requestRepository.existsByMemberIdAndStatusIn(memberId, UNRESOLVED_REQUEST_STATUSES))
             throw new AppException(ErrorCode.MEMBER_ALREADY_HAS_PENDING_CONSULTATION_REQUEST);
 
-        CareServicePackage carePackage = findActivePackage(request.getPackageId());
         List<Long> selectedHealthRecordIds = normalizeHealthRecordIds(
                 request.getSelectedHealthRecordIds(),
                 request.getHealthRecordId()
         );
         validateHealthRecordOwners(selectedHealthRecordIds, memberId);
 
+        Instant now = Instant.now(clock);
+        LocalDate queueDate = now.atZone(ZoneId.of(businessTimezone)).toLocalDate();
+
+        // This singleton lock serializes counter-row creation as well as increments. It makes
+        // the first admission of a business date safe without relying on COUNT + 1.
+        dispatchStateRepository.findSingletonForUpdate()
+                .orElseThrow(() -> new AppException(ErrorCode.DATA_INTEGRITY_VIOLATION,
+                        "Queue dispatch singleton is missing"));
+        ConsultationQueueCounter counter = queueCounterRepository.findByQueueDateForUpdate(queueDate)
+                .orElseGet(() -> ConsultationQueueCounter.builder()
+                        .queueDate(queueDate)
+                        .lastNumber(0L)
+                        .build());
+        long queueNumber = counter.getLastNumber() + 1;
+        counter.setLastNumber(queueNumber);
+        queueCounterRepository.save(counter);
+
         ConsultationRequest consultationRequest = ConsultationRequest.builder()
                 .memberId(memberId)
+                .flowType(ConsultationFlowType.QUEUE_DISPATCH_V1)
                 .healthRecordId(selectedHealthRecordIds.isEmpty() ? null : selectedHealthRecordIds.getFirst())
-                .packageId(carePackage.getId())
-                .packageVersion(carePackage.getVersionNumber())
-                .packagePriceSnapshot(carePackage.getPriceAmount())
-                .packageDurationDaysSnapshot(carePackage.getDurationDays())
                 .reason(request.getReasonForCare())
                 .reasonForCare(request.getReasonForCare())
                 .currentConcern(request.getCurrentConcern())
@@ -126,13 +175,20 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
                 .memberNote(request.getMemberNote())
                 .relevantSelfReportedContext(request.getRelevantSelfReportedContext())
                 .selectedHealthRecordIds(selectedHealthRecordIds)
-                .preferredDoctorId(request.getPreferredDoctorId())
-                .status(ConsultationRequestStatus.PENDING_REVIEW)
+                .status(ConsultationRequestStatus.QUEUED)
                 .build();
 
-        consultationRequest = requestRepository.save(consultationRequest);
-        auditRequest(consultationRequest, BusinessEventType.REQUEST_CREATED, memberId, UserRole.MEMBER,
-                null, ConsultationRequestStatus.PENDING_REVIEW, null, NotificationType.REQUEST_RECEIVED);
+        consultationRequest = requestRepository.saveAndFlush(consultationRequest);
+        ConsultationQueueEntry queueEntry = queueEntryRepository.save(ConsultationQueueEntry.builder()
+                .requestId(consultationRequest.getId())
+                .memberId(memberId)
+                .queueDate(queueDate)
+                .queueNumber(queueNumber)
+                .status(ConsultationQueueStatus.WAITING)
+                .queuedAt(now)
+                .build());
+        auditQueueAdmission(consultationRequest, queueEntry, memberId);
+        applicationEventPublisher.publishEvent(new DispatchRequested("queue-admitted"));
         return toRequestResponse(consultationRequest);
     }
 
@@ -145,6 +201,7 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
 
         ConsultationRequest consultationRequest = requestRepository.findByIdForUpdate(requestId)
                 .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_REQUEST_NOT_FOUND));
+        ConsultationFlowGuard.requireLegacy(consultationRequest);
 
         if (consultationRequest.getStatus() != ConsultationRequestStatus.PENDING_REVIEW)
             throw new AppException(ErrorCode.INVALID_CONSULTATION_STATUS);
@@ -184,6 +241,7 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
         validateConsultationManager(actorRole);
         ConsultationRequest consultationRequest = requestRepository.findByIdForUpdate(requestId)
                 .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_REQUEST_NOT_FOUND));
+        ConsultationFlowGuard.requireLegacy(consultationRequest);
 
         if (consultationRequest.getStatus() != ConsultationRequestStatus.PENDING_REVIEW
                 && consultationRequest.getStatus() != ConsultationRequestStatus.NEED_MORE_INFO
@@ -212,6 +270,7 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
         validateConsultationManager(actorRole);
         ConsultationRequest consultationRequest = requestRepository.findByIdForUpdate(requestId)
                 .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_REQUEST_NOT_FOUND));
+        ConsultationFlowGuard.requireLegacy(consultationRequest);
 
         if (consultationRequest.getStatus() != ConsultationRequestStatus.PENDING_REVIEW)
             throw new AppException(ErrorCode.INVALID_CONSULTATION_STATUS);
@@ -242,6 +301,7 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
     public ConsultationRequestResponse submitMoreInfo(Long memberId, Long requestId, SubmitConsultationMoreInfoRequest request) {
         ConsultationRequest consultationRequest = requestRepository.findByIdForUpdate(requestId)
                 .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_REQUEST_NOT_FOUND));
+        ConsultationFlowGuard.requireLegacy(consultationRequest);
 
         if (!consultationRequest.getMemberId().equals(memberId))
             throw new AppException(ErrorCode.CONSULTATION_ACCESS_DENIED);
@@ -284,11 +344,24 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
     @Override
     @Transactional
     public ConsultationRequestResponse cancelMyRequest(Long memberId, Long requestId) {
-        ConsultationRequest consultationRequest = requestRepository.findByIdForUpdate(requestId)
+        ConsultationRequest consultationRequest = requestRepository.findById(requestId)
+                .or(() -> requestRepository.findByIdForUpdate(requestId))
                 .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_REQUEST_NOT_FOUND));
 
         if (!consultationRequest.getMemberId().equals(memberId))
             throw new AppException(ErrorCode.CONSULTATION_ACCESS_DENIED);
+
+        if (consultationRequest.getFlowType() == ConsultationFlowType.QUEUE_DISPATCH_V1) {
+            doctorDispatchSelectionService.lockDispatchStateForOfferCommit();
+            ConsultationQueueEntry entry = queueEntryRepository.findByRequestIdForUpdate(requestId)
+                    .orElseThrow(() -> new AppException(ErrorCode.DATA_INTEGRITY_VIOLATION));
+            return cancelQueueRequest(consultationRequest, entry, memberId);
+        }
+
+        consultationRequest = requestRepository.findByIdForUpdate(requestId)
+                .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_REQUEST_NOT_FOUND));
+
+        ConsultationFlowGuard.requireLegacy(consultationRequest);
 
         if (consultationRequest.getStatus() != ConsultationRequestStatus.PENDING_REVIEW
                 && consultationRequest.getStatus() != ConsultationRequestStatus.NEED_MORE_INFO
@@ -299,13 +372,82 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
         reservationService.release(consultationRequest, DoctorReservationReleaseReason.MEMBER_CANCELLED);
         agreementService.invalidateCurrent(requestId, "Member cancelled before care activation");
         consultationRequest.setStatus(ConsultationRequestStatus.CANCELLED);
-        consultationRequest.setCancelledAt(Instant.now());
+        consultationRequest.setCancelledAt(Instant.now(clock));
         consultationRequest = requestRepository.save(consultationRequest);
         auditRequest(consultationRequest, BusinessEventType.REQUEST_CANCELLED, memberId, UserRole.MEMBER,
                 null, ConsultationRequestStatus.CANCELLED, "Member cancelled before activation", NotificationType.AGREEMENT_INVALIDATED);
         paymentCancellationService.prepareRequestCancellation(requestId);
         paymentCancellationService.cancelProviderLinksAfterCommit(requestId);
         return toRequestResponse(consultationRequest);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public CurrentQueueStateResponse getCurrentQueueState(Long memberId) {
+        validateMember(memberId);
+        Optional<ConsultationSession> activeSession = sessionRepository.findByMemberIdAndFlowTypeAndStatus(
+                memberId, ConsultationFlowType.QUEUE_DISPATCH_V1, ConsultationStatus.ACTIVE);
+        if (activeSession.isPresent()) return activeSessionState(activeSession.get());
+        ConsultationQueueEntry entry = queueEntryRepository
+                .findFirstByMemberIdAndStatusInOrderByQueueDateAscQueueNumberAsc(memberId, UNRESOLVED_QUEUE_STATUSES)
+                .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_REQUEST_NOT_FOUND));
+        ConsultationRequest request = requestRepository.findById(entry.getRequestId())
+                .filter(candidate -> candidate.getMemberId().equals(memberId)
+                        && candidate.getFlowType() == ConsultationFlowType.QUEUE_DISPATCH_V1)
+                .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_REQUEST_NOT_FOUND));
+        QueueStatistics statistics = queueStatistics();
+        Optional<DoctorOffer> visibleOffer = queueMemberOffer(entry);
+        long peopleAhead = queueEntryRepository.countUnresolvedAhead(
+                UNRESOLVED_QUEUE_STATUSES, entry.getQueueDate(), entry.getQueueNumber());
+        return CurrentQueueStateResponse.builder()
+                .phase(entry.getStatus() == ConsultationQueueStatus.WAITING_MEMBER_CONFIRMATION
+                        ? CurrentConsultationPhase.WAITING_CONFIRMATION : CurrentConsultationPhase.QUEUE)
+                .requestId(request.getId())
+                .queueEntryId(entry.getId())
+                .queueNumber(entry.getQueueNumber())
+                .queueDate(entry.getQueueDate())
+                .queueStatus(entry.getStatus())
+                .requestStatus(request.getStatus())
+                .queuedAt(entry.getQueuedAt())
+                .peopleAhead(peopleAhead)
+                .doctorsOnDuty(statistics.doctorsOnDuty())
+                .availableDoctors(statistics.availableDoctors())
+                .busyDoctors(statistics.busyDoctors())
+                .offerId(visibleOffer.map(DoctorOffer::offerId).orElse(null))
+                .memberConfirmExpiresAt(visibleOffer.map(DoctorOffer::memberConfirmExpiresAt).orElse(null))
+                .doctorReady(visibleOffer.map(o -> o.state() == DoctorOfferState.WAITING_MEMBER_CONFIRMATION).orElse(false))
+                .doctorId(visibleOffer.filter(o -> o.state() == DoctorOfferState.WAITING_MEMBER_CONFIRMATION)
+                        .map(DoctorOffer::doctorId).orElse(null))
+                .build();
+    }
+
+    private CurrentQueueStateResponse activeSessionState(ConsultationSession session) {
+        ConsultationRequest request = requestRepository.findById(session.getRequestId())
+                .filter(candidate -> candidate.getMemberId().equals(session.getMemberId())
+                        && candidate.getFlowType() == ConsultationFlowType.QUEUE_DISPATCH_V1
+                        && candidate.getStatus() == ConsultationRequestStatus.FULFILLED)
+                .orElseThrow(() -> new AppException(ErrorCode.DATA_INTEGRITY_VIOLATION));
+        ConsultationQueueEntry entry = queueEntryRepository.findByRequestId(request.getId())
+                .filter(candidate -> candidate.getStatus() == ConsultationQueueStatus.FULFILLED)
+                .orElseThrow(() -> new AppException(ErrorCode.DATA_INTEGRITY_VIOLATION));
+        return CurrentQueueStateResponse.builder()
+                .phase(CurrentConsultationPhase.ACTIVE_SESSION)
+                .requestId(request.getId()).queueEntryId(entry.getId())
+                .queueNumber(entry.getQueueNumber()).queueDate(entry.getQueueDate())
+                .queueStatus(entry.getStatus()).requestStatus(request.getStatus()).queuedAt(entry.getQueuedAt())
+                .peopleAhead(0).doctorId(session.getDoctorId()).doctorReady(true)
+                .sessionId(session.getId()).sessionStatus(session.getStatus())
+                .sessionStartedAt(session.getStartedAt()).sessionEndsAt(session.getEndsAt()).build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ConsultationQueueStatisticsResponse getQueueStatistics(Long memberId) {
+        validateMember(memberId);
+        QueueStatistics statistics = queueStatistics();
+        return new ConsultationQueueStatisticsResponse(
+                statistics.doctorsOnDuty(), statistics.availableDoctors(), statistics.busyDoctors(),
+                queueEntryRepository.countByStatusIn(UNRESOLVED_QUEUE_STATUSES));
     }
 
     @Override
@@ -407,6 +549,109 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
                     auditRequest(request, BusinessEventType.REQUEST_EXPIRED, null, null,
                             null, ConsultationRequestStatus.EXPIRED, "Offer/payment window expired", NotificationType.PAYMENT_FAILED);
                 });
+    }
+
+    private ConsultationRequestResponse cancelQueueRequest(
+            ConsultationRequest request, ConsultationQueueEntry entry, Long memberId) {
+        // Queue cancellation is idempotent when both persisted states already agree.
+        if (request.getStatus() == ConsultationRequestStatus.CANCELLED
+                && entry.getStatus() == ConsultationQueueStatus.CANCELLED)
+            return toRequestResponse(request);
+
+        if (request.getStatus() != ConsultationRequestStatus.QUEUED
+                || !UNRESOLVED_QUEUE_STATUSES.contains(entry.getStatus()))
+            throw new AppException(ErrorCode.INVALID_CONSULTATION_STATUS);
+
+        Optional<DoctorOffer> activeOffer = doctorOfferStore.findByQueueEntryId(entry.getId());
+        if (entry.getStatus() != ConsultationQueueStatus.WAITING && activeOffer.isEmpty())
+            throw new AppException(ErrorCode.DISPATCH_TEMPORARILY_UNAVAILABLE,
+                    "The active Redis offer cannot be verified safely");
+        if (activeOffer.isPresent() && !doctorOfferStore.release(activeOffer.get()))
+            throw new AppException(ErrorCode.CONSULTATION_OFFER_STALE);
+
+        Instant now = Instant.now(clock);
+        request.setStatus(ConsultationRequestStatus.CANCELLED);
+        request.setCancelledAt(now);
+        entry.setStatus(ConsultationQueueStatus.CANCELLED);
+        entry.setCancelledAt(now);
+        request = requestRepository.save(request);
+        queueEntryRepository.save(entry);
+        auditQueueCancellation(request, entry, memberId);
+        applicationEventPublisher.publishEvent(new DispatchRequested("member-cancelled"));
+        return toRequestResponse(request);
+    }
+
+    private QueueStatistics queueStatistics() {
+        long persistedAvailable = doctorCareProfileRepository.countByDispatchStatus(DoctorDispatchStatus.AVAILABLE);
+        long available;
+        try {
+            available = doctorDispatchSelectionService.countEffectivelyDispatchableDoctors();
+        } catch (AppException ex) {
+            if (ex.getErrorCode() != ErrorCode.DISPATCH_TEMPORARILY_UNAVAILABLE) throw ex;
+            available = 0; // Redis failure: fail closed rather than claim a held Doctor is dispatchable.
+        }
+        long busy = doctorCareProfileRepository.countByDispatchStatus(DoctorDispatchStatus.BUSY);
+        return new QueueStatistics(persistedAvailable + busy, available, busy);
+    }
+
+    private void auditQueueAdmission(ConsultationRequest request, ConsultationQueueEntry entry, Long memberId) {
+        NotificationIntent acknowledgement = new NotificationIntent(memberId, UserRole.MEMBER,
+                NotificationType.REQUEST_RECEIVED,
+                "Care request queued",
+                "Your care request was received and added to the consultation queue.",
+                BusinessDomainType.REQUEST,
+                request.getId(),
+                "queue:" + entry.getId() + ":queued:member");
+        OperationalEventPublisher.record(OperationalEventCommand.builder()
+                .domainType(BusinessDomainType.REQUEST)
+                .domainId(request.getId())
+                .eventType(BusinessEventType.REQUEST_QUEUED)
+                .actorType(BusinessActorType.USER)
+                .actorUserId(memberId)
+                .actorRole(UserRole.MEMBER.name())
+                .requestId(request.getId())
+                .memberId(memberId)
+                .newState(ConsultationRequestStatus.QUEUED.name())
+                .metadata(Map.of(
+                        "queueEntryId", entry.getId().toString(),
+                        "queueNumber", entry.getQueueNumber().toString(),
+                        "queueDate", entry.getQueueDate().toString()))
+                .idempotencyKey("queue:" + entry.getId() + ":queued")
+                .occurredAt(entry.getQueuedAt())
+                .notifications(List.of(acknowledgement))
+                .build());
+    }
+
+    private void auditQueueCancellation(ConsultationRequest request, ConsultationQueueEntry entry, Long memberId) {
+        OperationalEventPublisher.record(OperationalEventCommand.builder()
+                .domainType(BusinessDomainType.REQUEST)
+                .domainId(request.getId())
+                .eventType(BusinessEventType.QUEUE_CANCELLED)
+                .actorType(BusinessActorType.USER)
+                .actorUserId(memberId)
+                .actorRole(UserRole.MEMBER.name())
+                .requestId(request.getId())
+                .memberId(memberId)
+                .previousState(ConsultationRequestStatus.QUEUED.name())
+                .newState(ConsultationRequestStatus.CANCELLED.name())
+                .reason("Member left consultation queue")
+                .metadata(Map.of("queueEntryId", entry.getId().toString()))
+                .idempotencyKey("queue:" + entry.getId() + ":cancelled")
+                .occurredAt(entry.getCancelledAt())
+                .notifications(List.of())
+                .build());
+    }
+
+    private record QueueStatistics(long doctorsOnDuty, long availableDoctors, long busyDoctors) {
+    }
+
+    private Optional<DoctorOffer> queueMemberOffer(ConsultationQueueEntry entry) {
+        if (entry.getStatus() != ConsultationQueueStatus.WAITING_MEMBER_CONFIRMATION) return Optional.empty();
+        try { return doctorOfferStore.findByQueueEntryId(entry.getId()); }
+        catch (AppException ex) {
+            if (ex.getErrorCode() == ErrorCode.DISPATCH_TEMPORARILY_UNAVAILABLE) return Optional.empty();
+            throw ex;
+        }
     }
 
     private void auditRequest(ConsultationRequest request, BusinessEventType eventType, Long actorId,
@@ -591,6 +836,15 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
         ConsultationRequestResponse response = mapper.toRequestResponse(request);
         response.setSelectedHealthRecords(healthRecordSummaries(request.getSelectedHealthRecordIds(), request.getMemberId()));
         response.setMoreInfoHistory(moreInfoHistory(request.getId(), request.getMemberId()));
+        if (request.getFlowType() == ConsultationFlowType.QUEUE_DISPATCH_V1) {
+            queueEntryRepository.findByRequestId(request.getId()).ifPresent(entry -> {
+                response.setQueueEntryId(entry.getId());
+                response.setQueueNumber(entry.getQueueNumber());
+                response.setQueueDate(entry.getQueueDate());
+                response.setQueueStatus(entry.getStatus());
+                response.setQueuedAt(entry.getQueuedAt());
+            });
+        }
         return response;
     }
 

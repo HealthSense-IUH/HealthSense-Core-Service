@@ -2,6 +2,7 @@ package fit.iuh.se.hschat.service.doctor.impl;
 
 import fit.iuh.se.hschat.dto.DoctorAvailabilityDto;
 import fit.iuh.se.hschat.dto.request.DoctorCareProfileRequest;
+import fit.iuh.se.hschat.dto.request.UpdateDoctorAvailabilityRequest;
 import fit.iuh.se.hschat.dto.response.DoctorCareProfileResponse;
 import fit.iuh.se.hschat.entity.DoctorCareProfile;
 import fit.iuh.se.hschat.mapper.ConsultationMapper;
@@ -11,6 +12,7 @@ import fit.iuh.se.hschat.service.doctor.SupportScheduleValidator;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsuser.entity.UserAccount;
+import fit.iuh.se.hsuser.entity.enums.AccountStatus;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
 import fit.iuh.se.hsuser.repository.UserAccountRepository;
 import lombok.AccessLevel;
@@ -73,6 +75,41 @@ public class DoctorCareProfileServiceImpl implements DoctorCareProfileService {
         return mapper.toDoctorCareProfileResponse(profileRepository.save(profile));
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public DoctorCareProfileResponse getOwnProfile(Long doctorId) {
+        validateActiveDoctor(userAccountRepository.findById(doctorId)
+                .orElseThrow(() -> new AppException(ErrorCode.DOCTOR_NOT_FOUND)));
+        return profileRepository.findByDoctorId(doctorId)
+                .map(mapper::toDoctorCareProfileResponse)
+                .orElseThrow(() -> new AppException(ErrorCode.DOCTOR_CARE_PROFILE_NOT_FOUND));
+    }
+
+    @Override
+    @Transactional
+    public DoctorCareProfileResponse updateOwnAvailability(
+            Long doctorId,
+            UpdateDoctorAvailabilityRequest request
+    ) {
+        validateActiveDoctor(userAccountRepository.findByIdForUpdate(doctorId)
+                .orElseThrow(() -> new AppException(ErrorCode.DOCTOR_NOT_FOUND)));
+        DoctorCareProfile profile = profileRepository.findByDoctorIdForUpdate(doctorId)
+                .orElseThrow(() -> new AppException(ErrorCode.DOCTOR_CARE_PROFILE_NOT_FOUND));
+
+        String timezone = isBlank(request.timezone())
+                ? profile.getTimezone()
+                : request.timezone().trim();
+        String availabilityJson = toAvailabilityJson(request.availability());
+        scheduleValidator.validate(
+                availabilityJson,
+                timezone,
+                Boolean.TRUE.equals(profile.getAcceptsOneOnOneCare()));
+
+        profile.setAvailabilityJson(availabilityJson);
+        profile.setTimezone(timezone);
+        return mapper.toDoctorCareProfileResponse(profileRepository.save(profile));
+    }
+
     private String resolveAvailabilityJson(DoctorCareProfileRequest request) {
         if (request.getAvailability() == null)
             return request.getAvailabilityJson();
@@ -103,6 +140,11 @@ public class DoctorCareProfileServiceImpl implements DoctorCareProfileService {
         UserAccount doctor = userAccountRepository.findById(doctorId)
                 .orElseThrow(() -> new AppException(ErrorCode.DOCTOR_NOT_FOUND));
         if (doctor.getRole() != UserRole.DOCTOR)
+            throw new AppException(ErrorCode.DOCTOR_NOT_FOUND);
+    }
+
+    private void validateActiveDoctor(UserAccount doctor) {
+        if (doctor.getRole() != UserRole.DOCTOR || doctor.getStatus() != AccountStatus.ACTIVE)
             throw new AppException(ErrorCode.DOCTOR_NOT_FOUND);
     }
 

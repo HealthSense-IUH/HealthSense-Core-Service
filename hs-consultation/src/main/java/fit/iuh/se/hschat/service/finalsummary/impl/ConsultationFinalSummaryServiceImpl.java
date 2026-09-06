@@ -12,13 +12,18 @@ import fit.iuh.se.hschat.entity.enums.ConsultationStatus;
 import fit.iuh.se.hschat.repository.ConsultationFinalSummaryAddendumRepository;
 import fit.iuh.se.hschat.repository.ConsultationFinalSummaryRepository;
 import fit.iuh.se.hschat.repository.ConsultationSessionRepository;
+import fit.iuh.se.hschat.repository.DoctorCareProfileRepository;
 import fit.iuh.se.hschat.repository.EpisodeHealthRecordAuthorizationRepository;
 import fit.iuh.se.hschat.service.finalsummary.ConsultationFinalSummaryService;
 import fit.iuh.se.hschat.service.finalsummary.FinalSummaryClosureService;
+import fit.iuh.se.hschat.service.finalsummary.QueueFinalSummaryLifecycleService;
+import fit.iuh.se.hschat.entity.DoctorCareProfile;
+import fit.iuh.se.hschat.entity.enums.ConsultationFlowType;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsuser.entity.enums.AccountStatus;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
+import fit.iuh.se.hsuser.entity.UserAccount;
 import fit.iuh.se.hsuser.repository.UserAccountRepository;
 import fit.iuh.se.hsoperations.dto.command.*;
 import fit.iuh.se.hsoperations.entity.enums.*;
@@ -45,6 +50,8 @@ public class ConsultationFinalSummaryServiceImpl implements ConsultationFinalSum
     EpisodeHealthRecordAuthorizationRepository authorizationRepository;
     UserAccountRepository userAccountRepository;
     FinalSummaryClosureService closureService;
+    QueueFinalSummaryLifecycleService queueLifecycleService;
+    DoctorCareProfileRepository doctorCareProfileRepository;
     OperationalEventPublisher OperationalEventPublisher;
 
     @Override
@@ -92,28 +99,39 @@ public class ConsultationFinalSummaryServiceImpl implements ConsultationFinalSum
     @Override
     @Transactional
     public ConsultationFinalSummaryResponse finalizeSummary(Long doctorId, Long sessionId) {
-        requireActiveDoctor(doctorId);
-        ConsultationSession session = getAssignedDoctorSession(doctorId, sessionId);
+        ConsultationSession session = getAssignedDoctorSessionForUpdate(doctorId, sessionId);
+        UserAccount doctor = requireActiveDoctorForUpdate(doctorId);
         if (session.getStatus() != ConsultationStatus.COMPLETED
                 && !(session.getStatus() == ConsultationStatus.CANCELLED
                 && Boolean.TRUE.equals(session.getMeaningfulCareOccurred())))
             throw new AppException(ErrorCode.INVALID_CONSULTATION_STATUS,
                     "Final summary can be finalized only after session completion");
 
+        DoctorCareProfile queueProfile = session.getFlowType() == ConsultationFlowType.QUEUE_DISPATCH_V1
+                ? doctorCareProfileRepository.findByDoctorIdForUpdate(doctorId)
+                .orElseThrow(() -> new AppException(ErrorCode.DOCTOR_CARE_PROFILE_NOT_FOUND))
+                : null;
+
         ConsultationFinalSummary summary = summaryRepository.findBySessionIdForUpdate(sessionId)
                 .orElseThrow(() -> new AppException(ErrorCode.ENTITY_NOT_FOUND,
                         "Final care summary draft not found"));
         if (!summary.getCreatedByDoctorId().equals(doctorId))
             throw new AppException(ErrorCode.CONSULTATION_ACCESS_DENIED);
-        if (summary.getStatus() == ConsultationFinalSummaryStatus.FINALIZED)
+        if (summary.getStatus() == ConsultationFinalSummaryStatus.FINALIZED) {
+            if (session.getFlowType() == ConsultationFlowType.QUEUE_DISPATCH_V1)
+                queueLifecycleService.onSummaryFinalized(session, queueProfile, doctor, summary, Instant.now());
             return toResponse(summary, session);
+        }
 
         validateRequiredFinalizationFields(summary);
         Instant now = Instant.now();
         summary.setStatus(ConsultationFinalSummaryStatus.FINALIZED);
         summary.setFinalizedAt(now);
         summary = summaryRepository.save(summary);
-        closureService.onSummaryFinalized(session, now);
+        if (session.getFlowType() == ConsultationFlowType.QUEUE_DISPATCH_V1)
+            queueLifecycleService.onSummaryFinalized(session, queueProfile, doctor, summary, now);
+        else
+            closureService.onSummaryFinalized(session, now);
         auditSummary(summary, session, BusinessEventType.FINAL_SUMMARY_FINALIZED, doctorId,
                 new NotificationIntent(session.getMemberId(), NotificationType.FINAL_SUMMARY_AVAILABLE,
                         "Final care summary available", "Your finalized care summary is available in Care History.",
@@ -185,6 +203,15 @@ public class ConsultationFinalSummaryServiceImpl implements ConsultationFinalSum
                     "Only the active assigned Doctor may author clinical closure content");
     }
 
+    private UserAccount requireActiveDoctorForUpdate(Long doctorId) {
+        UserAccount doctor = userAccountRepository.findByIdForUpdate(doctorId)
+                .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_ACCESS_DENIED));
+        if (doctor.getRole() != UserRole.DOCTOR || doctor.getStatus() != AccountStatus.ACTIVE)
+            throw new AppException(ErrorCode.CONSULTATION_ACCESS_DENIED,
+                    "Only the active assigned Doctor may author clinical closure content");
+        return doctor;
+    }
+
     private void auditSummary(ConsultationFinalSummary summary, ConsultationSession session,
             BusinessEventType eventType, Long doctorId, NotificationIntent notification) {
         OperationalEventPublisher.record(OperationalEventCommand.builder()
@@ -199,6 +226,14 @@ public class ConsultationFinalSummaryServiceImpl implements ConsultationFinalSum
     private ConsultationSession getAssignedDoctorSession(Long doctorId, Long sessionId) {
         return sessionRepository.findByIdAndDoctorId(sessionId, doctorId)
                 .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_ACCESS_DENIED));
+    }
+
+    private ConsultationSession getAssignedDoctorSessionForUpdate(Long doctorId, Long sessionId) {
+        ConsultationSession session = sessionRepository.findByIdForUpdate(sessionId)
+                .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_ACCESS_DENIED));
+        if (!doctorId.equals(session.getDoctorId()))
+            throw new AppException(ErrorCode.CONSULTATION_ACCESS_DENIED);
+        return session;
     }
 
     private ConsultationFinalSummaryResponse getFinalizedSummary(ConsultationSession session) {
