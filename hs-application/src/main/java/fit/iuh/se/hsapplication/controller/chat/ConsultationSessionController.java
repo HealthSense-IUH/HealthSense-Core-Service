@@ -5,6 +5,9 @@ import fit.iuh.se.hschat.dto.response.ConsultationFinalSummaryResponse;
 import fit.iuh.se.hschat.dto.response.ConsultationSessionResponse;
 import fit.iuh.se.hschat.dto.response.EpisodeHealthRecordAuthorizationResponse;
 import fit.iuh.se.hschat.dto.request.RequestSessionTerminationRequest;
+import fit.iuh.se.hschat.dto.request.SubmitContinuationDecisionRequest;
+import fit.iuh.se.hschat.dto.response.ContinuationDecisionResponse;
+import fit.iuh.se.hschat.service.continuation.QueueContinuationService;
 import fit.iuh.se.hschat.service.authorization.EpisodeHealthRecordAuthorizationService;
 import fit.iuh.se.hschat.service.finalsummary.ConsultationFinalSummaryService;
 import fit.iuh.se.hschat.service.session.ConsultationSessionService;
@@ -32,6 +35,7 @@ public class ConsultationSessionController {
     ConsultationSessionService consultationSessionService;
     ConsultationFinalSummaryService finalSummaryService;
     EpisodeHealthRecordAuthorizationService authorizationService;
+    QueueContinuationService queueContinuationService;
 
     @GetMapping
     public ApiResponse<PageResponse<ConsultationSessionResponse>> getMySessions(
@@ -75,5 +79,23 @@ public class ConsultationSessionController {
             @jakarta.validation.Valid @RequestBody RequestSessionTerminationRequest request) {
         return new ApiResponse<>(consultationSessionService.requestTermination(
                 currentUser.getUserId(), currentUser.getRole(), sessionId, request));
+    }
+
+    @GetMapping("/{sessionId}/continuations/current")
+    public ApiResponse<ContinuationDecisionResponse> getCurrentContinuation(
+            @AuthenticationPrincipal UserAuthentication currentUser,
+            @PathVariable Long sessionId) {
+        return new ApiResponse<>(queueContinuationService.getCurrent(
+                currentUser.getUserId(), currentUser.getRole(), sessionId));
+    }
+
+    @PutMapping("/{sessionId}/continuations/{round}/decision")
+    public ApiResponse<ContinuationDecisionResponse> submitContinuationDecision(
+            @AuthenticationPrincipal UserAuthentication currentUser,
+            @PathVariable Long sessionId,
+            @PathVariable @Min(0) int round,
+            @jakarta.validation.Valid @RequestBody SubmitContinuationDecisionRequest request) {
+        return new ApiResponse<>(queueContinuationService.decide(
+                currentUser.getUserId(), currentUser.getRole(), sessionId, round, request));
     }
 }

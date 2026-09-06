@@ -2,9 +2,15 @@ package fit.iuh.se.hsapplication.controller.chat;
 
 import fit.iuh.se.hsapplication.dto.auth.UserAuthentication;
 import fit.iuh.se.hschat.dto.request.CreateConsultationRequest;
+import fit.iuh.se.hschat.dto.request.ConfirmConsultationRequest;
 import fit.iuh.se.hschat.dto.request.SubmitConsultationMoreInfoRequest;
 import fit.iuh.se.hschat.dto.response.ConsultationRequestResponse;
+import fit.iuh.se.hschat.dto.response.CurrentQueueStateResponse;
+import fit.iuh.se.hschat.dto.response.ConsultationSessionResponse;
 import fit.iuh.se.hschat.service.request.ConsultationRequestService;
+import fit.iuh.se.hschat.service.session.QueueConsultationSessionService;
+import fit.iuh.se.hsshared.advice.entity.AppException;
+import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsshared.dto.response.ApiResponse;
 import fit.iuh.se.hsshared.dto.response.PageResponse;
 import jakarta.validation.Valid;
@@ -18,6 +24,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import fit.iuh.se.hsuser.entity.enums.UserRole;
 
 @Validated
 @RestController
@@ -27,6 +34,7 @@ import org.springframework.web.bind.annotation.*;
 public class ConsultationRequestController {
 
     ConsultationRequestService consultationRequestService;
+    QueueConsultationSessionService queueConsultationSessionService;
 
     @PostMapping
     public ApiResponse<ConsultationRequestResponse> createRequest(
@@ -44,11 +52,28 @@ public class ConsultationRequestController {
         return new ApiResponse<>(consultationRequestService.getMyRequests(currentUser.getUserId(), pageable));
     }
 
+    @GetMapping("/current")
+    public ApiResponse<CurrentQueueStateResponse> getCurrentQueueState(
+            @AuthenticationPrincipal UserAuthentication currentUser) {
+        return new ApiResponse<>(consultationRequestService.getCurrentQueueState(currentUser.getUserId()));
+    }
+
     @PatchMapping("/{requestId}/cancel")
     public ApiResponse<ConsultationRequestResponse> cancelMyRequest(
             @AuthenticationPrincipal UserAuthentication currentUser,
             @PathVariable Long requestId) {
         return new ApiResponse<>(consultationRequestService.cancelMyRequest(currentUser.getUserId(), requestId));
+    }
+
+    @PostMapping("/{requestId}/confirm")
+    public ApiResponse<ConsultationSessionResponse> confirmQueueConsultation(
+            @AuthenticationPrincipal UserAuthentication currentUser,
+            @PathVariable Long requestId,
+            @Valid @RequestBody ConfirmConsultationRequest request) {
+        if (currentUser == null || currentUser.getRole() != UserRole.MEMBER)
+            throw new AppException(ErrorCode.ACCESS_DENIED);
+        return new ApiResponse<>(queueConsultationSessionService.confirmMember(
+                currentUser.getUserId(), requestId, request.offerId()));
     }
 
     @PatchMapping("/{requestId}/more-info")
