@@ -1,6 +1,7 @@
 package fit.iuh.se.hschat.entity;
 
 import fit.iuh.se.hschat.entity.enums.DoctorSpecialty;
+import fit.iuh.se.hschat.entity.enums.DoctorDispatchStatus;
 import fit.iuh.se.hsshared.generator.SnowflakeGenerated;
 import fit.iuh.se.hsuser.entity.BaseEntity;
 import jakarta.persistence.*;
@@ -35,6 +36,22 @@ public class DoctorCareProfile extends BaseEntity {
     Long doctorId;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "dispatch_status", nullable = false, length = 20)
+    @Builder.Default
+    DoctorDispatchStatus dispatchStatus = DoctorDispatchStatus.UNAVAILABLE;
+
+    @Column(name = "stop_after_current_session", nullable = false)
+    @Builder.Default
+    Boolean stopAfterCurrentSession = false;
+
+    @Column(name = "busy_session_id")
+    Long busySessionId;
+
+    @Column(name = "dispatch_status_changed_at", nullable = false)
+    @Builder.Default
+    java.time.Instant dispatchStatusChangedAt = java.time.Instant.now();
+
+    @Enumerated(EnumType.STRING)
     @Column(name = "specialty", length = 40)
     DoctorSpecialty specialty;
 
@@ -49,4 +66,8 @@ public class DoctorCareProfile extends BaseEntity {
 
     @Column(name = "timezone", nullable = false, length = 80)
     String timezone;
+
+    @Version
+    @Column(nullable = false)
+    long version;
 }
