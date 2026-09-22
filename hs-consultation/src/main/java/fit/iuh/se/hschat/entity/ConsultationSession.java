@@ -7,6 +7,7 @@ import fit.iuh.se.hschat.entity.enums.FinalSummaryClosureStatus;
 import fit.iuh.se.hschat.entity.enums.CareOperationalReviewReason;
 import fit.iuh.se.hschat.entity.enums.CareTerminationReason;
 import fit.iuh.se.hschat.entity.enums.ConsultationFlowType;
+import fit.iuh.se.hschat.entity.enums.ConsultationCreditPolicy;
 import fit.iuh.se.hschat.entity.enums.DoctorReleaseReason;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
 import fit.iuh.se.hsshared.generator.SnowflakeGenerated;
@@ -55,6 +56,15 @@ public class ConsultationSession extends BaseEntity {
     @Column(name = "flow_type", nullable = false, length = 30)
     @Builder.Default
     ConsultationFlowType flowType = ConsultationFlowType.LEGACY_V3;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "credit_policy", nullable = false, length = 30)
+    @Builder.Default
+    ConsultationCreditPolicy creditPolicy = ConsultationCreditPolicy.FREE_EXISTING;
+
+    @Column(name = "credit_cost", nullable = false)
+    @Builder.Default
+    Long creditCost = 0L;
 
     @Column(name = "created_by_admin_id")
     Long createdByAdminId;

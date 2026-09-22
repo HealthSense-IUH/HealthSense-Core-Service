@@ -2,6 +2,7 @@ package fit.iuh.se.hschat.entity;
 
 import fit.iuh.se.hschat.entity.enums.ConsultationRequestStatus;
 import fit.iuh.se.hschat.entity.enums.ConsultationFlowType;
+import fit.iuh.se.hschat.entity.enums.ConsultationCreditPolicy;
 import fit.iuh.se.hsshared.generator.SnowflakeGenerated;
 import fit.iuh.se.hsuser.entity.BaseEntity;
 import jakarta.persistence.*;
@@ -48,6 +49,15 @@ public class ConsultationRequest extends BaseEntity {
     @Column(name = "flow_type", nullable = false, length = 30)
     @Builder.Default
     ConsultationFlowType flowType = ConsultationFlowType.LEGACY_V3;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "credit_policy", nullable = false, length = 30)
+    @Builder.Default
+    ConsultationCreditPolicy creditPolicy = ConsultationCreditPolicy.FREE_EXISTING;
+
+    @Column(name = "credit_cost", nullable = false)
+    @Builder.Default
+    Long creditCost = 0L;
 
     @Column(name = "health_record_id")
     Long healthRecordId;
