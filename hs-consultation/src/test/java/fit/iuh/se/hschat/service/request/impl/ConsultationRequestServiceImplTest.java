@@ -20,6 +20,7 @@ import fit.iuh.se.hschat.entity.ConsultationDispatchState;
 import fit.iuh.se.hschat.entity.enums.CareServicePackageStatus;
 import fit.iuh.se.hschat.entity.enums.ConsultationRequestStatus;
 import fit.iuh.se.hschat.entity.enums.ConsultationFlowType;
+import fit.iuh.se.hschat.entity.enums.ConsultationCreditPolicy;
 import fit.iuh.se.hschat.entity.enums.ConsultationQueueStatus;
 import fit.iuh.se.hschat.entity.enums.ConsultationStatus;
 import fit.iuh.se.hschat.entity.enums.CurrentConsultationPhase;
@@ -49,6 +50,7 @@ import fit.iuh.se.hsuser.entity.enums.UserRole;
 import fit.iuh.se.hsuser.repository.UserAccountRepository;
 import fit.iuh.se.hschat.service.dispatch.DoctorDispatchSelectionService;
 import fit.iuh.se.hschat.service.dispatch.offer.DoctorOfferStore;
+import fit.iuh.se.hsbilling.service.ConsultationCreditService;
 import org.springframework.context.ApplicationEventPublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -119,6 +121,7 @@ class ConsultationRequestServiceImplTest {
     @Mock DoctorOfferStore doctorOfferStore;
     @Mock DoctorDispatchSelectionService doctorDispatchSelectionService;
     @Mock ApplicationEventPublisher applicationEventPublisher;
+    @Mock ConsultationCreditService consultationCreditService;
 
     ConsultationRequestServiceImpl service;
 
@@ -142,10 +145,14 @@ class ConsultationRequestServiceImplTest {
                 OperationalEventPublisher,
                 doctorOfferStore,
                 doctorDispatchSelectionService,
-                applicationEventPublisher
+                applicationEventPublisher,
+                consultationCreditService
         );
         ReflectionTestUtils.setField(service, "paymentDeadlineMinutes", 30L);
         ReflectionTestUtils.setField(service, "businessTimezone", "Asia/Ho_Chi_Minh");
+        ReflectionTestUtils.setField(service, "consultationCreditsEnabled", false);
+        lenient().when(userAccountRepository.findByIdForUpdate(anyLong()))
+                .thenAnswer(invocation -> Optional.of(user(invocation.getArgument(0), UserRole.MEMBER)));
         lenient().when(dispatchStateRepository.findSingletonForUpdate()).thenReturn(Optional.of(
                 ConsultationDispatchState.builder().id(ConsultationDispatchState.SINGLETON_ID).build()));
         lenient().when(queueCounterRepository.findByQueueDateForUpdate(any())).thenReturn(Optional.of(
@@ -200,6 +207,20 @@ class ConsultationRequestServiceImplTest {
                 command.eventType() == fit.iuh.se.hsoperations.entity.enums.BusinessEventType.REQUEST_QUEUED
                         && Long.valueOf(1L).equals(command.actorUserId())
                         && "QUEUED".equals(command.newState())));
+    }
+
+    @Test
+    void paidQueueAdmissionChecksCreditWithoutReservingIt() {
+        stubSuccessfulCreate();
+        ReflectionTestUtils.setField(service, "consultationCreditsEnabled", true);
+
+        service.createRequest(1L, validCreateRequest());
+
+        verify(requestRepository).saveAndFlush(argThat(saved ->
+                saved.getCreditPolicy() == ConsultationCreditPolicy.PER_SESSION_CONFIRM_V2
+                        && saved.getCreditCost() == 1L));
+        verify(consultationCreditService).requireAvailable(1L, 1L);
+        verify(consultationCreditService, never()).reserve(anyLong(), anyLong(), anyLong());
     }
 
     @Test
@@ -344,6 +365,19 @@ class ConsultationRequestServiceImplTest {
         assertEquals(2L, response.busyDoctors());
         assertEquals(2L, response.doctorsOnDuty());
         assertEquals(7L, response.waitingMembers());
+        assertEquals(ConsultationCreditPolicy.FREE_DISABLED, response.creditPolicy());
+        assertEquals(0L, response.creditCost());
+    }
+
+    @Test
+    void queueStatisticsAdvertisesThePolicyForNewRequests() {
+        when(userAccountRepository.findById(1L)).thenReturn(Optional.of(user(1L, UserRole.MEMBER)));
+        ReflectionTestUtils.setField(service, "consultationCreditsEnabled", true);
+
+        var response = service.getQueueStatistics(1L);
+
+        assertEquals(ConsultationCreditPolicy.PER_SESSION_CONFIRM_V2, response.creditPolicy());
+        assertEquals(1L, response.creditCost());
     }
 
     @Test
@@ -384,6 +418,45 @@ class ConsultationRequestServiceImplTest {
         verify(requestRepository, times(1)).save(request);
         verify(queueEntryRepository, times(1)).save(entry);
         verifyNoInteractions(reservationService, agreementService, paymentCancellationService);
+    }
+
+    @Test
+    void cancellingPaidQueueReleasesHeldCreditExactlyOnce() {
+        ConsultationRequest request = ConsultationRequest.builder()
+                .id(100L).memberId(1L).flowType(ConsultationFlowType.QUEUE_DISPATCH_V1)
+                .creditPolicy(ConsultationCreditPolicy.PER_SESSION_V1).creditCost(1L)
+                .status(ConsultationRequestStatus.QUEUED).build();
+        ConsultationQueueEntry entry = ConsultationQueueEntry.builder()
+                .id(200L).requestId(100L).memberId(1L).queueDate(LocalDate.of(2026, 9, 5))
+                .queueNumber(5L).status(ConsultationQueueStatus.WAITING).queuedAt(Instant.now()).build();
+        when(requestRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(request));
+        when(queueEntryRepository.findByRequestIdForUpdate(100L)).thenReturn(Optional.of(entry));
+        when(requestRepository.save(request)).thenReturn(request);
+        when(mapper.toRequestResponse(request)).thenReturn(ConsultationRequestResponse.builder().build());
+
+        service.cancelMyRequest(1L, 100L);
+        service.cancelMyRequest(1L, 100L);
+
+        verify(consultationCreditService, times(1)).release(1L, 100L, "MEMBER_CANCELLED");
+    }
+
+    @Test
+    void cancellingV2PaidQueueDoesNotReleaseCreditBecauseNothingWasHeld() {
+        ConsultationRequest request = ConsultationRequest.builder()
+                .id(100L).memberId(1L).flowType(ConsultationFlowType.QUEUE_DISPATCH_V1)
+                .creditPolicy(ConsultationCreditPolicy.PER_SESSION_CONFIRM_V2).creditCost(1L)
+                .status(ConsultationRequestStatus.QUEUED).build();
+        ConsultationQueueEntry entry = ConsultationQueueEntry.builder()
+                .id(200L).requestId(100L).memberId(1L).queueDate(LocalDate.of(2026, 9, 5))
+                .queueNumber(5L).status(ConsultationQueueStatus.WAITING).queuedAt(Instant.now()).build();
+        when(requestRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(request));
+        when(queueEntryRepository.findByRequestIdForUpdate(100L)).thenReturn(Optional.of(entry));
+        when(requestRepository.save(request)).thenReturn(request);
+        when(mapper.toRequestResponse(request)).thenReturn(ConsultationRequestResponse.builder().build());
+
+        service.cancelMyRequest(1L, 100L);
+
+        verify(consultationCreditService, never()).release(anyLong(), anyLong(), anyString());
     }
 
     @ParameterizedTest

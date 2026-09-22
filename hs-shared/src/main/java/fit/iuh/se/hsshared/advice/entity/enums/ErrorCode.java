@@ -70,7 +70,21 @@ public enum ErrorCode {
     CONTINUATION_NOT_OPEN(4031, "Consultation continuation is not open", HttpStatus.CONFLICT),
     CONTINUATION_EXPIRED(4032, "Consultation continuation grace period has expired", HttpStatus.CONFLICT),
     CONTINUATION_DECISION_CONFLICT(4033, "Continuation decision cannot be changed", HttpStatus.CONFLICT),
-    CONTINUATION_ROUND_STALE(4034, "Consultation continuation round is stale", HttpStatus.CONFLICT);
+    CONTINUATION_ROUND_STALE(4034, "Consultation continuation round is stale", HttpStatus.CONFLICT),
+
+    // Consultation credits
+    INSUFFICIENT_CONSULTATION_CREDITS(4100, "Insufficient consultation credits", HttpStatus.CONFLICT),
+    CREDIT_RESERVATION_NOT_FOUND(4101, "Credit reservation not found", HttpStatus.NOT_FOUND),
+    INVALID_CREDIT_RESERVATION_STATUS(4102, "Invalid credit reservation transition", HttpStatus.CONFLICT),
+    CREDIT_IDEMPOTENCY_CONFLICT(4103, "Credit operation conflicts with an existing operation", HttpStatus.CONFLICT),
+    CREDIT_BALANCE_OVERFLOW(4104, "Credit balance exceeds the supported range", HttpStatus.CONFLICT),
+    CREDIT_PACKAGE_UNAVAILABLE(4105, "Credit package is unavailable", HttpStatus.CONFLICT),
+    CREDIT_ORDER_NOT_FOUND(4106, "Credit purchase order not found", HttpStatus.NOT_FOUND),
+    INVALID_CREDIT_PAYMENT(4107, "Credit payment evidence or state is invalid", HttpStatus.CONFLICT),
+    CREDIT_PURCHASE_DISABLED(4108, "Credit purchases are disabled in this environment", HttpStatus.SERVICE_UNAVAILABLE),
+    CREDIT_PACKAGE_NOT_FOUND(4109, "Credit package not found", HttpStatus.NOT_FOUND),
+    CREDIT_PACKAGE_VERSION_CONFLICT(4110, "Credit package was changed by another administrator", HttpStatus.CONFLICT),
+    CREDIT_REFUND_NOT_ELIGIBLE(4111, "Consultation session is not eligible for a credit refund", HttpStatus.CONFLICT);
 
     private final int code;
     private final String message;

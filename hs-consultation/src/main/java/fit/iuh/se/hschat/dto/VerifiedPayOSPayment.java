@@ -15,4 +15,7 @@ public class VerifiedPayOSPayment {
     Long amount;
     String currency;
     String paymentLinkId;
+    String code;
+    String reference;
+    String transactionDateTime;
 }

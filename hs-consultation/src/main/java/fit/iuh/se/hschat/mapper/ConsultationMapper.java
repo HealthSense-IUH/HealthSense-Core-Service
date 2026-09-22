@@ -26,6 +26,7 @@ public interface ConsultationMapper {
     @Mapping(target = "unreadCount", ignore = true)
     @Mapping(target = "memberDisplayName", ignore = true)
     @Mapping(target = "doctorDisplayName", ignore = true)
+    @Mapping(target = "creditReservationStatus", expression = "java((session.getCreditPolicy() == fit.iuh.se.hschat.entity.enums.ConsultationCreditPolicy.PER_SESSION_V1 || session.getCreditPolicy() == fit.iuh.se.hschat.entity.enums.ConsultationCreditPolicy.PER_SESSION_CONFIRM_V2) ? fit.iuh.se.hsbilling.entity.enums.CreditReservationStatus.CAPTURED : null)")
     ConsultationSessionResponse toSessionResponse(ConsultationSession session);
 
     @Mapping(target = "selectedHealthRecords", ignore = true)
@@ -35,6 +36,7 @@ public interface ConsultationMapper {
     @Mapping(target = "queueDate", ignore = true)
     @Mapping(target = "queueStatus", ignore = true)
     @Mapping(target = "queuedAt", ignore = true)
+    @Mapping(target = "creditReservationStatus", ignore = true)
     ConsultationRequestResponse toRequestResponse(ConsultationRequest request);
 
     @Mapping(target = "version", source = "versionNumber")

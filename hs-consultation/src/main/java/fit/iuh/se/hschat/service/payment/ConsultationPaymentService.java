@@ -2,6 +2,7 @@ package fit.iuh.se.hschat.service.payment;
 
 import fit.iuh.se.hschat.dto.response.ConsultationPaymentResponse;
 import vn.payos.model.webhooks.Webhook;
+import fit.iuh.se.hschat.dto.VerifiedPayOSPayment;
 
 import java.util.List;
 
@@ -18,6 +19,8 @@ public interface ConsultationPaymentService {
     List<ConsultationPaymentResponse> getRenewalPaymentAttempts(Long memberId, Long renewalId);
 
     void handlePayOSWebhook(Webhook webhook);
+
+    void handleVerifiedPayOSWebhook(VerifiedPayOSPayment payment);
 
     void expireOverduePayments();
 }

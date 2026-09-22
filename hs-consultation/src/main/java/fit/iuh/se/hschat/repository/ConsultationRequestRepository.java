@@ -51,4 +51,20 @@ public interface ConsultationRequestRepository extends JpaRepository<Consultatio
             Collection<ConsultationRequestStatus> statuses,
             Instant paymentDeadline
     );
+
+    @Query("""
+        select r.id from ConsultationRequest r
+        where r.creditPolicy = fit.iuh.se.hschat.entity.enums.ConsultationCreditPolicy.PER_SESSION_V1
+          and r.status in :statuses and r.consultationSessionId is null
+        order by r.id
+        """)
+    List<Long> findTerminalPaidRequestIds(Collection<ConsultationRequestStatus> statuses, Pageable pageable);
+
+    @Query("""
+        select r.id from ConsultationRequest r
+        where r.creditPolicy = fit.iuh.se.hschat.entity.enums.ConsultationCreditPolicy.PER_SESSION_V1
+          and r.status = fit.iuh.se.hschat.entity.enums.ConsultationRequestStatus.FULFILLED
+        order by r.id
+        """)
+    List<Long> findFulfilledPaidRequestIds(Pageable pageable);
 }

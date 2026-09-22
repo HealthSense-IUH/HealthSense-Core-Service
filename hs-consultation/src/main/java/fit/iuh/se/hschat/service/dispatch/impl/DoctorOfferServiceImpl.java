@@ -18,6 +18,7 @@ import fit.iuh.se.hsoperations.event.OperationalEventPublisher;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
 import fit.iuh.se.hsuser.entity.enums.AccountStatus;
 import fit.iuh.se.hsuser.repository.UserAccountRepository;
+import fit.iuh.se.hsbilling.service.ConsultationCreditService;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
@@ -47,6 +48,7 @@ public class DoctorOfferServiceImpl implements DoctorOfferService {
     private final UserAccountRepository userAccountRepository;
     private final OperationalEventPublisher operationalEvents;
     private final ApplicationEventPublisher applicationEvents;
+    private final ConsultationCreditService consultationCredits;
 
     @NonFinal @Value("${app.consultation.dispatch.doctor-offer-minutes:5}") long doctorOfferMinutes = 5;
     @NonFinal @Value("${app.consultation.dispatch.member-confirmation-minutes:15}") long memberConfirmationMinutes = 15;
@@ -113,9 +115,9 @@ public class DoctorOfferServiceImpl implements DoctorOfferService {
     public DoctorConsultationOfferResponse accept(Long doctorId, String offerId) {
         selectionService.lockDispatchStateForOfferCommit();
         DoctorOffer offer = ownedOffer(doctorId, offerId);
-        ConsultationQueueEntry entry = queueRepository.findByIdForUpdate(offer.queueEntryId())
-                .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_OFFER_STALE));
         ConsultationRequest request = requestRepository.findByIdForUpdate(offer.requestId())
+                .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_OFFER_STALE));
+        ConsultationQueueEntry entry = queueRepository.findByIdForUpdate(offer.queueEntryId())
                 .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_OFFER_STALE));
         var account = userAccountRepository.findByIdForUpdate(doctorId)
                 .orElseThrow(() -> new AppException(ErrorCode.DOCTOR_NOT_FOUND));
@@ -170,9 +172,9 @@ public class DoctorOfferServiceImpl implements DoctorOfferService {
         DoctorOffer offer = ownedOffer(doctorId, offerId);
         if (offer.state() == DoctorOfferState.WAITING_MEMBER_CONFIRMATION)
             throw new AppException(ErrorCode.CONSULTATION_OFFER_ALREADY_ACCEPTED);
-        ConsultationQueueEntry entry = queueRepository.findByIdForUpdate(offer.queueEntryId())
-                .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_OFFER_STALE));
         ConsultationRequest request = requestRepository.findByIdForUpdate(offer.requestId())
+                .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_OFFER_STALE));
+        ConsultationQueueEntry entry = queueRepository.findByIdForUpdate(offer.queueEntryId())
                 .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_OFFER_STALE));
         DoctorCareProfile doctor = profileRepository.findByDoctorIdForUpdate(doctorId)
                 .orElseThrow(() -> new AppException(ErrorCode.DOCTOR_CARE_PROFILE_NOT_FOUND));
@@ -222,8 +224,8 @@ public class DoctorOfferServiceImpl implements DoctorOfferService {
             offer = withState(offer, DoctorOfferState.WAITING_MEMBER_CONFIRMATION);
         }
         if (offer.state() != DoctorOfferState.WAITING_MEMBER_CONFIRMATION) return;
-        ConsultationQueueEntry entry = queueRepository.findByIdForUpdate(offer.queueEntryId()).orElse(null);
         ConsultationRequest request = requestRepository.findByIdForUpdate(offer.requestId()).orElse(null);
+        ConsultationQueueEntry entry = queueRepository.findByIdForUpdate(offer.queueEntryId()).orElse(null);
         DoctorCareProfile doctor = profileRepository.findByDoctorIdForUpdate(offer.doctorId()).orElse(null);
         if (entry == null || request == null || doctor == null
                 || entry.getStatus() != ConsultationQueueStatus.WAITING_MEMBER_CONFIRMATION
@@ -234,6 +236,8 @@ public class DoctorOfferServiceImpl implements DoctorOfferService {
         request.setStatus(ConsultationRequestStatus.TIMED_OUT); request.setExpiredAt(now);
         doctor.setDispatchStatus(DoctorDispatchStatus.AVAILABLE); doctor.setDispatchStatusChangedAt(now);
         queueRepository.save(entry); requestRepository.save(request); profileRepository.save(doctor);
+        if (usesLegacyReservation(request))
+            consultationCredits.release(request.getMemberId(), request.getId(), "MEMBER_CONFIRMATION_TIMEOUT");
         auditOffer(offer, BusinessEventType.MEMBER_CONFIRMATION_TIMEOUT, null,
                 ConsultationQueueStatus.WAITING_MEMBER_CONFIRMATION, ConsultationQueueStatus.TIMED_OUT,
                 List.of(new NotificationIntent(offer.memberId(), UserRole.MEMBER,
@@ -241,6 +245,11 @@ public class DoctorOfferServiceImpl implements DoctorOfferService {
                         "Thời gian xác nhận tham gia tư vấn đã hết. Vui lòng tạo yêu cầu mới khi cần.",
                         BusinessDomainType.REQUEST, offer.requestId(), "offer:" + offer.offerId() + ":expired")));
         applicationEvents.publishEvent(new DispatchRequested("member-confirmation-timeout"));
+    }
+
+    private boolean usesLegacyReservation(ConsultationRequest request) {
+        return request.getCreditPolicy() == ConsultationCreditPolicy.PER_SESSION_V1
+                && request.getCreditCost() != null && request.getCreditCost() > 0;
     }
 
     @Override @Transactional

@@ -3,6 +3,8 @@ package fit.iuh.se.hschat.dto.response;
 import fit.iuh.se.hschat.entity.enums.ConsultationSourceType;
 import fit.iuh.se.hschat.entity.enums.ConsultationStatus;
 import fit.iuh.se.hschat.entity.enums.ConsultationFlowType;
+import fit.iuh.se.hschat.entity.enums.ConsultationCreditPolicy;
+import fit.iuh.se.hsbilling.entity.enums.CreditReservationStatus;
 import fit.iuh.se.hschat.entity.enums.FinalSummaryClosureStatus;
 import fit.iuh.se.hschat.entity.enums.CareOperationalReviewReason;
 import fit.iuh.se.hschat.entity.enums.CareTerminationReason;
@@ -27,6 +29,9 @@ public class ConsultationSessionResponse {
     Long doctorId;
     String doctorDisplayName;
     ConsultationFlowType flowType;
+    ConsultationCreditPolicy creditPolicy;
+    Long creditCost;
+    CreditReservationStatus creditReservationStatus;
     Boolean exceptionalOverride;
     String overrideReason;
     String overrideServiceScope;

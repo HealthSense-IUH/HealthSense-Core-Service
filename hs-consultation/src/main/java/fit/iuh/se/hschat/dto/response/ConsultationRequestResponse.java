@@ -3,6 +3,8 @@ package fit.iuh.se.hschat.dto.response;
 import fit.iuh.se.hschat.entity.enums.ConsultationRequestStatus;
 import fit.iuh.se.hschat.entity.enums.ConsultationFlowType;
 import fit.iuh.se.hschat.entity.enums.ConsultationQueueStatus;
+import fit.iuh.se.hschat.entity.enums.ConsultationCreditPolicy;
+import fit.iuh.se.hsbilling.entity.enums.CreditReservationStatus;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -22,6 +24,9 @@ public class ConsultationRequestResponse {
     Long id;
     Long memberId;
     ConsultationFlowType flowType;
+    ConsultationCreditPolicy creditPolicy;
+    Long creditCost;
+    CreditReservationStatus creditReservationStatus;
     Long healthRecordId;
     Long packageId;
     Integer packageVersion;

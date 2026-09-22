@@ -11,5 +11,6 @@ public enum BusinessDomainType {
     REFUND,
     HEALTH_RECORD,
     FINAL_SUMMARY,
-    ACCOUNT
+    ACCOUNT,
+    CONSULTATION_CREDIT
 }

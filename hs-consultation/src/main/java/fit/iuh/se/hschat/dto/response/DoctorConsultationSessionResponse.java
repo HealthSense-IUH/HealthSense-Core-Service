@@ -1,6 +1,8 @@
 package fit.iuh.se.hschat.dto.response;
 
+import fit.iuh.se.hschat.entity.enums.ConsultationFlowType;
 import fit.iuh.se.hschat.entity.enums.ConsultationStatus;
+import fit.iuh.se.hschat.entity.enums.FinalSummaryClosureStatus;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -24,4 +26,9 @@ public class DoctorConsultationSessionResponse {
     Instant lastMessageAt;
     Long unreadCount;
     Long unresolvedAttentionCount;
+    FinalSummaryClosureStatus summaryClosureStatus;
+    Instant summaryDueAt;
+    Instant completedAt;
+    Boolean meaningfulCareOccurred;
+    ConsultationFlowType flowType;
 }

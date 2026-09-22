@@ -10,6 +10,7 @@ import fit.iuh.se.hsoperations.event.OperationalEventPublisher;
 import fit.iuh.se.hsuser.entity.UserAccount;
 import fit.iuh.se.hsuser.entity.enums.*;
 import fit.iuh.se.hsuser.repository.UserAccountRepository;
+import fit.iuh.se.hsbilling.service.ConsultationCreditService;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
@@ -36,12 +37,13 @@ class DoctorOfferServiceImplTest {
     @Mock UserAccountRepository users;
     @Mock OperationalEventPublisher operations;
     @Mock ApplicationEventPublisher events;
+    @Mock ConsultationCreditService consultationCredits;
     DoctorOfferServiceImpl service;
     Instant now = Instant.parse("2026-09-05T05:00:00Z");
 
     @BeforeEach void setUp() {
         service = new DoctorOfferServiceImpl(selection, store, queues, requests, profiles, sessions, users,
-                operations, events);
+                operations, events, consultationCredits);
         ReflectionTestUtils.setField(service, "clock", Clock.fixed(now, ZoneOffset.UTC));
         ReflectionTestUtils.setField(service, "doctorOfferMinutes", 5L);
         ReflectionTestUtils.setField(service, "memberConfirmationMinutes", 15L);
@@ -190,6 +192,25 @@ class DoctorOfferServiceImplTest {
         assertNotEquals(ConsultationQueueStatus.WAITING, entry.getStatus());
         assertEquals(DoctorDispatchStatus.AVAILABLE, doctor.getDispatchStatus());
         verifyNoInteractions(sessions);
+    }
+
+    @Test void memberTimeoutReleasesPaidCreditHold() {
+        DoctorOffer offer = offer(DoctorOfferState.WAITING_MEMBER_CONFIRMATION,
+                now.minusSeconds(901), now);
+        ConsultationQueueEntry entry = queue(ConsultationQueueStatus.WAITING_MEMBER_CONFIRMATION);
+        ConsultationRequest request = request(ConsultationRequestStatus.QUEUED);
+        request.setCreditPolicy(ConsultationCreditPolicy.PER_SESSION_V1);
+        request.setCreditCost(1L);
+        DoctorCareProfile doctor = doctor(DoctorDispatchStatus.AVAILABLE);
+        when(store.findById("offer-a")).thenReturn(Optional.of(offer));
+        when(requests.findByIdForUpdate(11L)).thenReturn(Optional.of(request));
+        when(queues.findByIdForUpdate(10L)).thenReturn(Optional.of(entry));
+        when(profiles.findByDoctorIdForUpdate(20L)).thenReturn(Optional.of(doctor));
+        when(store.release(offer)).thenReturn(true);
+
+        service.processMemberConfirmationTimeout("offer-a");
+
+        verify(consultationCredits).release(12L, 11L, "MEMBER_CONFIRMATION_TIMEOUT");
     }
 
     @Test void missingRedisOfferReconcilesBothTemporaryDbStatesToWaitingWithoutSession() {

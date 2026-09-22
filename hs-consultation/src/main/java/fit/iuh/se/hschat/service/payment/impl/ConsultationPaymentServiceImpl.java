@@ -39,12 +39,12 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.payos.model.webhooks.Webhook;
+import java.util.concurrent.ThreadLocalRandom;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 
 @Service
 @RequiredArgsConstructor
@@ -205,6 +205,13 @@ public class ConsultationPaymentServiceImpl implements ConsultationPaymentServic
             throw new AppException(ErrorCode.INVALID_PAYMENT_WEBHOOK, exception.getMessage());
         }
         log.info("payOS webhook verified, orderCode={}", verifiedPayment.getOrderCode());
+
+        handleVerifiedPayOSWebhook(verifiedPayment);
+    }
+
+    @Override
+    @Transactional
+    public void handleVerifiedPayOSWebhook(VerifiedPayOSPayment verifiedPayment) {
 
         log.info("Looking up consultation payment orderCode={}", verifiedPayment.getOrderCode());
         ConsultationPayment discoveredPayment = paymentRepository.findByOrderCode(verifiedPayment.getOrderCode())
