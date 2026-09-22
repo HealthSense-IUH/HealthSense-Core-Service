@@ -39,7 +39,6 @@ public class SecurityConfig {
         "/api/auth/register",
         "/api/auth/login",
         "/api/auth/refresh",
-        "/api/auth/me",
         "/api/auth/mobile/login",
         "/api/auth/mobile/refresh",
         "/api/auth/forgot-password/request-otp",
@@ -56,17 +55,13 @@ public class SecurityConfig {
     static String[] ADMIN_ENDPOINTS = {
             "/api/admin/users/**",
             "/api/admin/health-records/**",
-            "/api/admin/care-service-packages/**",
+            "/api/admin/credits/**",
     };
 
     static String[] CONSULTATION_MANAGEMENT_ENDPOINTS = {
             "/api/admin/consultation-requests/**",
             "/api/admin/consultation-sessions/**",
             "/api/admin/doctors/**",
-            "/api/admin/consultation-refunds/**",
-            "/api/admin/payment-reconciliation/**",
-            "/api/admin/business-audit-events/**",
-            "/api/admin/needs-actions/**",
     };
 
     @Bean
@@ -84,6 +79,7 @@ public class SecurityConfig {
         httpSecurity.authorizeHttpRequests(request -> request
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
+                .requestMatchers("/api/credits/**").hasRole("MEMBER")
                 .requestMatchers(ADMIN_ENDPOINTS).hasAnyRole("SUPER_ADMIN", "ADMIN")
                 .requestMatchers(CONSULTATION_MANAGEMENT_ENDPOINTS).hasAnyRole("SUPER_ADMIN", "ADMIN", "CARE_COORDINATOR")
                 .anyRequest().authenticated()
