@@ -4,6 +4,8 @@ import fit.iuh.se.hschat.entity.enums.ConsultationQueueStatus;
 import fit.iuh.se.hschat.entity.enums.ConsultationRequestStatus;
 import fit.iuh.se.hschat.entity.enums.ConsultationStatus;
 import fit.iuh.se.hschat.entity.enums.CurrentConsultationPhase;
+import fit.iuh.se.hschat.entity.enums.ConsultationCreditPolicy;
+import fit.iuh.se.hsbilling.entity.enums.CreditReservationStatus;
 import lombok.Builder;
 
 import java.time.Instant;
@@ -18,6 +20,9 @@ public record CurrentQueueStateResponse(
         LocalDate queueDate,
         ConsultationQueueStatus queueStatus,
         ConsultationRequestStatus requestStatus,
+        ConsultationCreditPolicy creditPolicy,
+        Long creditCost,
+        CreditReservationStatus creditReservationStatus,
         Instant queuedAt,
         long peopleAhead,
         long doctorsOnDuty,
