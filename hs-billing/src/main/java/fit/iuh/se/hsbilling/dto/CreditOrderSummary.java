@@ -1,0 +1,15 @@
+package fit.iuh.se.hsbilling.dto;
+
+import fit.iuh.se.hsbilling.entity.CreditPurchaseOrder;
+import fit.iuh.se.hsbilling.entity.enums.CreditOrderStatus;
+import java.time.Instant;
+
+public record CreditOrderSummary(String id, String packageId, String packageCode, String packageName,
+        long creditQuantity, long amountVnd, String currency, CreditOrderStatus status,
+        Instant createdAt, Instant paidAt) {
+    public static CreditOrderSummary from(CreditPurchaseOrder order) {
+        return new CreditOrderSummary(order.getId().toString(), order.getPackageId().toString(),
+                order.getPackageCode(), order.getPackageName(), order.getCreditQuantity(), order.getAmountVnd(),
+                order.getCurrency(), order.getStatus(), order.getCreatedAt(), order.getPaidAt());
+    }
+}
