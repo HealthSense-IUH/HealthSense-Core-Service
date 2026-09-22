@@ -228,6 +228,11 @@ public class DoctorActiveCareServiceImpl implements DoctorActiveCareService {
                 .lastMessageAt(session.getLastMessageAt())
                 .unreadCount(countUnread(session, doctorId))
                 .unresolvedAttentionCount(attentionRepository.countBySessionIdAndStatus(session.getId(), ConsultationAttentionStatus.REQUIRES_ATTENTION))
+                .summaryClosureStatus(session.getSummaryClosureStatus())
+                .summaryDueAt(session.getSummaryDueAt())
+                .completedAt(session.getCompletedAt())
+                .meaningfulCareOccurred(session.getMeaningfulCareOccurred())
+                .flowType(session.getFlowType())
                 .build();
     }
 

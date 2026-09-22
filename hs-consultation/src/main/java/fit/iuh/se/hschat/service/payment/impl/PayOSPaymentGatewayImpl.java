@@ -82,6 +82,9 @@ public class PayOSPaymentGatewayImpl implements PayOSPaymentGateway {
                 .amount(data.getAmount())
                 .currency(data.getCurrency())
                 .paymentLinkId(data.getPaymentLinkId())
+                .code(data.getCode())
+                .reference(data.getReference())
+                .transactionDateTime(data.getTransactionDateTime())
                 .build();
     }
 

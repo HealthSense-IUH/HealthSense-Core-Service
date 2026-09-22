@@ -30,6 +30,8 @@ import fit.iuh.se.hschat.service.dispatch.offer.DoctorOfferStore;
 import fit.iuh.se.hschat.service.reservation.DoctorReservationService;
 import fit.iuh.se.hschat.service.agreement.CareServiceAgreementService;
 import fit.iuh.se.hschat.service.payment.PaymentCancellationService;
+import fit.iuh.se.hsbilling.entity.enums.CreditReservationStatus;
+import fit.iuh.se.hsbilling.service.ConsultationCreditService;
 import fit.iuh.se.hshealthrecord.entity.HealthRecord;
 import fit.iuh.se.hshealthrecord.repository.HealthRecordRepository;
 import fit.iuh.se.hsshared.advice.entity.AppException;
@@ -112,6 +114,11 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
     DoctorOfferStore doctorOfferStore;
     DoctorDispatchSelectionService doctorDispatchSelectionService;
     ApplicationEventPublisher applicationEventPublisher;
+    ConsultationCreditService consultationCreditService;
+
+    @NonFinal
+    @Value("${app.consultation.credits.enabled:false}")
+    boolean consultationCreditsEnabled;
 
     @NonFinal
     @Value("${app.consultation.payment-deadline-minutes:30}")
@@ -150,11 +157,12 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
         Instant now = Instant.now(clock);
         LocalDate queueDate = now.atZone(ZoneId.of(businessTimezone)).toLocalDate();
 
-        // This singleton lock serializes counter-row creation as well as increments. It makes
-        // the first admission of a business date safe without relying on COUNT + 1.
+        // Queue mutations share this order: account -> dispatch -> request -> queue -> doctor -> wallet.
         dispatchStateRepository.findSingletonForUpdate()
                 .orElseThrow(() -> new AppException(ErrorCode.DATA_INTEGRITY_VIOLATION,
                         "Queue dispatch singleton is missing"));
+        // This singleton lock serializes counter-row creation as well as increments. It makes
+        // the first admission of a business date safe without relying on COUNT + 1.
         ConsultationQueueCounter counter = queueCounterRepository.findByQueueDateForUpdate(queueDate)
                 .orElseGet(() -> ConsultationQueueCounter.builder()
                         .queueDate(queueDate)
@@ -167,6 +175,10 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
         ConsultationRequest consultationRequest = ConsultationRequest.builder()
                 .memberId(memberId)
                 .flowType(ConsultationFlowType.QUEUE_DISPATCH_V1)
+                .creditPolicy(consultationCreditsEnabled
+                        ? ConsultationCreditPolicy.PER_SESSION_CONFIRM_V2
+                        : ConsultationCreditPolicy.FREE_DISABLED)
+                .creditCost(consultationCreditsEnabled ? 1L : 0L)
                 .healthRecordId(selectedHealthRecordIds.isEmpty() ? null : selectedHealthRecordIds.getFirst())
                 .reason(request.getReasonForCare())
                 .reasonForCare(request.getReasonForCare())
@@ -179,6 +191,10 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
                 .build();
 
         consultationRequest = requestRepository.saveAndFlush(consultationRequest);
+        if (usesLegacyReservation(consultationRequest))
+            consultationCreditService.reserve(memberId, consultationRequest.getId(), consultationRequest.getCreditCost());
+        else if (requiresCredits(consultationRequest))
+            consultationCreditService.requireAvailable(memberId, consultationRequest.getCreditCost());
         ConsultationQueueEntry queueEntry = queueEntryRepository.save(ConsultationQueueEntry.builder()
                 .requestId(consultationRequest.getId())
                 .memberId(memberId)
@@ -352,7 +368,11 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
             throw new AppException(ErrorCode.CONSULTATION_ACCESS_DENIED);
 
         if (consultationRequest.getFlowType() == ConsultationFlowType.QUEUE_DISPATCH_V1) {
+            userAccountRepository.findByIdForUpdate(memberId)
+                    .orElseThrow(() -> new AppException(ErrorCode.MEMBER_NOT_FOUND));
             doctorDispatchSelectionService.lockDispatchStateForOfferCommit();
+            consultationRequest = requestRepository.findByIdForUpdate(requestId)
+                    .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_REQUEST_NOT_FOUND));
             ConsultationQueueEntry entry = queueEntryRepository.findByRequestIdForUpdate(requestId)
                     .orElseThrow(() -> new AppException(ErrorCode.DATA_INTEGRITY_VIOLATION));
             return cancelQueueRequest(consultationRequest, entry, memberId);
@@ -408,6 +428,9 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
                 .queueDate(entry.getQueueDate())
                 .queueStatus(entry.getStatus())
                 .requestStatus(request.getStatus())
+                .creditPolicy(request.getCreditPolicy())
+                .creditCost(request.getCreditCost())
+                .creditReservationStatus(creditReservationStatus(request))
                 .queuedAt(entry.getQueuedAt())
                 .peopleAhead(peopleAhead)
                 .doctorsOnDuty(statistics.doctorsOnDuty())
@@ -435,6 +458,8 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
                 .requestId(request.getId()).queueEntryId(entry.getId())
                 .queueNumber(entry.getQueueNumber()).queueDate(entry.getQueueDate())
                 .queueStatus(entry.getStatus()).requestStatus(request.getStatus()).queuedAt(entry.getQueuedAt())
+                .creditPolicy(session.getCreditPolicy()).creditCost(session.getCreditCost())
+                .creditReservationStatus(creditReservationStatus(session))
                 .peopleAhead(0).doctorId(session.getDoctorId()).doctorReady(true)
                 .sessionId(session.getId()).sessionStatus(session.getStatus())
                 .sessionStartedAt(session.getStartedAt()).sessionEndsAt(session.getEndsAt()).build();
@@ -447,7 +472,10 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
         QueueStatistics statistics = queueStatistics();
         return new ConsultationQueueStatisticsResponse(
                 statistics.doctorsOnDuty(), statistics.availableDoctors(), statistics.busyDoctors(),
-                queueEntryRepository.countByStatusIn(UNRESOLVED_QUEUE_STATUSES));
+                queueEntryRepository.countByStatusIn(UNRESOLVED_QUEUE_STATUSES),
+                consultationCreditsEnabled ? ConsultationCreditPolicy.PER_SESSION_CONFIRM_V2
+                        : ConsultationCreditPolicy.FREE_DISABLED,
+                consultationCreditsEnabled ? 1L : 0L);
     }
 
     @Override
@@ -576,6 +604,8 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
         entry.setCancelledAt(now);
         request = requestRepository.save(request);
         queueEntryRepository.save(entry);
+        if (usesLegacyReservation(request))
+            consultationCreditService.release(memberId, request.getId(), "MEMBER_CANCELLED");
         auditQueueCancellation(request, entry, memberId);
         applicationEventPublisher.publishEvent(new DispatchRequested("member-cancelled"));
         return toRequestResponse(request);
@@ -834,6 +864,7 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
 
     private ConsultationRequestResponse toRequestResponse(ConsultationRequest request) {
         ConsultationRequestResponse response = mapper.toRequestResponse(request);
+        response.setCreditReservationStatus(creditReservationStatus(request));
         response.setSelectedHealthRecords(healthRecordSummaries(request.getSelectedHealthRecordIds(), request.getMemberId()));
         response.setMoreInfoHistory(moreInfoHistory(request.getId(), request.getMemberId()));
         if (request.getFlowType() == ConsultationFlowType.QUEUE_DISPATCH_V1) {
@@ -846,6 +877,35 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
             });
         }
         return response;
+    }
+
+    private boolean requiresCredits(ConsultationRequest request) {
+        return (request.getCreditPolicy() == ConsultationCreditPolicy.PER_SESSION_V1
+                || request.getCreditPolicy() == ConsultationCreditPolicy.PER_SESSION_CONFIRM_V2)
+                && request.getCreditCost() != null && request.getCreditCost() > 0;
+    }
+
+    private boolean usesLegacyReservation(ConsultationRequest request) {
+        return request.getCreditPolicy() == ConsultationCreditPolicy.PER_SESSION_V1
+                && request.getCreditCost() != null && request.getCreditCost() > 0;
+    }
+
+    private CreditReservationStatus creditReservationStatus(ConsultationRequest request) {
+        if (!requiresCredits(request)) return null;
+        if (request.getCreditPolicy() == ConsultationCreditPolicy.PER_SESSION_CONFIRM_V2)
+            return request.getStatus() == ConsultationRequestStatus.FULFILLED
+                    ? CreditReservationStatus.CAPTURED : null;
+        return switch (request.getStatus()) {
+            case FULFILLED -> CreditReservationStatus.CAPTURED;
+            case CANCELLED, TIMED_OUT -> CreditReservationStatus.RELEASED;
+            default -> CreditReservationStatus.HELD;
+        };
+    }
+
+    private CreditReservationStatus creditReservationStatus(ConsultationSession session) {
+        return (session.getCreditPolicy() == ConsultationCreditPolicy.PER_SESSION_V1
+                || session.getCreditPolicy() == ConsultationCreditPolicy.PER_SESSION_CONFIRM_V2)
+                ? CreditReservationStatus.CAPTURED : null;
     }
 
     private HealthRecordSummaryResponse toHealthRecordSummary(HealthRecord record) {

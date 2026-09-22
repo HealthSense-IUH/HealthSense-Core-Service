@@ -14,6 +14,8 @@ import fit.iuh.se.hsoperations.dto.command.NotificationIntent;
 import fit.iuh.se.hsoperations.dto.command.OperationalEventCommand;
 import fit.iuh.se.hsoperations.entity.enums.*;
 import fit.iuh.se.hsoperations.event.OperationalEventPublisher;
+import fit.iuh.se.hsbilling.entity.enums.CreditReservationStatus;
+import fit.iuh.se.hsbilling.service.ConsultationCreditService;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsuser.entity.UserAccount;
@@ -48,6 +50,7 @@ public class QueueConsultationSessionServiceImpl implements QueueConsultationSes
     private final ConsultationMapper mapper;
     private final OperationalEventPublisher operationalEvents;
     private final ApplicationEventPublisher applicationEvents;
+    private final ConsultationCreditService consultationCredits;
 
     @NonFinal @Value("${app.consultation.dispatch.initial-session-minutes:15}") long initialSessionMinutes = 15;
     @NonFinal Clock clock = Clock.systemUTC();
@@ -55,10 +58,10 @@ public class QueueConsultationSessionServiceImpl implements QueueConsultationSes
     @Override
     @Transactional
     public ConsultationSessionResponse confirmMember(Long memberId, Long requestId, String offerId) {
-        dispatchSelection.lockDispatchStateForOfferCommit();
         UserAccount member = userAccounts.findByIdForUpdate(memberId)
                 .orElseThrow(() -> new AppException(ErrorCode.MEMBER_NOT_FOUND));
         requireAccount(member, UserRole.MEMBER);
+        dispatchSelection.lockDispatchStateForOfferCommit();
         ConsultationRequest request = requests.findByIdForUpdate(requestId)
                 .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_REQUEST_NOT_FOUND));
         if (!request.getMemberId().equals(memberId))
@@ -111,11 +114,14 @@ public class QueueConsultationSessionServiceImpl implements QueueConsultationSes
         ConsultationSession session = sessions.saveAndFlush(ConsultationSession.builder()
                 .memberId(memberId).doctorId(offer.doctorId())
                 .flowType(ConsultationFlowType.QUEUE_DISPATCH_V1)
+                .creditPolicy(request.getCreditPolicy()).creditCost(request.getCreditCost())
                 .sourceType(ConsultationSourceType.MEMBER_REQUEST)
                 .status(ConsultationStatus.ACTIVE)
                 .startedAt(now).activatedAt(now).blockStartedAt(now).endsAt(endsAt).supportEndsAt(endsAt)
                 .continuationRound(0).requestId(requestId)
                 .healthRecordId(firstSelectedRecord(request)).build());
+
+        settleCredit(request, session);
 
         participants.save(ConsultationParticipant.builder().sessionId(session.getId()).userId(memberId)
                 .role(ConsultationParticipantRole.MEMBER).joinedAt(now).active(true).build());
@@ -142,7 +148,7 @@ public class QueueConsultationSessionServiceImpl implements QueueConsultationSes
         audit(session, offer, BusinessEventType.SESSION_CREATED, BusinessDomainType.SESSION,
                 session.getId(), memberId, activationNotifications(session));
         applicationEvents.publishEvent(new DispatchRequested("queue-session-created"));
-        return mapper.toSessionResponse(session);
+        return response(session);
     }
 
     private ConsultationSessionResponse existingResult(
@@ -153,8 +159,29 @@ public class QueueConsultationSessionServiceImpl implements QueueConsultationSes
                 || !Objects.equals(request.getConsultationSessionId(), session.getId())
                 || request.getStatus() != ConsultationRequestStatus.FULFILLED)
             throw new AppException(ErrorCode.CONSULTATION_OFFER_STALE);
+        verifyCapturedCredit(request, session);
         cleanupStaleOfferAfterExistingSession(request, session);
-        return mapper.toSessionResponse(session);
+        return response(session);
+    }
+
+    private void verifyCapturedCredit(ConsultationRequest request, ConsultationSession session) {
+        if (request.getCreditPolicy() == ConsultationCreditPolicy.PER_SESSION_V1)
+            consultationCredits.capture(request.getMemberId(), request.getId(), session.getId());
+        else if (request.getCreditPolicy() == ConsultationCreditPolicy.PER_SESSION_CONFIRM_V2)
+            consultationCredits.chargeSession(request.getMemberId(), request.getId(), session.getId(),
+                    request.getCreditCost());
+    }
+
+    private void settleCredit(ConsultationRequest request, ConsultationSession session) {
+        verifyCapturedCredit(request, session);
+    }
+
+    private ConsultationSessionResponse response(ConsultationSession session) {
+        ConsultationSessionResponse response = mapper.toSessionResponse(session);
+        if (session.getCreditPolicy() == ConsultationCreditPolicy.PER_SESSION_V1
+                || session.getCreditPolicy() == ConsultationCreditPolicy.PER_SESSION_CONFIRM_V2)
+            response.setCreditReservationStatus(CreditReservationStatus.CAPTURED);
+        return response;
     }
 
     private void cleanupStaleOfferAfterExistingSession(ConsultationRequest request, ConsultationSession session) {
