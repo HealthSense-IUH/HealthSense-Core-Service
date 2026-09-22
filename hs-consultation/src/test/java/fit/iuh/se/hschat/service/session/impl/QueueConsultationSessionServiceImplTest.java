@@ -10,6 +10,7 @@ import fit.iuh.se.hschat.service.dispatch.DoctorDispatchSelectionService;
 import fit.iuh.se.hschat.service.dispatch.offer.*;
 import fit.iuh.se.hsoperations.dto.command.OperationalEventCommand;
 import fit.iuh.se.hsoperations.event.OperationalEventPublisher;
+import fit.iuh.se.hsbilling.service.ConsultationCreditService;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsuser.entity.UserAccount;
 import fit.iuh.se.hsuser.entity.enums.*;
@@ -44,12 +45,14 @@ class QueueConsultationSessionServiceImplTest {
     @Mock ConsultationMapper mapper;
     @Mock OperationalEventPublisher events;
     @Mock ApplicationEventPublisher applicationEvents;
+    @Mock ConsultationCreditService consultationCredits;
     QueueConsultationSessionServiceImpl service;
     final Instant now = Instant.parse("2026-09-05T06:00:00Z");
 
     @BeforeEach void setUp() {
         service = new QueueConsultationSessionServiceImpl(dispatch, users, requests, queues, doctors,
-                sessions, participants, authorizations, offers, mapper, events, applicationEvents);
+                sessions, participants, authorizations, offers, mapper, events, applicationEvents,
+                consultationCredits);
         ReflectionTestUtils.setField(service, "clock", Clock.fixed(now, ZoneOffset.UTC));
         ReflectionTestUtils.setField(service, "initialSessionMinutes", 15L);
     }
@@ -86,6 +89,45 @@ class QueueConsultationSessionServiceImplTest {
         verify(events, times(3)).record(any(OperationalEventCommand.class));
     }
 
+    @Test void paidConfirmationCapturesCreditAndCopiesPolicyToSession() {
+        Fixtures fixtures = validFixtures();
+        fixtures.request.setCreditPolicy(ConsultationCreditPolicy.PER_SESSION_V1);
+        fixtures.request.setCreditCost(1L);
+        when(sessions.saveAndFlush(any())).thenAnswer(invocation -> {
+            ConsultationSession session = invocation.getArgument(0); session.setId(500L); return session;
+        });
+        when(mapper.toSessionResponse(any())).thenReturn(ConsultationSessionResponse.builder().id(500L).build());
+
+        ConsultationSessionResponse response = service.confirmMember(12L, 11L, "offer-a");
+
+        verify(consultationCredits).capture(12L, 11L, 500L);
+        verify(sessions).saveAndFlush(argThat(session ->
+                session.getCreditPolicy() == ConsultationCreditPolicy.PER_SESSION_V1
+                        && session.getCreditCost() == 1L));
+        assertEquals(fit.iuh.se.hsbilling.entity.enums.CreditReservationStatus.CAPTURED,
+                response.getCreditReservationStatus());
+    }
+
+    @Test void confirmationChargesV2CreditOnlyWhenSessionIsCreated() {
+        Fixtures fixtures = validFixtures();
+        fixtures.request.setCreditPolicy(ConsultationCreditPolicy.PER_SESSION_CONFIRM_V2);
+        fixtures.request.setCreditCost(1L);
+        when(sessions.saveAndFlush(any())).thenAnswer(invocation -> {
+            ConsultationSession session = invocation.getArgument(0); session.setId(500L); return session;
+        });
+        when(mapper.toSessionResponse(any())).thenReturn(ConsultationSessionResponse.builder().id(500L).build());
+
+        ConsultationSessionResponse response = service.confirmMember(12L, 11L, "offer-a");
+
+        verify(consultationCredits).chargeSession(12L, 11L, 500L, 1L);
+        verify(consultationCredits, never()).capture(anyLong(), anyLong(), anyLong());
+        verify(sessions).saveAndFlush(argThat(session ->
+                session.getCreditPolicy() == ConsultationCreditPolicy.PER_SESSION_CONFIRM_V2
+                        && session.getCreditCost() == 1L));
+        assertEquals(fit.iuh.se.hsbilling.entity.enums.CreditReservationStatus.CAPTURED,
+                response.getCreditReservationStatus());
+    }
+
     @Test void duplicateAfterCommitReturnsExistingSessionWithoutRedisOrDuplicateSideEffects() {
         ConsultationRequest request = request(ConsultationRequestStatus.FULFILLED);
         request.setConsultationSessionId(500L);
@@ -102,6 +144,48 @@ class QueueConsultationSessionServiceImplTest {
         verify(offers, never()).findById(anyString());
         verify(sessions, never()).saveAndFlush(any());
         verifyNoInteractions(participants, authorizations, events);
+    }
+
+    @Test void duplicatePaidConfirmationVerifiesTheSameCapturedReservation() {
+        ConsultationRequest request = request(ConsultationRequestStatus.FULFILLED);
+        request.setCreditPolicy(ConsultationCreditPolicy.PER_SESSION_V1);
+        request.setCreditCost(1L);
+        request.setConsultationSessionId(500L);
+        ConsultationSession existing = ConsultationSession.builder().id(500L).requestId(11L).memberId(12L)
+                .doctorId(20L).flowType(ConsultationFlowType.QUEUE_DISPATCH_V1)
+                .creditPolicy(ConsultationCreditPolicy.PER_SESSION_V1).creditCost(1L)
+                .status(ConsultationStatus.ACTIVE).endsAt(now.plusSeconds(800)).build();
+        when(users.findByIdForUpdate(12L)).thenReturn(Optional.of(account(12L, UserRole.MEMBER)));
+        when(requests.findByIdForUpdate(11L)).thenReturn(Optional.of(request));
+        when(sessions.findByRequestId(11L)).thenReturn(Optional.of(existing));
+        when(queues.findByRequestId(11L)).thenReturn(Optional.empty());
+        when(mapper.toSessionResponse(existing)).thenReturn(ConsultationSessionResponse.builder().id(500L).build());
+
+        service.confirmMember(12L, 11L, "already-cleaned");
+
+        verify(consultationCredits).capture(12L, 11L, 500L);
+        verify(sessions, never()).saveAndFlush(any());
+    }
+
+    @Test void duplicateV2ConfirmationVerifiesTheSameSessionCharge() {
+        ConsultationRequest request = request(ConsultationRequestStatus.FULFILLED);
+        request.setCreditPolicy(ConsultationCreditPolicy.PER_SESSION_CONFIRM_V2);
+        request.setCreditCost(1L);
+        request.setConsultationSessionId(500L);
+        ConsultationSession existing = ConsultationSession.builder().id(500L).requestId(11L).memberId(12L)
+                .doctorId(20L).flowType(ConsultationFlowType.QUEUE_DISPATCH_V1)
+                .creditPolicy(ConsultationCreditPolicy.PER_SESSION_CONFIRM_V2).creditCost(1L)
+                .status(ConsultationStatus.ACTIVE).endsAt(now.plusSeconds(800)).build();
+        when(users.findByIdForUpdate(12L)).thenReturn(Optional.of(account(12L, UserRole.MEMBER)));
+        when(requests.findByIdForUpdate(11L)).thenReturn(Optional.of(request));
+        when(sessions.findByRequestId(11L)).thenReturn(Optional.of(existing));
+        when(queues.findByRequestId(11L)).thenReturn(Optional.empty());
+        when(mapper.toSessionResponse(existing)).thenReturn(ConsultationSessionResponse.builder().id(500L).build());
+
+        service.confirmMember(12L, 11L, "already-cleaned");
+
+        verify(consultationCredits).chargeSession(12L, 11L, 500L, 1L);
+        verify(sessions, never()).saveAndFlush(any());
     }
 
     @Test void duplicateAfterCommitReturnsExistingSessionWhenRedisCleanupIsUnavailable() {
