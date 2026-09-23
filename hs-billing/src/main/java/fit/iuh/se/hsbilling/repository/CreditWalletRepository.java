@@ -3,10 +3,15 @@ package fit.iuh.se.hsbilling.repository;
 import fit.iuh.se.hsbilling.entity.CreditWallet;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.*;
+
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 public interface CreditWalletRepository extends JpaRepository<CreditWallet, Long> {
     Optional<CreditWallet> findByMemberId(Long memberId);
+
+    List<CreditWallet> findAllByMemberIdIn(Collection<Long> memberIds);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select w from CreditWallet w where w.memberId = :memberId")

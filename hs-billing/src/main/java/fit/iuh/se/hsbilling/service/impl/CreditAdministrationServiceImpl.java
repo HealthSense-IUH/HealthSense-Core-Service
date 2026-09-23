@@ -12,6 +12,7 @@ import fit.iuh.se.hsoperations.event.OperationalEventPublisher;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsshared.dto.response.PageResponse;
+import fit.iuh.se.hsuser.entity.UserAccount;
 import fit.iuh.se.hsuser.entity.enums.*;
 import fit.iuh.se.hsuser.repository.UserAccountRepository;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,7 @@ import org.springframework.data.jpa.domain.Specification;
 
 import java.time.Instant;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -77,6 +79,20 @@ public class CreditAdministrationServiceImpl implements CreditAdministrationServ
         requireAdminRole(role);
         return packages.findAll(Sort.by("creditQuantity").ascending().and(Sort.by("id"))).stream()
                 .map(AdminCreditPackageResponse::from).toList();
+    }
+
+    @Override public PageResponse<AdminMemberCreditSummary> getMembers(Long actorId, UserRole role,
+            AccountStatus status, String keyword, Pageable pageable) {
+        requireAdmin(actorId, role); page(pageable);
+        String normalizedKeyword = trim(keyword);
+        Page<UserAccount> members = normalizedKeyword == null
+                ? users.findUsers(UserRole.MEMBER, status, actorId, pageable)
+                : users.searchUsers(UserRole.MEMBER, status, actorId, normalizedKeyword, pageable);
+        List<Long> memberIds = members.getContent().stream().map(UserAccount::getId).toList();
+        Map<Long, CreditWallet> walletsByMember = memberIds.isEmpty() ? Map.of()
+                : wallets.findAllByMemberIdIn(memberIds).stream()
+                        .collect(Collectors.toMap(CreditWallet::getMemberId, wallet -> wallet));
+        return new PageResponse<>(members.map(member -> memberSummary(member, walletsByMember.get(member.getId()))));
     }
 
     @Override public CreditWalletResponse getWallet(UserRole role, Long memberId) {
@@ -233,6 +249,14 @@ public class CreditAdministrationServiceImpl implements CreditAdministrationServ
     }
     private CreditMutationResponse mutationResponse(CreditLedgerEntry e, CreditWallet w) {
         return new CreditMutationResponse(AdminCreditLedgerResponse.from(e), walletResponse(w));
+    }
+    private AdminMemberCreditSummary memberSummary(UserAccount member, CreditWallet wallet) {
+        var profile = member.getProfile();
+        long balance = wallet == null ? 0 : wallet.getBalance();
+        long reserved = wallet == null ? 0 : wallet.getReserved();
+        return new AdminMemberCreditSummary(member.getId().toString(), profile.getDisplayName(), member.getEmail(),
+                profile.getPhone(), member.getStatus(), profile.getAvatarUrl(), wallet != null, balance, reserved,
+                balance - reserved, wallet == null ? null : wallet.getUpdatedAt());
     }
     private CreditWalletResponse walletResponse(CreditWallet w) { return new CreditWalletResponse(w.getBalance(),w.getReserved(),w.getBalance()-w.getReserved()); }
     private void audit(Long id, BusinessEventType type, Long actor, UserRole role, String previous, String next,
