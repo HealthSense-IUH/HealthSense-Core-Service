@@ -10,8 +10,10 @@ import fit.iuh.se.hschat.dto.response.CreditRecoveryResponse;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsshared.dto.response.*;
+import fit.iuh.se.hsuser.entity.enums.AccountStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -42,6 +44,15 @@ public class AdminCreditController {
     @GetMapping("/packages")
     public ApiResponse<List<AdminCreditPackageResponse>> packages(@AuthenticationPrincipal UserAuthentication actor) {
         require(actor); return new ApiResponse<>(admin.getPackages(actor.getRole()));
+    }
+
+    @GetMapping("/members")
+    public ApiResponse<PageResponse<AdminMemberCreditSummary>> members(@AuthenticationPrincipal UserAuthentication actor,
+            @RequestParam(required=false) AccountStatus status, @RequestParam(required=false) String keyword,
+            @RequestParam(defaultValue="1") int page, @RequestParam(defaultValue="20") int size) {
+        require(actor);
+        PageRequest pageable = page(page,size).withSort(Sort.by(Sort.Direction.DESC, "createdAt", "id"));
+        return new ApiResponse<>(admin.getMembers(actor.getUserId(), actor.getRole(), status, keyword, pageable));
     }
 
     @GetMapping("/wallets/{memberId}")

@@ -60,6 +60,7 @@ public interface UserAccountRepository extends JpaRepository<UserAccount, Long> 
           and (
               cast(u.id as string) like concat('%', :keyword, '%')
               or lower(u.email) like lower(concat('%', :keyword, '%'))
+              or lower(u.profile.displayName) like lower(concat('%', :keyword, '%'))
               or u.profile.phone like concat('%', :keyword, '%')
           )
     """)
