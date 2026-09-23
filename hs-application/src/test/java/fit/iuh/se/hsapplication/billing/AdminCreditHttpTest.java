@@ -8,6 +8,7 @@ import fit.iuh.se.hsbilling.dto.*;
 import fit.iuh.se.hsbilling.service.CreditAdministrationService;
 import fit.iuh.se.hschat.service.refund.ConsultationCreditRefundService;
 import fit.iuh.se.hschat.service.recovery.ConsultationCreditRecoveryService;
+import fit.iuh.se.hsuser.entity.enums.AccountStatus;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
 import org.junit.jupiter.api.*;
 import org.springframework.context.annotation.*;
@@ -58,6 +59,7 @@ class AdminCreditHttpTest {
     }
     @Test void adminRoutesRejectAnonymousMemberDoctorAndCoordinator() throws Exception {
         var requests=List.of(get("/api/admin/credits/packages"),
+                get("/api/admin/credits/members"),
                 post("/api/admin/credits/wallets/1/adjustments").header("Idempotency-Key","x")
                         .contentType("application/json").content("{\"delta\":1,\"reason\":\"fix\"}"),
                 post("/api/admin/credits/session-refunds").header("Idempotency-Key","x")
@@ -78,5 +80,29 @@ class AdminCreditHttpTest {
                 "approved correction","adjust-ADMIN");
         verify(context.getBean(CreditAdministrationService.class)).adjust(88L,UserRole.SUPER_ADMIN,5L,1L,
                 "approved correction","adjust-SUPER_ADMIN");
+    }
+
+    @Test void adminCanSearchPagedMemberWalletDirectory() throws Exception {
+        mvc.perform(get("/api/admin/credits/members").with(authentication(actor(UserRole.ADMIN)))
+                        .param("status", "ACTIVE").param("keyword", "alice")
+                        .param("page", "2").param("size", "25"))
+                .andExpect(status().isOk());
+
+        verify(context.getBean(CreditAdministrationService.class)).getMembers(
+                eq(88L), eq(UserRole.ADMIN), eq(AccountStatus.ACTIVE), eq("alice"),
+                argThat(pageable -> pageable.getPageNumber() == 1 && pageable.getPageSize() == 25
+                        && pageable.getSort().getOrderFor("createdAt") != null
+                        && pageable.getSort().getOrderFor("id") != null));
+    }
+
+    @Test void memberWalletDirectoryRejectsInvalidPagination() throws Exception {
+        mvc.perform(get("/api/admin/credits/members").with(authentication(actor(UserRole.ADMIN)))
+                        .param("page", "0"))
+                .andExpect(status().isBadRequest());
+        mvc.perform(get("/api/admin/credits/members").with(authentication(actor(UserRole.ADMIN)))
+                        .param("size", "101"))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(context.getBean(CreditAdministrationService.class));
     }
 }
