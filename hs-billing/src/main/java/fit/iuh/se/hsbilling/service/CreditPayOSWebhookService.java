@@ -3,11 +3,15 @@ package fit.iuh.se.hsbilling.service;
 import fit.iuh.se.hsbilling.dto.VerifiedCreditPayment;
 import fit.iuh.se.hsbilling.entity.CreditPaymentAttempt;
 import fit.iuh.se.hsbilling.entity.CreditPurchaseOrder;
-import fit.iuh.se.hsbilling.entity.enums.*;
-import fit.iuh.se.hsbilling.repository.*;
+import fit.iuh.se.hsbilling.entity.enums.CreditOrderStatus;
+import fit.iuh.se.hsbilling.entity.enums.CreditPaymentProvider;
+import fit.iuh.se.hsbilling.entity.enums.CreditPaymentStatus;
+import fit.iuh.se.hsbilling.repository.CreditOrderRepository;
+import fit.iuh.se.hsbilling.repository.CreditPaymentAttemptRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.util.Objects;
 
 @Service
@@ -19,7 +23,7 @@ public class CreditPayOSWebhookService {
 
     @Transactional
     public boolean handle(Long orderCode, Long amount, String currency, String paymentLinkId,
-            String resultCode, String reference) {
+                          String resultCode, String reference) {
         var attempt = attempts.findByOrderCode(orderCode).orElse(null);
         if (attempt == null) return false;
         if (attempt.getProvider() != CreditPaymentProvider.PAYOS) return true;

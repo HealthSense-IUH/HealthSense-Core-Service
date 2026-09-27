@@ -12,7 +12,8 @@ import fit.iuh.se.hsuser.entity.enums.UserRole;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class ConsultationContinuationControllerTest {
 

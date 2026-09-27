@@ -1,24 +1,25 @@
 package fit.iuh.se.hschat.service.payment.impl;
 
 import fit.iuh.se.hschat.entity.ConsultationPayment;
-import fit.iuh.se.hschat.event.PaymentProviderCancellationRequestedEvent;
 import fit.iuh.se.hschat.entity.enums.ConsultationPaymentStatus;
 import fit.iuh.se.hschat.entity.enums.PaymentProviderCancellationStatus;
+import fit.iuh.se.hschat.event.PaymentProviderCancellationRequestedEvent;
 import fit.iuh.se.hschat.repository.ConsultationPaymentRepository;
 import fit.iuh.se.hschat.service.payment.PayOSPaymentGateway;
 import fit.iuh.se.hschat.service.payment.PaymentCancellationService;
+import fit.iuh.se.hsoperations.dto.command.NeedsActionIntent;
+import fit.iuh.se.hsoperations.dto.command.OperationalEventCommand;
+import fit.iuh.se.hsoperations.entity.enums.*;
+import fit.iuh.se.hsoperations.event.OperationalEventPublisher;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
-import fit.iuh.se.hsoperations.dto.command.*;
-import fit.iuh.se.hsoperations.entity.enums.*;
-import fit.iuh.se.hsoperations.event.OperationalEventPublisher;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -101,7 +102,8 @@ public class PaymentCancellationServiceImpl implements PaymentCancellationServic
         paymentRepository.save(payment);
         boolean failed = payment.getProviderCancellationStatus() == PaymentProviderCancellationStatus.FAILED;
         String actionKey = "payment:" + payment.getId() + ":provider-cancellation-failure";
-        if (!failed) OperationalEventPublisher.resolveNeedsAction(actionKey, "Provider payment link cancellation succeeded");
+        if (!failed)
+            OperationalEventPublisher.resolveNeedsAction(actionKey, "Provider payment link cancellation succeeded");
         OperationalEventPublisher.record(OperationalEventCommand.builder()
                 .domainType(BusinessDomainType.PAYMENT).domainId(payment.getId())
                 .eventType(failed ? BusinessEventType.PAYMENT_PROVIDER_CANCELLATION_FAILED

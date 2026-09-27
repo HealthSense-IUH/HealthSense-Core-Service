@@ -7,27 +7,27 @@ import fit.iuh.se.hschat.dto.response.FinalSummaryAddendumResponse;
 import fit.iuh.se.hschat.entity.ConsultationFinalSummary;
 import fit.iuh.se.hschat.entity.ConsultationFinalSummaryAddendum;
 import fit.iuh.se.hschat.entity.ConsultationSession;
+import fit.iuh.se.hschat.entity.DoctorCareProfile;
 import fit.iuh.se.hschat.entity.enums.ConsultationFinalSummaryStatus;
+import fit.iuh.se.hschat.entity.enums.ConsultationFlowType;
 import fit.iuh.se.hschat.entity.enums.ConsultationStatus;
-import fit.iuh.se.hschat.repository.ConsultationFinalSummaryAddendumRepository;
-import fit.iuh.se.hschat.repository.ConsultationFinalSummaryRepository;
-import fit.iuh.se.hschat.repository.ConsultationSessionRepository;
-import fit.iuh.se.hschat.repository.DoctorCareProfileRepository;
-import fit.iuh.se.hschat.repository.EpisodeHealthRecordAuthorizationRepository;
+import fit.iuh.se.hschat.repository.*;
 import fit.iuh.se.hschat.service.finalsummary.ConsultationFinalSummaryService;
 import fit.iuh.se.hschat.service.finalsummary.FinalSummaryClosureService;
 import fit.iuh.se.hschat.service.finalsummary.QueueFinalSummaryLifecycleService;
-import fit.iuh.se.hschat.entity.DoctorCareProfile;
-import fit.iuh.se.hschat.entity.enums.ConsultationFlowType;
+import fit.iuh.se.hsoperations.dto.command.NotificationIntent;
+import fit.iuh.se.hsoperations.dto.command.OperationalEventCommand;
+import fit.iuh.se.hsoperations.entity.enums.BusinessActorType;
+import fit.iuh.se.hsoperations.entity.enums.BusinessDomainType;
+import fit.iuh.se.hsoperations.entity.enums.BusinessEventType;
+import fit.iuh.se.hsoperations.entity.enums.NotificationType;
+import fit.iuh.se.hsoperations.event.OperationalEventPublisher;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
+import fit.iuh.se.hsuser.entity.UserAccount;
 import fit.iuh.se.hsuser.entity.enums.AccountStatus;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
-import fit.iuh.se.hsuser.entity.UserAccount;
 import fit.iuh.se.hsuser.repository.UserAccountRepository;
-import fit.iuh.se.hsoperations.dto.command.*;
-import fit.iuh.se.hsoperations.entity.enums.*;
-import fit.iuh.se.hsoperations.event.OperationalEventPublisher;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -213,7 +213,7 @@ public class ConsultationFinalSummaryServiceImpl implements ConsultationFinalSum
     }
 
     private void auditSummary(ConsultationFinalSummary summary, ConsultationSession session,
-            BusinessEventType eventType, Long doctorId, NotificationIntent notification) {
+                              BusinessEventType eventType, Long doctorId, NotificationIntent notification) {
         OperationalEventPublisher.record(OperationalEventCommand.builder()
                 .domainType(BusinessDomainType.FINAL_SUMMARY).domainId(summary.getId()).eventType(eventType)
                 .actorType(BusinessActorType.USER).actorUserId(doctorId).actorRole(UserRole.DOCTOR.name())
@@ -290,8 +290,8 @@ public class ConsultationFinalSummaryServiceImpl implements ConsultationFinalSum
         List<FinalSummaryAddendumResponse> addenda = summary.getId() == null
                 ? List.of()
                 : addendumRepository.findBySummaryIdOrderByAuthoredAtAsc(summary.getId()).stream()
-                        .map(this::toAddendumResponse)
-                        .toList();
+                .map(this::toAddendumResponse)
+                .toList();
         return ConsultationFinalSummaryResponse.builder()
                 .id(summary.getId())
                 .sessionId(summary.getSessionId())

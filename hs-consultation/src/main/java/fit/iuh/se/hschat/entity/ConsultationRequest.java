@@ -1,8 +1,8 @@
 package fit.iuh.se.hschat.entity;
 
-import fit.iuh.se.hschat.entity.enums.ConsultationRequestStatus;
-import fit.iuh.se.hschat.entity.enums.ConsultationFlowType;
 import fit.iuh.se.hschat.entity.enums.ConsultationCreditPolicy;
+import fit.iuh.se.hschat.entity.enums.ConsultationFlowType;
+import fit.iuh.se.hschat.entity.enums.ConsultationRequestStatus;
 import fit.iuh.se.hsshared.generator.SnowflakeGenerated;
 import fit.iuh.se.hsuser.entity.BaseEntity;
 import jakarta.persistence.*;

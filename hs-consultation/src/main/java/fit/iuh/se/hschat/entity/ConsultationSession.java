@@ -1,17 +1,9 @@
 package fit.iuh.se.hschat.entity;
 
-import fit.iuh.se.hschat.entity.enums.ConsultationSourceType;
-import fit.iuh.se.hschat.entity.enums.ConsultationCompletionReason;
-import fit.iuh.se.hschat.entity.enums.ConsultationStatus;
-import fit.iuh.se.hschat.entity.enums.FinalSummaryClosureStatus;
-import fit.iuh.se.hschat.entity.enums.CareOperationalReviewReason;
-import fit.iuh.se.hschat.entity.enums.CareTerminationReason;
-import fit.iuh.se.hschat.entity.enums.ConsultationFlowType;
-import fit.iuh.se.hschat.entity.enums.ConsultationCreditPolicy;
-import fit.iuh.se.hschat.entity.enums.DoctorReleaseReason;
-import fit.iuh.se.hsuser.entity.enums.UserRole;
+import fit.iuh.se.hschat.entity.enums.*;
 import fit.iuh.se.hsshared.generator.SnowflakeGenerated;
 import fit.iuh.se.hsuser.entity.BaseEntity;
+import fit.iuh.se.hsuser.entity.enums.UserRole;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;

@@ -5,7 +5,10 @@ import fit.iuh.se.hschat.entity.EpisodeHealthRecordAuthorization;
 import fit.iuh.se.hschat.entity.enums.ConsultationStatus;
 import fit.iuh.se.hschat.entity.enums.EpisodeHealthRecordAuthorizationSource;
 import fit.iuh.se.hschat.mapper.ConsultationMapper;
-import fit.iuh.se.hschat.repository.*;
+import fit.iuh.se.hschat.repository.ConsultationHealthRecordAttentionRepository;
+import fit.iuh.se.hschat.repository.ConsultationMessageRepository;
+import fit.iuh.se.hschat.repository.ConsultationParticipantRepository;
+import fit.iuh.se.hschat.repository.ConsultationSessionRepository;
 import fit.iuh.se.hschat.service.authorization.EpisodeHealthRecordAuthorizationService;
 import fit.iuh.se.hshealthrecord.dto.response.HealthRecordResponse;
 import fit.iuh.se.hshealthrecord.entity.HealthRecord;
@@ -14,18 +17,18 @@ import fit.iuh.se.hshealthrecord.repository.HealthRecordRepository;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsshared.service.s3.S3Service;
-import fit.iuh.se.hsuser.repository.UserAccountRepository;
 import fit.iuh.se.hsuser.entity.UserAccount;
+import fit.iuh.se.hsuser.repository.UserAccountRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageRequest;
 
 import java.time.Instant;
-import java.util.Optional;
 import java.util.List;
-import org.springframework.data.domain.PageRequest;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -33,17 +36,28 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class DoctorActiveCareServiceImplTest {
 
-    @Mock ConsultationSessionRepository sessionRepository;
-    @Mock ConsultationParticipantRepository participantRepository;
-    @Mock ConsultationMessageRepository messageRepository;
-    @Mock ConsultationHealthRecordAttentionRepository attentionRepository;
-    @Mock HealthRecordRepository healthRecordRepository;
-    @Mock EpisodeHealthRecordAuthorizationService authorizationService;
-    @Mock UserAccountRepository userAccountRepository;
-    @Mock ConsultationMapper consultationMapper;
-    @Mock HealthRecordMapper healthRecordMapper;
-    @Mock S3Service s3Service;
-    @Mock fit.iuh.se.hsoperations.event.OperationalEventPublisher OperationalEventPublisher;
+    @Mock
+    ConsultationSessionRepository sessionRepository;
+    @Mock
+    ConsultationParticipantRepository participantRepository;
+    @Mock
+    ConsultationMessageRepository messageRepository;
+    @Mock
+    ConsultationHealthRecordAttentionRepository attentionRepository;
+    @Mock
+    HealthRecordRepository healthRecordRepository;
+    @Mock
+    EpisodeHealthRecordAuthorizationService authorizationService;
+    @Mock
+    UserAccountRepository userAccountRepository;
+    @Mock
+    ConsultationMapper consultationMapper;
+    @Mock
+    HealthRecordMapper healthRecordMapper;
+    @Mock
+    S3Service s3Service;
+    @Mock
+    fit.iuh.se.hsoperations.event.OperationalEventPublisher OperationalEventPublisher;
 
     DoctorActiveCareServiceImpl service;
 

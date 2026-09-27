@@ -3,11 +3,7 @@ package fit.iuh.se.hschat.dto.request;
 import fit.iuh.se.hschat.entity.enums.CareServiceCode;
 import fit.iuh.se.hschat.entity.enums.CareServiceSupportPolicy;
 import fit.iuh.se.hschat.entity.enums.DoctorSpecialty;
-import jakarta.validation.constraints.DecimalMin;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 

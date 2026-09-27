@@ -1,34 +1,41 @@
 package fit.iuh.se.hsbilling.service;
 
 import fit.iuh.se.hsbilling.config.CreditPaymentConfiguration;
-import fit.iuh.se.hsbilling.payment.MockCreditPaymentGateway;
 import fit.iuh.se.hsbilling.dto.VerifiedCreditPayment;
 import fit.iuh.se.hsbilling.entity.enums.CreditPaymentProvider;
+import fit.iuh.se.hsbilling.payment.MockCreditPaymentGateway;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.mock.env.MockEnvironment;
-import static org.junit.jupiter.api.Assertions.*;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class CreditPaymentConfigurationTest {
-    @Test void defaultConfigurationDisablesPaymentsAndGateway() {
+    @Test
+    void defaultConfigurationDisablesPaymentsAndGateway() {
         var config = new CreditPaymentConfiguration(new MockEnvironment());
         assertEquals(ErrorCode.CREDIT_PURCHASE_DISABLED,
                 assertThrows(AppException.class, config::requireMockEnabled).getErrorCode());
         assertThrows(AppException.class, () -> new MockCreditPaymentGateway(config).pay(1L, 1000, "VND"));
     }
 
-    @Test void explicitlyEnabledTestCanPay() {
-        var env = enabled(); env.setActiveProfiles("test");
+    @Test
+    void explicitlyEnabledTestCanPay() {
+        var env = enabled();
+        env.setActiveProfiles("test");
         var gateway = new MockCreditPaymentGateway(new CreditPaymentConfiguration(env));
         assertEquals(new VerifiedCreditPayment(CreditPaymentProvider.MOCK, "mock:7", 1000, "VND"),
                 gateway.pay(7L, 1000, "VND"));
     }
 
-    @Test void productionEvenAlongsideDevRejectsStartup() {
+    @Test
+    void productionEvenAlongsideDevRejectsStartup() {
         for (String[] profiles : new String[][]{{"dev"}, {"prod"}, {"production"}, {"dev", "prod"}, {"test", "production"}, {"billing-mock"}}) {
-            var env = enabled(); env.setActiveProfiles(profiles);
+            var env = enabled();
+            env.setActiveProfiles(profiles);
             try (var context = new AnnotationConfigApplicationContext()) {
                 context.setEnvironment(env);
                 context.register(CreditPaymentConfiguration.class);
@@ -37,7 +44,8 @@ class CreditPaymentConfigurationTest {
         }
     }
 
-    @Test void missingFlagAndUnsupportedProviderFailClosed() {
+    @Test
+    void missingFlagAndUnsupportedProviderFailClosed() {
         var env = new MockEnvironment().withProperty("app.billing.payment-provider", "MOCK");
         env.setActiveProfiles("dev");
         assertThrows(IllegalStateException.class, () -> new CreditPaymentConfiguration(env));
@@ -48,7 +56,8 @@ class CreditPaymentConfigurationTest {
         }
     }
 
-    @Test void payOSRequiresHostedCheckoutUrlsAndDoesNotRequireMockFlag() {
+    @Test
+    void payOSRequiresHostedCheckoutUrlsAndDoesNotRequireMockFlag() {
         var env = new MockEnvironment()
                 .withProperty("app.billing.payment-provider", "PAYOS")
                 .withProperty("app.billing.payos.return-url", "https://app.example/credits/payment/result")

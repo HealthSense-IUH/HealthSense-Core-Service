@@ -1,5 +1,7 @@
 package fit.iuh.se.hschat.service.session.impl;
 
+import fit.iuh.se.hsbilling.entity.enums.CreditReservationStatus;
+import fit.iuh.se.hsbilling.service.ConsultationCreditService;
 import fit.iuh.se.hschat.dto.response.ConsultationSessionResponse;
 import fit.iuh.se.hschat.entity.*;
 import fit.iuh.se.hschat.entity.enums.*;
@@ -8,18 +10,22 @@ import fit.iuh.se.hschat.repository.*;
 import fit.iuh.se.hschat.service.authorization.EpisodeHealthRecordAuthorizationService;
 import fit.iuh.se.hschat.service.dispatch.DoctorDispatchSelectionService;
 import fit.iuh.se.hschat.service.dispatch.event.DispatchRequested;
-import fit.iuh.se.hschat.service.dispatch.offer.*;
+import fit.iuh.se.hschat.service.dispatch.offer.DoctorOffer;
+import fit.iuh.se.hschat.service.dispatch.offer.DoctorOfferState;
+import fit.iuh.se.hschat.service.dispatch.offer.DoctorOfferStore;
 import fit.iuh.se.hschat.service.session.QueueConsultationSessionService;
 import fit.iuh.se.hsoperations.dto.command.NotificationIntent;
 import fit.iuh.se.hsoperations.dto.command.OperationalEventCommand;
-import fit.iuh.se.hsoperations.entity.enums.*;
+import fit.iuh.se.hsoperations.entity.enums.BusinessActorType;
+import fit.iuh.se.hsoperations.entity.enums.BusinessDomainType;
+import fit.iuh.se.hsoperations.entity.enums.BusinessEventType;
+import fit.iuh.se.hsoperations.entity.enums.NotificationType;
 import fit.iuh.se.hsoperations.event.OperationalEventPublisher;
-import fit.iuh.se.hsbilling.entity.enums.CreditReservationStatus;
-import fit.iuh.se.hsbilling.service.ConsultationCreditService;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsuser.entity.UserAccount;
-import fit.iuh.se.hsuser.entity.enums.*;
+import fit.iuh.se.hsuser.entity.enums.AccountStatus;
+import fit.iuh.se.hsuser.entity.enums.UserRole;
 import fit.iuh.se.hsuser.repository.UserAccountRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.NonFinal;
@@ -31,8 +37,13 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
-import java.time.*;
-import java.util.*;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -52,8 +63,11 @@ public class QueueConsultationSessionServiceImpl implements QueueConsultationSes
     private final ApplicationEventPublisher applicationEvents;
     private final ConsultationCreditService consultationCredits;
 
-    @NonFinal @Value("${app.consultation.dispatch.initial-session-minutes:15}") long initialSessionMinutes = 15;
-    @NonFinal Clock clock = Clock.systemUTC();
+    @NonFinal
+    @Value("${app.consultation.dispatch.initial-session-minutes:15}")
+    long initialSessionMinutes = 15;
+    @NonFinal
+    Clock clock = Clock.systemUTC();
 
     @Override
     @Transactional
@@ -95,7 +109,7 @@ public class QueueConsultationSessionServiceImpl implements QueueConsultationSes
                 .orElseThrow(() -> new AppException(ErrorCode.DOCTOR_CARE_PROFILE_NOT_FOUND));
         if (doctor.getDispatchStatus() != DoctorDispatchStatus.AVAILABLE || doctor.getBusySessionId() != null
                 || sessions.existsByDoctorIdAndStatusIn(offer.doctorId(),
-                        List.of(ConsultationStatus.SCHEDULED, ConsultationStatus.ACTIVE)))
+                List.of(ConsultationStatus.SCHEDULED, ConsultationStatus.ACTIVE)))
             throw new AppException(ErrorCode.DOCTOR_NOT_ELIGIBLE_FOR_CONSULTATION);
         if (sessions.existsByMemberIdAndFlowTypeAndStatus(
                 memberId, ConsultationFlowType.QUEUE_DISPATCH_V1, ConsultationStatus.ACTIVE))
@@ -196,7 +210,7 @@ public class QueueConsultationSessionServiceImpl implements QueueConsultationSes
     }
 
     private void requireOfferOwnership(DoctorOffer offer, ConsultationRequest request,
-            ConsultationQueueEntry queue, Long memberId, String offerId) {
+                                       ConsultationQueueEntry queue, Long memberId, String offerId) {
         if (!offer.offerId().equals(offerId) || !offer.requestId().equals(request.getId())
                 || !offer.queueEntryId().equals(queue.getId()) || !offer.memberId().equals(memberId))
             throw new AppException(ErrorCode.CONSULTATION_ACCESS_DENIED);
@@ -230,8 +244,8 @@ public class QueueConsultationSessionServiceImpl implements QueueConsultationSes
     }
 
     private void audit(ConsultationSession session, DoctorOffer offer, BusinessEventType type,
-            BusinessDomainType domain, Long domainId, Long actorId, List<NotificationIntent> notifications) {
-        Map<String,String> metadata = new LinkedHashMap<>();
+                       BusinessDomainType domain, Long domainId, Long actorId, List<NotificationIntent> notifications) {
+        Map<String, String> metadata = new LinkedHashMap<>();
         metadata.put("offerId", offer.offerId());
         metadata.put("queueEntryId", offer.queueEntryId().toString());
         metadata.put("sessionId", session.getId().toString());
@@ -251,7 +265,8 @@ public class QueueConsultationSessionServiceImpl implements QueueConsultationSes
     private void registerRedisCompletion(DoctorOffer offer) {
         if (!TransactionSynchronizationManager.isSynchronizationActive()) return;
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override public void afterCompletion(int status) {
+            @Override
+            public void afterCompletion(int status) {
                 try {
                     if (status == STATUS_COMMITTED) offers.release(offer);
                     else offers.restoreMemberConfirmation(offer);

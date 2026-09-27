@@ -1,14 +1,15 @@
 package fit.iuh.se.hsbilling.config;
 
+import fit.iuh.se.hsbilling.entity.enums.CreditPaymentProvider;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
+
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.Set;
-import java.time.Duration;
-import fit.iuh.se.hsbilling.entity.enums.CreditPaymentProvider;
 
 @Component
 public class CreditPaymentConfiguration {
@@ -58,7 +59,15 @@ public class CreditPaymentConfiguration {
             throw new AppException(ErrorCode.CREDIT_PURCHASE_DISABLED);
     }
 
-    public String returnUrl() { return returnUrl; }
-    public String cancelUrl() { return cancelUrl; }
-    public Duration linkTtl() { return linkTtl; }
+    public String returnUrl() {
+        return returnUrl;
+    }
+
+    public String cancelUrl() {
+        return cancelUrl;
+    }
+
+    public Duration linkTtl() {
+        return linkTtl;
+    }
 }

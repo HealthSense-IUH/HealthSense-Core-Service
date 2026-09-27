@@ -2,18 +2,20 @@ package fit.iuh.se.hschat.service.finalsummary.impl;
 
 import fit.iuh.se.hschat.entity.ConsultationSession;
 import fit.iuh.se.hschat.entity.enums.ConsultationFinalSummaryStatus;
-import fit.iuh.se.hschat.entity.enums.FinalSummaryClosureStatus;
 import fit.iuh.se.hschat.entity.enums.ConsultationFlowType;
+import fit.iuh.se.hschat.entity.enums.FinalSummaryClosureStatus;
 import fit.iuh.se.hschat.repository.ConsultationFinalSummaryRepository;
 import fit.iuh.se.hschat.repository.ConsultationSessionRepository;
 import fit.iuh.se.hschat.service.finalsummary.FinalSummaryClosureService;
+import fit.iuh.se.hsoperations.dto.command.NeedsActionIntent;
+import fit.iuh.se.hsoperations.dto.command.NotificationIntent;
+import fit.iuh.se.hsoperations.dto.command.OperationalEventCommand;
+import fit.iuh.se.hsoperations.entity.enums.*;
+import fit.iuh.se.hsoperations.event.OperationalEventPublisher;
 import fit.iuh.se.hsuser.entity.UserAccount;
 import fit.iuh.se.hsuser.entity.enums.AccountStatus;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
 import fit.iuh.se.hsuser.repository.UserAccountRepository;
-import fit.iuh.se.hsoperations.dto.command.*;
-import fit.iuh.se.hsoperations.entity.enums.*;
-import fit.iuh.se.hsoperations.event.OperationalEventPublisher;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -127,14 +129,14 @@ public class FinalSummaryClosureServiceImpl implements FinalSummaryClosureServic
         };
         NeedsActionIntent action = eventType == BusinessEventType.SUMMARY_FINALIZED ? null
                 : new NeedsActionIntent(switch (eventType) {
-                    case SUMMARY_OVERDUE -> NeedsActionType.SUMMARY_OVERDUE;
-                    case SUMMARY_ESCALATED -> NeedsActionType.SUMMARY_ESCALATED;
-                    default -> NeedsActionType.SUMMARY_PENDING;
-                }, eventType == BusinessEventType.SUMMARY_ESCALATED ? NeedsActionPriority.CRITICAL
-                        : eventType == BusinessEventType.SUMMARY_OVERDUE ? NeedsActionPriority.HIGH : NeedsActionPriority.NORMAL,
-                        "Final summary " + suffix, "The care episode requires Final Care Summary follow-up.",
-                        BusinessDomainType.FINAL_SUMMARY, session.getId(), UserRole.CARE_COORDINATOR.name(),
-                        summaryKey(session, suffix));
+            case SUMMARY_OVERDUE -> NeedsActionType.SUMMARY_OVERDUE;
+            case SUMMARY_ESCALATED -> NeedsActionType.SUMMARY_ESCALATED;
+            default -> NeedsActionType.SUMMARY_PENDING;
+        }, eventType == BusinessEventType.SUMMARY_ESCALATED ? NeedsActionPriority.CRITICAL
+                : eventType == BusinessEventType.SUMMARY_OVERDUE ? NeedsActionPriority.HIGH : NeedsActionPriority.NORMAL,
+                "Final summary " + suffix, "The care episode requires Final Care Summary follow-up.",
+                BusinessDomainType.FINAL_SUMMARY, session.getId(), UserRole.CARE_COORDINATOR.name(),
+                summaryKey(session, suffix));
         String eventKey = "summary-closure:" + session.getId() + ":" + suffix;
         OperationalEventPublisher.record(OperationalEventCommand.builder()
                 .domainType(BusinessDomainType.FINAL_SUMMARY).domainId(session.getId()).eventType(eventType)

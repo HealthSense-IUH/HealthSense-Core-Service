@@ -1,13 +1,20 @@
 package fit.iuh.se.hsnutrition.entity;
 
-import jakarta.persistence.*;
-import lombok.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.hibernate.annotations.Immutable;
 
 import java.math.BigDecimal;
 
-/** Khẩu phần thường dùng của một món, quy ra gram (V21). */
+/**
+ * Khẩu phần thường dùng của một món, quy ra gram (V21).
+ */
 @Entity
 @Immutable
 @Table(name = "nutrition_food_portions")
@@ -15,10 +22,16 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class NutritionFoodPortion {
-    @Id Long id;
-    @Column(name = "food_id", nullable = false) Long foodId;
-    @Column(name = "sequence_number", nullable = false) int sequenceNumber;
-    @Column(nullable = false, length = 160) String description;
-    @Column(name = "gram_weight", nullable = false) BigDecimal gramWeight;
-    @Column(name = "is_default", nullable = false) boolean defaultPortion;
+    @Id
+    Long id;
+    @Column(name = "food_id", nullable = false)
+    Long foodId;
+    @Column(name = "sequence_number", nullable = false)
+    int sequenceNumber;
+    @Column(nullable = false, length = 160)
+    String description;
+    @Column(name = "gram_weight", nullable = false)
+    BigDecimal gramWeight;
+    @Column(name = "is_default", nullable = false)
+    boolean defaultPortion;
 }

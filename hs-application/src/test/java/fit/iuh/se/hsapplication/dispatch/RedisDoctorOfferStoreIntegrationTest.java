@@ -1,6 +1,8 @@
 package fit.iuh.se.hsapplication.dispatch;
 
-import fit.iuh.se.hschat.service.dispatch.offer.*;
+import fit.iuh.se.hschat.service.dispatch.offer.DoctorOffer;
+import fit.iuh.se.hschat.service.dispatch.offer.DoctorOfferState;
+import fit.iuh.se.hschat.service.dispatch.offer.DoctorOfferStore;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -9,14 +11,17 @@ import org.springframework.test.context.ActiveProfiles;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(properties = "app.consultation.dispatch.scheduler-delay-ms=3600000")
 @ActiveProfiles("dev")
 class RedisDoctorOfferStoreIntegrationTest {
-    @Autowired DoctorOfferStore store;
+    @Autowired
+    DoctorOfferStore store;
 
-    @Test void luaOwnershipDeadlinesIdempotentAcceptAndStaleCleanupUseRealRedis() {
+    @Test
+    void luaOwnershipDeadlinesIdempotentAcceptAndStaleCleanupUseRealRedis() {
         long seed = Math.abs(System.nanoTime());
         long doctorId = seed;
         long queueId = seed + 1;

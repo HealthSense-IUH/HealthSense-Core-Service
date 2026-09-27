@@ -1,16 +1,16 @@
 package fit.iuh.se.hschat.repository;
 
 import fit.iuh.se.hschat.entity.ConsultationFinalSummary;
+import fit.iuh.se.hschat.entity.enums.ConsultationFinalSummaryStatus;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
-import jakarta.persistence.LockModeType;
+import org.springframework.stereotype.Repository;
 
-import java.util.Optional;
 import java.util.Collection;
 import java.util.List;
-import fit.iuh.se.hschat.entity.enums.ConsultationFinalSummaryStatus;
+import java.util.Optional;
 
 @Repository
 public interface ConsultationFinalSummaryRepository extends JpaRepository<ConsultationFinalSummary, Long> {

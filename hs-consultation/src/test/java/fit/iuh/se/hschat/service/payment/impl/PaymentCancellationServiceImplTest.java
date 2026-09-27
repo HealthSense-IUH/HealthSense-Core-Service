@@ -1,10 +1,12 @@
 package fit.iuh.se.hschat.service.payment.impl;
 
 import fit.iuh.se.hschat.entity.ConsultationPayment;
-import fit.iuh.se.hschat.entity.enums.*;
+import fit.iuh.se.hschat.entity.enums.ConsultationPaymentProvider;
+import fit.iuh.se.hschat.entity.enums.ConsultationPaymentStatus;
+import fit.iuh.se.hschat.entity.enums.PaymentProviderCancellationStatus;
+import fit.iuh.se.hschat.event.PaymentProviderCancellationRequestedEvent;
 import fit.iuh.se.hschat.repository.ConsultationPaymentRepository;
 import fit.iuh.se.hschat.service.payment.PayOSPaymentGateway;
-import fit.iuh.se.hschat.event.PaymentProviderCancellationRequestedEvent;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,10 +26,14 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class PaymentCancellationServiceImplTest {
-    @Mock ConsultationPaymentRepository paymentRepository;
-    @Mock PayOSPaymentGateway paymentGateway;
-    @Mock ApplicationEventPublisher eventPublisher;
-    @Mock fit.iuh.se.hsoperations.event.OperationalEventPublisher OperationalEventPublisher;
+    @Mock
+    ConsultationPaymentRepository paymentRepository;
+    @Mock
+    PayOSPaymentGateway paymentGateway;
+    @Mock
+    ApplicationEventPublisher eventPublisher;
+    @Mock
+    fit.iuh.se.hsoperations.event.OperationalEventPublisher OperationalEventPublisher;
     PaymentCancellationServiceImpl service;
     PaymentProviderCancellationEventHandler eventHandler;
 

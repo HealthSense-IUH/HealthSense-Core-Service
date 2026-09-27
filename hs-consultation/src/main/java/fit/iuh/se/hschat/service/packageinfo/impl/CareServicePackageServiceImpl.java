@@ -12,13 +12,15 @@ import fit.iuh.se.hschat.mapper.ConsultationMapper;
 import fit.iuh.se.hschat.repository.CareServicePackageFamilyRepository;
 import fit.iuh.se.hschat.repository.CareServicePackageRepository;
 import fit.iuh.se.hschat.service.packageinfo.CareServicePackageService;
+import fit.iuh.se.hsoperations.dto.command.OperationalEventCommand;
+import fit.iuh.se.hsoperations.entity.enums.BusinessActorType;
+import fit.iuh.se.hsoperations.entity.enums.BusinessDomainType;
+import fit.iuh.se.hsoperations.entity.enums.BusinessEventType;
+import fit.iuh.se.hsoperations.event.OperationalEventPublisher;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsshared.dto.response.PageResponse;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
-import fit.iuh.se.hsoperations.dto.command.OperationalEventCommand;
-import fit.iuh.se.hsoperations.entity.enums.*;
-import fit.iuh.se.hsoperations.event.OperationalEventPublisher;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -28,12 +30,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -231,7 +228,7 @@ public class CareServicePackageServiceImpl implements CareServicePackageService 
     }
 
     private void auditPackage(CareServicePackage carePackage, BusinessEventType eventType, Long actorId, UserRole actorRole,
-            CareServicePackageStatus previous, CareServicePackageStatus next) {
+                              CareServicePackageStatus previous, CareServicePackageStatus next) {
         OperationalEventPublisher.record(OperationalEventCommand.builder()
                 .domainType(BusinessDomainType.PACKAGE).domainId(carePackage.getId()).eventType(eventType)
                 .actorType(BusinessActorType.USER).actorUserId(actorId).actorRole(actorRole.name())

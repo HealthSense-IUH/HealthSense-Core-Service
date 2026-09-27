@@ -10,11 +10,11 @@ import fit.iuh.se.hschat.repository.ConsultationDispatchStateRepository;
 import fit.iuh.se.hschat.repository.ConsultationQueueEntryRepository;
 import fit.iuh.se.hschat.repository.ConsultationSessionRepository;
 import fit.iuh.se.hschat.repository.DoctorCareProfileRepository;
+import fit.iuh.se.hschat.service.dispatch.offer.DoctorOfferStore;
 import fit.iuh.se.hsuser.entity.UserAccount;
 import fit.iuh.se.hsuser.entity.enums.AccountStatus;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
 import fit.iuh.se.hsuser.repository.UserAccountRepository;
-import fit.iuh.se.hschat.service.dispatch.offer.DoctorOfferStore;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,18 +27,25 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class DoctorDispatchSelectionServiceImplTest {
 
-    @Mock DoctorCareProfileRepository profileRepository;
-    @Mock ConsultationQueueEntryRepository queueEntryRepository;
-    @Mock ConsultationDispatchStateRepository dispatchStateRepository;
-    @Mock ConsultationSessionRepository sessionRepository;
-    @Mock UserAccountRepository userAccountRepository;
-    @Mock DoctorOfferStore offerStore;
+    @Mock
+    DoctorCareProfileRepository profileRepository;
+    @Mock
+    ConsultationQueueEntryRepository queueEntryRepository;
+    @Mock
+    ConsultationDispatchStateRepository dispatchStateRepository;
+    @Mock
+    ConsultationSessionRepository sessionRepository;
+    @Mock
+    UserAccountRepository userAccountRepository;
+    @Mock
+    DoctorOfferStore offerStore;
 
     DoctorDispatchSelectionServiceImpl service;
 

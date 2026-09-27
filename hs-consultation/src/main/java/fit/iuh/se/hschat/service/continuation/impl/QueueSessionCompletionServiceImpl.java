@@ -7,12 +7,15 @@ import fit.iuh.se.hschat.repository.ConsultationSessionRepository;
 import fit.iuh.se.hschat.service.continuation.ContinuationState;
 import fit.iuh.se.hschat.service.continuation.ContinuationStore;
 import fit.iuh.se.hschat.service.continuation.QueueSessionCompletionService;
-import fit.iuh.se.hsshared.advice.entity.AppException;
-import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsoperations.dto.command.NotificationIntent;
 import fit.iuh.se.hsoperations.dto.command.OperationalEventCommand;
-import fit.iuh.se.hsoperations.entity.enums.*;
+import fit.iuh.se.hsoperations.entity.enums.BusinessActorType;
+import fit.iuh.se.hsoperations.entity.enums.BusinessDomainType;
+import fit.iuh.se.hsoperations.entity.enums.BusinessEventType;
+import fit.iuh.se.hsoperations.entity.enums.NotificationType;
 import fit.iuh.se.hsoperations.event.OperationalEventPublisher;
+import fit.iuh.se.hsshared.advice.entity.AppException;
+import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -24,8 +27,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
-import java.time.Instant;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
@@ -88,7 +91,7 @@ public class QueueSessionCompletionServiceImpl implements QueueSessionCompletion
     }
 
     private void recordCompletion(ConsultationSession session, int round, Instant completedAt,
-            ConsultationCompletionReason reason, ContinuationState state) {
+                                  ConsultationCompletionReason reason, ContinuationState state) {
         Map<String, String> metadata = new java.util.LinkedHashMap<>();
         metadata.put("round", Integer.toString(round));
         metadata.put("completedAt", completedAt.toString());
@@ -132,15 +135,19 @@ public class QueueSessionCompletionServiceImpl implements QueueSessionCompletion
 
     private void releaseAfterCommit(Long sessionId, int round) {
         Runnable release = () -> {
-            try { continuationStore.release(sessionId, round); }
-            catch (RuntimeException ignored) { /* recovery cleanup is safe on a later tick/TTL */ }
+            try {
+                continuationStore.release(sessionId, round);
+            } catch (RuntimeException ignored) { /* recovery cleanup is safe on a later tick/TTL */ }
         };
         if (!TransactionSynchronizationManager.isSynchronizationActive()) {
             release.run();
             return;
         }
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override public void afterCommit() { release.run(); }
+            @Override
+            public void afterCommit() {
+                release.run();
+            }
         });
     }
 

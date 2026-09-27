@@ -1,31 +1,44 @@
 package fit.iuh.se.hschat.service.session.impl;
 
+import fit.iuh.se.hsbilling.service.ConsultationCreditService;
 import fit.iuh.se.hschat.dto.response.ConsultationSessionResponse;
-import fit.iuh.se.hschat.entity.*;
+import fit.iuh.se.hschat.entity.ConsultationQueueEntry;
+import fit.iuh.se.hschat.entity.ConsultationRequest;
+import fit.iuh.se.hschat.entity.ConsultationSession;
+import fit.iuh.se.hschat.entity.DoctorCareProfile;
 import fit.iuh.se.hschat.entity.enums.*;
 import fit.iuh.se.hschat.mapper.ConsultationMapper;
 import fit.iuh.se.hschat.repository.*;
 import fit.iuh.se.hschat.service.authorization.EpisodeHealthRecordAuthorizationService;
 import fit.iuh.se.hschat.service.dispatch.DoctorDispatchSelectionService;
-import fit.iuh.se.hschat.service.dispatch.offer.*;
+import fit.iuh.se.hschat.service.dispatch.offer.DoctorOffer;
+import fit.iuh.se.hschat.service.dispatch.offer.DoctorOfferState;
+import fit.iuh.se.hschat.service.dispatch.offer.DoctorOfferStore;
 import fit.iuh.se.hsoperations.dto.command.OperationalEventCommand;
 import fit.iuh.se.hsoperations.event.OperationalEventPublisher;
-import fit.iuh.se.hsbilling.service.ConsultationCreditService;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsuser.entity.UserAccount;
-import fit.iuh.se.hsuser.entity.enums.*;
+import fit.iuh.se.hsuser.entity.enums.AccountStatus;
+import fit.iuh.se.hsuser.entity.enums.UserRole;
 import fit.iuh.se.hsuser.repository.UserAccountRepository;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.*;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
-import java.time.*;
-import java.util.*;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -33,23 +46,37 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class QueueConsultationSessionServiceImplTest {
-    @Mock DoctorDispatchSelectionService dispatch;
-    @Mock UserAccountRepository users;
-    @Mock ConsultationRequestRepository requests;
-    @Mock ConsultationQueueEntryRepository queues;
-    @Mock DoctorCareProfileRepository doctors;
-    @Mock ConsultationSessionRepository sessions;
-    @Mock ConsultationParticipantRepository participants;
-    @Mock EpisodeHealthRecordAuthorizationService authorizations;
-    @Mock DoctorOfferStore offers;
-    @Mock ConsultationMapper mapper;
-    @Mock OperationalEventPublisher events;
-    @Mock ApplicationEventPublisher applicationEvents;
-    @Mock ConsultationCreditService consultationCredits;
+    @Mock
+    DoctorDispatchSelectionService dispatch;
+    @Mock
+    UserAccountRepository users;
+    @Mock
+    ConsultationRequestRepository requests;
+    @Mock
+    ConsultationQueueEntryRepository queues;
+    @Mock
+    DoctorCareProfileRepository doctors;
+    @Mock
+    ConsultationSessionRepository sessions;
+    @Mock
+    ConsultationParticipantRepository participants;
+    @Mock
+    EpisodeHealthRecordAuthorizationService authorizations;
+    @Mock
+    DoctorOfferStore offers;
+    @Mock
+    ConsultationMapper mapper;
+    @Mock
+    OperationalEventPublisher events;
+    @Mock
+    ApplicationEventPublisher applicationEvents;
+    @Mock
+    ConsultationCreditService consultationCredits;
     QueueConsultationSessionServiceImpl service;
     final Instant now = Instant.parse("2026-09-05T06:00:00Z");
 
-    @BeforeEach void setUp() {
+    @BeforeEach
+    void setUp() {
         service = new QueueConsultationSessionServiceImpl(dispatch, users, requests, queues, doctors,
                 sessions, participants, authorizations, offers, mapper, events, applicationEvents,
                 consultationCredits);
@@ -57,10 +84,13 @@ class QueueConsultationSessionServiceImplTest {
         ReflectionTestUtils.setField(service, "initialSessionMinutes", 15L);
     }
 
-    @Test void validConfirmationCreatesOneActiveQueueSessionAndDurableBoundary() {
+    @Test
+    void validConfirmationCreatesOneActiveQueueSessionAndDurableBoundary() {
         Fixtures f = validFixtures();
         when(sessions.saveAndFlush(any())).thenAnswer(invocation -> {
-            ConsultationSession session = invocation.getArgument(0); session.setId(500L); return session;
+            ConsultationSession session = invocation.getArgument(0);
+            session.setId(500L);
+            return session;
         });
         when(mapper.toSessionResponse(any())).thenReturn(ConsultationSessionResponse.builder().id(500L).build());
 
@@ -89,12 +119,15 @@ class QueueConsultationSessionServiceImplTest {
         verify(events, times(3)).record(any(OperationalEventCommand.class));
     }
 
-    @Test void paidConfirmationCapturesCreditAndCopiesPolicyToSession() {
+    @Test
+    void paidConfirmationCapturesCreditAndCopiesPolicyToSession() {
         Fixtures fixtures = validFixtures();
         fixtures.request.setCreditPolicy(ConsultationCreditPolicy.PER_SESSION_V1);
         fixtures.request.setCreditCost(1L);
         when(sessions.saveAndFlush(any())).thenAnswer(invocation -> {
-            ConsultationSession session = invocation.getArgument(0); session.setId(500L); return session;
+            ConsultationSession session = invocation.getArgument(0);
+            session.setId(500L);
+            return session;
         });
         when(mapper.toSessionResponse(any())).thenReturn(ConsultationSessionResponse.builder().id(500L).build());
 
@@ -108,12 +141,15 @@ class QueueConsultationSessionServiceImplTest {
                 response.getCreditReservationStatus());
     }
 
-    @Test void confirmationChargesV2CreditOnlyWhenSessionIsCreated() {
+    @Test
+    void confirmationChargesV2CreditOnlyWhenSessionIsCreated() {
         Fixtures fixtures = validFixtures();
         fixtures.request.setCreditPolicy(ConsultationCreditPolicy.PER_SESSION_CONFIRM_V2);
         fixtures.request.setCreditCost(1L);
         when(sessions.saveAndFlush(any())).thenAnswer(invocation -> {
-            ConsultationSession session = invocation.getArgument(0); session.setId(500L); return session;
+            ConsultationSession session = invocation.getArgument(0);
+            session.setId(500L);
+            return session;
         });
         when(mapper.toSessionResponse(any())).thenReturn(ConsultationSessionResponse.builder().id(500L).build());
 
@@ -128,7 +164,8 @@ class QueueConsultationSessionServiceImplTest {
                 response.getCreditReservationStatus());
     }
 
-    @Test void duplicateAfterCommitReturnsExistingSessionWithoutRedisOrDuplicateSideEffects() {
+    @Test
+    void duplicateAfterCommitReturnsExistingSessionWithoutRedisOrDuplicateSideEffects() {
         ConsultationRequest request = request(ConsultationRequestStatus.FULFILLED);
         request.setConsultationSessionId(500L);
         ConsultationSession existing = ConsultationSession.builder().id(500L).requestId(11L).memberId(12L)
@@ -146,7 +183,8 @@ class QueueConsultationSessionServiceImplTest {
         verifyNoInteractions(participants, authorizations, events);
     }
 
-    @Test void duplicatePaidConfirmationVerifiesTheSameCapturedReservation() {
+    @Test
+    void duplicatePaidConfirmationVerifiesTheSameCapturedReservation() {
         ConsultationRequest request = request(ConsultationRequestStatus.FULFILLED);
         request.setCreditPolicy(ConsultationCreditPolicy.PER_SESSION_V1);
         request.setCreditCost(1L);
@@ -167,7 +205,8 @@ class QueueConsultationSessionServiceImplTest {
         verify(sessions, never()).saveAndFlush(any());
     }
 
-    @Test void duplicateV2ConfirmationVerifiesTheSameSessionCharge() {
+    @Test
+    void duplicateV2ConfirmationVerifiesTheSameSessionCharge() {
         ConsultationRequest request = request(ConsultationRequestStatus.FULFILLED);
         request.setCreditPolicy(ConsultationCreditPolicy.PER_SESSION_CONFIRM_V2);
         request.setCreditCost(1L);
@@ -188,7 +227,8 @@ class QueueConsultationSessionServiceImplTest {
         verify(sessions, never()).saveAndFlush(any());
     }
 
-    @Test void duplicateAfterCommitReturnsExistingSessionWhenRedisCleanupIsUnavailable() {
+    @Test
+    void duplicateAfterCommitReturnsExistingSessionWhenRedisCleanupIsUnavailable() {
         ConsultationRequest request = request(ConsultationRequestStatus.FULFILLED);
         request.setConsultationSessionId(500L);
         ConsultationSession existing = ConsultationSession.builder().id(500L).requestId(11L).memberId(12L)
@@ -207,7 +247,8 @@ class QueueConsultationSessionServiceImplTest {
         verifyNoInteractions(participants, authorizations, events);
     }
 
-    @Test void exactMemberDeadlineRejectsWithoutCreatingDurableState() {
+    @Test
+    void exactMemberDeadlineRejectsWithoutCreatingDurableState() {
         Fixtures f = validFixtures();
         when(offers.confirm("offer-a", 10L, 12L, 20L, now))
                 .thenReturn(DoctorOfferStore.ConfirmResult.EXPIRED);
@@ -218,14 +259,16 @@ class QueueConsultationSessionServiceImplTest {
         assertEquals(DoctorDispatchStatus.AVAILABLE, f.doctor.getDispatchStatus());
     }
 
-    @Test void anotherMemberCannotConfirm() {
+    @Test
+    void anotherMemberCannotConfirm() {
         when(users.findByIdForUpdate(99L)).thenReturn(Optional.of(account(99L, UserRole.MEMBER)));
         when(requests.findByIdForUpdate(11L)).thenReturn(Optional.of(request(ConsultationRequestStatus.QUEUED)));
         assertThrows(AppException.class, () -> service.confirmMember(99L, 11L, "offer-a"));
         verifyNoInteractions(offers, participants, authorizations);
     }
 
-    @Test void cancelledRequestCannotCreateSession() {
+    @Test
+    void cancelledRequestCannotCreateSession() {
         when(users.findByIdForUpdate(12L)).thenReturn(Optional.of(account(12L, UserRole.MEMBER)));
         when(requests.findByIdForUpdate(11L)).thenReturn(Optional.of(request(ConsultationRequestStatus.CANCELLED)));
         when(sessions.findByRequestId(11L)).thenReturn(Optional.empty());
@@ -234,10 +277,13 @@ class QueueConsultationSessionServiceImplTest {
         verify(sessions, never()).saveAndFlush(any());
     }
 
-    @Test void dbRollbackRestoresAcceptedRedisOfferAndCommitReleasesIt() {
+    @Test
+    void dbRollbackRestoresAcceptedRedisOfferAndCommitReleasesIt() {
         validFixtures();
         when(sessions.saveAndFlush(any())).thenAnswer(invocation -> {
-            ConsultationSession session = invocation.getArgument(0); session.setId(500L); return session;
+            ConsultationSession session = invocation.getArgument(0);
+            session.setId(500L);
+            return session;
         });
         when(mapper.toSessionResponse(any())).thenReturn(ConsultationSessionResponse.builder().id(500L).build());
         TransactionSynchronizationManager.initSynchronization();
@@ -280,13 +326,17 @@ class QueueConsultationSessionServiceImplTest {
         return ConsultationRequest.builder().id(11L).memberId(12L).flowType(ConsultationFlowType.QUEUE_DISPATCH_V1)
                 .status(status).selectedHealthRecordIds(new ArrayList<>(List.of(101L, 102L))).build();
     }
+
     private ConsultationQueueEntry queue(ConsultationQueueStatus status) {
         return ConsultationQueueEntry.builder().id(10L).requestId(11L).memberId(12L)
                 .queueDate(LocalDate.of(2026, 9, 5)).queueNumber(7L).queuedAt(now.minusSeconds(1000))
                 .status(status).build();
     }
+
     private UserAccount account(Long id, UserRole role) {
         return UserAccount.builder().id(id).role(role).status(AccountStatus.ACTIVE).build();
     }
-    private record Fixtures(ConsultationRequest request, ConsultationQueueEntry queue, DoctorCareProfile doctor) {}
+
+    private record Fixtures(ConsultationRequest request, ConsultationQueueEntry queue, DoctorCareProfile doctor) {
+    }
 }

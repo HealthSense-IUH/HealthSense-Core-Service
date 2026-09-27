@@ -1,7 +1,9 @@
 package fit.iuh.se.hsoperations.service.impl;
 
 import fit.iuh.se.hsoperations.entity.UserNotification;
-import fit.iuh.se.hsoperations.entity.enums.*;
+import fit.iuh.se.hsoperations.entity.enums.BusinessDomainType;
+import fit.iuh.se.hsoperations.entity.enums.NotificationDeliveryStatus;
+import fit.iuh.se.hsoperations.entity.enums.NotificationType;
 import fit.iuh.se.hsoperations.repository.UserNotificationRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -16,7 +18,8 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class NotificationServiceImplTest {
-    @Mock UserNotificationRepository repository;
+    @Mock
+    UserNotificationRepository repository;
 
     @Test
     void markingNotificationReadDoesNotChangeItsBusinessReference() {

@@ -6,25 +6,25 @@ import fit.iuh.se.hschat.entity.DoctorCareProfile;
 import fit.iuh.se.hschat.entity.enums.DoctorDispatchStatus;
 import fit.iuh.se.hschat.repository.ConsultationSessionRepository;
 import fit.iuh.se.hschat.repository.DoctorCareProfileRepository;
-import fit.iuh.se.hsshared.advice.entity.AppException;
+import fit.iuh.se.hschat.service.dispatch.DoctorDispatchSelectionService;
+import fit.iuh.se.hschat.service.dispatch.DoctorOfferService;
+import fit.iuh.se.hschat.service.dispatch.offer.DoctorOfferStore;
 import fit.iuh.se.hsoperations.entity.enums.BusinessEventType;
 import fit.iuh.se.hsoperations.event.OperationalEventPublisher;
+import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsuser.entity.UserAccount;
 import fit.iuh.se.hsuser.entity.enums.AccountStatus;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
 import fit.iuh.se.hsuser.repository.UserAccountRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.context.ApplicationEventPublisher;
-import fit.iuh.se.hschat.service.dispatch.DoctorDispatchSelectionService;
-import fit.iuh.se.hschat.service.dispatch.DoctorOfferService;
-import fit.iuh.se.hschat.service.dispatch.offer.DoctorOfferStore;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -38,14 +38,22 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class DoctorDispatchStatusServiceImplTest {
 
-    @Mock DoctorCareProfileRepository profileRepository;
-    @Mock ConsultationSessionRepository sessionRepository;
-    @Mock UserAccountRepository userAccountRepository;
-    @Mock OperationalEventPublisher eventPublisher;
-    @Mock ApplicationEventPublisher applicationEventPublisher;
-    @Mock DoctorDispatchSelectionService selectionService;
-    @Mock DoctorOfferStore offerStore;
-    @Mock DoctorOfferService offerService;
+    @Mock
+    DoctorCareProfileRepository profileRepository;
+    @Mock
+    ConsultationSessionRepository sessionRepository;
+    @Mock
+    UserAccountRepository userAccountRepository;
+    @Mock
+    OperationalEventPublisher eventPublisher;
+    @Mock
+    ApplicationEventPublisher applicationEventPublisher;
+    @Mock
+    DoctorDispatchSelectionService selectionService;
+    @Mock
+    DoctorOfferStore offerStore;
+    @Mock
+    DoctorOfferService offerService;
 
     DoctorDispatchStatusServiceImpl service;
 

@@ -1,6 +1,8 @@
 package fit.iuh.se.hsoperations.dto.command;
 
-import fit.iuh.se.hsoperations.entity.enums.*;
+import fit.iuh.se.hsoperations.entity.enums.BusinessActorType;
+import fit.iuh.se.hsoperations.entity.enums.BusinessDomainType;
+import fit.iuh.se.hsoperations.entity.enums.BusinessEventType;
 import lombok.Builder;
 
 import java.time.Instant;

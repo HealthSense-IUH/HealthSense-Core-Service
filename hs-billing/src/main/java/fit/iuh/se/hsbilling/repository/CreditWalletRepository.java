@@ -2,7 +2,10 @@ package fit.iuh.se.hsbilling.repository;
 
 import fit.iuh.se.hsbilling.entity.CreditWallet;
 import jakarta.persistence.LockModeType;
-import org.springframework.data.jpa.repository.*;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
 
 import java.util.Collection;
 import java.util.List;
@@ -19,9 +22,9 @@ public interface CreditWalletRepository extends JpaRepository<CreditWallet, Long
 
     @Modifying
     @Query(value = """
-        INSERT INTO credit_wallets (id, member_id, balance, reserved, version, created_at, updated_at)
-        VALUES (:id, :memberId, 0, 0, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-        ON CONFLICT (member_id) DO NOTHING
-        """, nativeQuery = true)
+            INSERT INTO credit_wallets (id, member_id, balance, reserved, version, created_at, updated_at)
+            VALUES (:id, :memberId, 0, 0, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            ON CONFLICT (member_id) DO NOTHING
+            """, nativeQuery = true)
     void initialize(Long id, Long memberId);
 }

@@ -1,17 +1,11 @@
 package fit.iuh.se.hsapplication.controller.doctor;
 
 import fit.iuh.se.hsapplication.dto.auth.UserAuthentication;
-import fit.iuh.se.hschat.dto.request.UpsertConsultationFinalSummaryRequest;
 import fit.iuh.se.hschat.dto.request.CreateFinalSummaryAddendumRequest;
-import fit.iuh.se.hschat.dto.response.ConsultationFinalSummaryResponse;
-import fit.iuh.se.hschat.dto.response.FinalSummaryAddendumResponse;
-import fit.iuh.se.hschat.dto.response.DoctorConsultationDetailResponse;
-import fit.iuh.se.hschat.dto.response.DoctorConsultationSessionResponse;
-import fit.iuh.se.hschat.dto.response.DoctorScopedHealthRecordResponse;
-import fit.iuh.se.hschat.dto.response.RawHealthRecordArtifactResponse;
-import fit.iuh.se.hschat.dto.response.CareContinuitySummaryResponse;
-import fit.iuh.se.hschat.service.carehistory.CareHistoryService;
+import fit.iuh.se.hschat.dto.request.UpsertConsultationFinalSummaryRequest;
+import fit.iuh.se.hschat.dto.response.*;
 import fit.iuh.se.hschat.service.activecare.DoctorActiveCareService;
+import fit.iuh.se.hschat.service.carehistory.CareHistoryService;
 import fit.iuh.se.hschat.service.finalsummary.ConsultationFinalSummaryService;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;

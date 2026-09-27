@@ -2,17 +2,29 @@ package fit.iuh.se.hsbilling.service.impl;
 
 import cn.hutool.core.lang.Snowflake;
 import fit.iuh.se.hsbilling.dto.*;
-import fit.iuh.se.hsbilling.entity.*;
-import fit.iuh.se.hsbilling.entity.enums.*;
-import fit.iuh.se.hsbilling.repository.*;
+import fit.iuh.se.hsbilling.entity.CreditLedgerEntry;
+import fit.iuh.se.hsbilling.entity.CreditReservation;
+import fit.iuh.se.hsbilling.entity.CreditWallet;
+import fit.iuh.se.hsbilling.entity.enums.CreditOperation;
+import fit.iuh.se.hsbilling.entity.enums.CreditPackageStatus;
+import fit.iuh.se.hsbilling.entity.enums.CreditReservationStatus;
+import fit.iuh.se.hsbilling.entity.enums.CreditSourceType;
+import fit.iuh.se.hsbilling.repository.CreditLedgerRepository;
+import fit.iuh.se.hsbilling.repository.CreditPackageRepository;
+import fit.iuh.se.hsbilling.repository.CreditReservationRepository;
+import fit.iuh.se.hsbilling.repository.CreditWalletRepository;
 import fit.iuh.se.hsbilling.service.ConsultationCreditService;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsshared.dto.response.PageResponse;
-import fit.iuh.se.hsuser.entity.enums.*;
+import fit.iuh.se.hsuser.entity.enums.AccountStatus;
+import fit.iuh.se.hsuser.entity.enums.UserRole;
 import fit.iuh.se.hsuser.repository.UserAccountRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -254,8 +266,8 @@ public class ConsultationCreditServiceImpl implements ConsultationCreditService 
     }
 
     private void append(CreditWallet wallet, CreditOperation operation, long quantity,
-            long deltaBalance, long deltaReserved, CreditSourceType sourceType, Long sourceId,
-            String key, String reason) {
+                        long deltaBalance, long deltaReserved, CreditSourceType sourceType, Long sourceId,
+                        String key, String reason) {
         wallets.saveAndFlush(wallet);
         var entry = CreditLedgerEntry.builder().walletId(wallet.getId()).operation(operation).quantity(quantity)
                 .deltaBalance(deltaBalance).deltaReserved(deltaReserved).balanceAfter(wallet.getBalance())
@@ -294,5 +306,7 @@ public class ConsultationCreditServiceImpl implements ConsultationCreditService 
                         + ", availableCredits=" + available);
     }
 
-    private void conflict() { throw new AppException(ErrorCode.CREDIT_IDEMPOTENCY_CONFLICT); }
+    private void conflict() {
+        throw new AppException(ErrorCode.CREDIT_IDEMPOTENCY_CONFLICT);
+    }
 }

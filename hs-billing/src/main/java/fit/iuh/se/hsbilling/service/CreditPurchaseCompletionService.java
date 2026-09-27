@@ -1,10 +1,22 @@
 package fit.iuh.se.hsbilling.service;
 
 import fit.iuh.se.hsbilling.config.CreditPaymentConfiguration;
-import fit.iuh.se.hsbilling.dto.*;
-import fit.iuh.se.hsbilling.entity.enums.*;
+import fit.iuh.se.hsbilling.dto.CreditSource;
+import fit.iuh.se.hsbilling.dto.CreditWalletResponse;
+import fit.iuh.se.hsbilling.dto.VerifiedCreditPayment;
+import fit.iuh.se.hsbilling.entity.enums.CreditOrderStatus;
+import fit.iuh.se.hsbilling.entity.enums.CreditPaymentProvider;
+import fit.iuh.se.hsbilling.entity.enums.CreditPaymentStatus;
 import fit.iuh.se.hsbilling.event.CreditPurchaseCompleted;
-import fit.iuh.se.hsbilling.repository.*;
+import fit.iuh.se.hsbilling.repository.CreditOrderRepository;
+import fit.iuh.se.hsbilling.repository.CreditPaymentAttemptRepository;
+import fit.iuh.se.hsoperations.dto.command.NotificationIntent;
+import fit.iuh.se.hsoperations.dto.command.OperationalEventCommand;
+import fit.iuh.se.hsoperations.entity.enums.BusinessActorType;
+import fit.iuh.se.hsoperations.entity.enums.BusinessDomainType;
+import fit.iuh.se.hsoperations.entity.enums.BusinessEventType;
+import fit.iuh.se.hsoperations.entity.enums.NotificationType;
+import fit.iuh.se.hsoperations.event.OperationalEventPublisher;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -12,16 +24,17 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.*;
-import fit.iuh.se.hsoperations.dto.command.*;
-import fit.iuh.se.hsoperations.entity.enums.*;
-import fit.iuh.se.hsoperations.event.OperationalEventPublisher;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
-import java.time.Instant;
 import java.util.Objects;
 
-/** Internal-only settlement boundary. Phase 5 adds verified PAYOS evidence here, not another wallet credit path. */
+/**
+ * Internal-only settlement boundary. Phase 5 adds verified PAYOS evidence here, not another wallet credit path.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -45,7 +58,7 @@ public class CreditPurchaseCompletionService {
         boolean validReference = attempt.getProvider() == CreditPaymentProvider.MOCK
                 ? Objects.equals(evidence.reference(), "mock:" + attemptId)
                 : (attempt.getPaymentLinkId() == null || Objects.equals(evidence.paymentLinkId(), attempt.getPaymentLinkId()))
-                    && evidence.reference() != null && !evidence.reference().isBlank();
+                && evidence.reference() != null && !evidence.reference().isBlank();
         if (attempt.getProvider() != evidence.provider() || !validReference
                 || evidence.amountVnd() != order.getAmountVnd()
                 || !Objects.equals(evidence.currency(), order.getCurrency()))
@@ -60,7 +73,7 @@ public class CreditPurchaseCompletionService {
         }
         boolean payableAttempt = attempt.getStatus() == CreditPaymentStatus.PENDING
                 || (attempt.getProvider() == CreditPaymentProvider.PAYOS
-                    && attempt.getStatus() == CreditPaymentStatus.CREATING);
+                && attempt.getStatus() == CreditPaymentStatus.CREATING);
         if (order.getStatus() != CreditOrderStatus.PENDING_PAYMENT || !payableAttempt)
             throw new AppException(ErrorCode.INVALID_CREDIT_PAYMENT);
 
@@ -91,9 +104,13 @@ public class CreditPurchaseCompletionService {
                 .build());
         var event = new CreditPurchaseCompleted(orderId, order.getMemberId(), order.getCreditQuantity(), attempt.getProvider());
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override public void afterCommit() {
-                try { events.publishEvent(event); }
-                catch (RuntimeException ex) { log.error("Credit purchase committed but event delivery failed for order {}", orderId, ex); }
+            @Override
+            public void afterCommit() {
+                try {
+                    events.publishEvent(event);
+                } catch (RuntimeException ex) {
+                    log.error("Credit purchase committed but event delivery failed for order {}", orderId, ex);
+                }
             }
         });
         return wallet;

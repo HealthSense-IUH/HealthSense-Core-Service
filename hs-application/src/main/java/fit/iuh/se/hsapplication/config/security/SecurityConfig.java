@@ -12,8 +12,8 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -36,20 +36,20 @@ public class SecurityConfig {
     RestAccessDeniedHandler restAccessDeniedHandler;
 
     static String[] PUBLIC_ENDPOINTS = {
-        "/api/auth/register",
-        "/api/auth/login",
-        "/api/auth/refresh",
-        "/api/auth/mobile/login",
-        "/api/auth/mobile/refresh",
-        "/api/auth/forgot-password/request-otp",
-        "/api/auth/forgot-password/verify-otp",
-        "/api/auth/forgot-password/reset",
-        "/api/health-records/ai-callback",
-        "/api/webhooks/payos",
-        "/api/webhooks/payos/**",
-        "/public/payments/webhook/payos",
-        "/public/payments/webhook/payos/**",
-        "/ws/consultations/**",
+            "/api/auth/register",
+            "/api/auth/login",
+            "/api/auth/refresh",
+            "/api/auth/mobile/login",
+            "/api/auth/mobile/refresh",
+            "/api/auth/forgot-password/request-otp",
+            "/api/auth/forgot-password/verify-otp",
+            "/api/auth/forgot-password/reset",
+            "/api/health-records/ai-callback",
+            "/api/webhooks/payos",
+            "/api/webhooks/payos/**",
+            "/public/payments/webhook/payos",
+            "/public/payments/webhook/payos/**",
+            "/ws/consultations/**",
     };
 
     static String[] ADMIN_ENDPOINTS = {

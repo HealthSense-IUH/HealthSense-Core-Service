@@ -1,8 +1,8 @@
 package fit.iuh.se.hschat.dto.response;
 
 import fit.iuh.se.hschat.entity.enums.ConsultationPaymentProvider;
-import fit.iuh.se.hschat.entity.enums.ConsultationPaymentStatus;
 import fit.iuh.se.hschat.entity.enums.ConsultationPaymentPurpose;
+import fit.iuh.se.hschat.entity.enums.ConsultationPaymentStatus;
 import fit.iuh.se.hschat.entity.enums.PaymentProviderCancellationStatus;
 import lombok.*;
 import lombok.experimental.FieldDefaults;

@@ -10,12 +10,15 @@ import fit.iuh.se.hschat.repository.DoctorCareProfileRepository;
 import fit.iuh.se.hschat.service.dispatch.event.DoctorDispatchStatusChanged;
 import fit.iuh.se.hschat.service.doctor.SupportScheduleValidator;
 import fit.iuh.se.hschat.service.finalsummary.QueueFinalSummaryLifecycleService;
-import fit.iuh.se.hsshared.advice.entity.AppException;
-import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsoperations.dto.command.NotificationIntent;
 import fit.iuh.se.hsoperations.dto.command.OperationalEventCommand;
-import fit.iuh.se.hsoperations.entity.enums.*;
+import fit.iuh.se.hsoperations.entity.enums.BusinessActorType;
+import fit.iuh.se.hsoperations.entity.enums.BusinessDomainType;
+import fit.iuh.se.hsoperations.entity.enums.BusinessEventType;
+import fit.iuh.se.hsoperations.entity.enums.NotificationType;
 import fit.iuh.se.hsoperations.event.OperationalEventPublisher;
+import fit.iuh.se.hsshared.advice.entity.AppException;
+import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsuser.entity.UserAccount;
 import fit.iuh.se.hsuser.entity.enums.AccountStatus;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
@@ -31,8 +34,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -60,7 +63,7 @@ public class QueueFinalSummaryLifecycleServiceImpl implements QueueFinalSummaryL
     @Override
     @Transactional
     public void onSummaryFinalized(ConsultationSession session, DoctorCareProfile profile,
-            UserAccount doctor, ConsultationFinalSummary summary, Instant now) {
+                                   UserAccount doctor, ConsultationFinalSummary summary, Instant now) {
         requireQueueCompletedSession(session);
         if (summary.getStatus() != ConsultationFinalSummaryStatus.FINALIZED)
             throw new AppException(ErrorCode.INVALID_CONSULTATION_STATUS);
@@ -133,7 +136,7 @@ public class QueueFinalSummaryLifecycleServiceImpl implements QueueFinalSummaryL
     }
 
     private void release(ConsultationSession session, DoctorCareProfile profile, UserAccount doctor,
-            Instant releasedAt, DoctorReleaseReason reason, boolean timely) {
+                         Instant releasedAt, DoctorReleaseReason reason, boolean timely) {
         DoctorDispatchStatus previous = profile == null ? null : profile.getDispatchStatus();
         boolean ownsDoctor = profile != null
                 && previous == DoctorDispatchStatus.BUSY
@@ -191,8 +194,8 @@ public class QueueFinalSummaryLifecycleServiceImpl implements QueueFinalSummaryL
     }
 
     private void recordRelease(ConsultationSession session, DoctorCareProfile profile,
-            DoctorDispatchStatus previous, DoctorDispatchStatus target, Instant releasedAt,
-            DoctorReleaseReason reason, boolean ownsDoctor) {
+                               DoctorDispatchStatus previous, DoctorDispatchStatus target, Instant releasedAt,
+                               DoctorReleaseReason reason, boolean ownsDoctor) {
         Map<String, String> metadata = new LinkedHashMap<>();
         metadata.put("completedAt", String.valueOf(session.getCompletedAt()));
         metadata.put("summaryDueAt", String.valueOf(session.getSummaryDueAt()));
@@ -209,10 +212,10 @@ public class QueueFinalSummaryLifecycleServiceImpl implements QueueFinalSummaryL
                 ? BusinessEventType.DOCTOR_AVAILABLE : BusinessEventType.DOCTOR_UNAVAILABLE;
         List<NotificationIntent> notifications = reason == DoctorReleaseReason.SUMMARY_TIMEOUT
                 ? List.of(new NotificationIntent(session.getDoctorId(),
-                        NotificationType.DOCTOR_SUMMARY_DEADLINE_EXPIRED,
-                        "Final summary deadline expired",
-                        "Consultation intake was disabled because the Final Summary was not completed on time. You can still finalize it from session history.",
-                        BusinessDomainType.SESSION, session.getId(), key + ":doctor"))
+                NotificationType.DOCTOR_SUMMARY_DEADLINE_EXPIRED,
+                "Final summary deadline expired",
+                "Consultation intake was disabled because the Final Summary was not completed on time. You can still finalize it from session history.",
+                BusinessDomainType.SESSION, session.getId(), key + ":doctor"))
                 : List.of();
         operationalEventPublisher.record(OperationalEventCommand.builder()
                 .domainType(BusinessDomainType.ACCOUNT).domainId(session.getDoctorId())

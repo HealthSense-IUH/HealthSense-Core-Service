@@ -3,11 +3,16 @@ package fit.iuh.se.hschat.service.continuation.impl;
 import fit.iuh.se.hschat.dto.request.SubmitContinuationDecisionRequest;
 import fit.iuh.se.hschat.dto.response.ContinuationDecisionResponse;
 import fit.iuh.se.hschat.entity.ConsultationSession;
-import fit.iuh.se.hschat.entity.enums.*;
+import fit.iuh.se.hschat.entity.enums.ConsultationCompletionReason;
+import fit.iuh.se.hschat.entity.enums.ConsultationFlowType;
+import fit.iuh.se.hschat.entity.enums.ConsultationStatus;
+import fit.iuh.se.hschat.entity.enums.ContinuationDecision;
 import fit.iuh.se.hschat.repository.ConsultationSessionRepository;
-import fit.iuh.se.hschat.service.continuation.*;
-import fit.iuh.se.hsshared.advice.entity.AppException;
+import fit.iuh.se.hschat.service.continuation.ContinuationState;
+import fit.iuh.se.hschat.service.continuation.ContinuationStore;
+import fit.iuh.se.hschat.service.continuation.QueueSessionCompletionService;
 import fit.iuh.se.hsoperations.event.OperationalEventPublisher;
+import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,10 +38,14 @@ class QueueContinuationServiceImplTest {
     static final Long MEMBER_ID = 10L;
     static final Long DOCTOR_ID = 20L;
 
-    @Mock ConsultationSessionRepository sessionRepository;
-    @Mock ContinuationStore store;
-    @Mock QueueSessionCompletionService completionService;
-    @Mock OperationalEventPublisher events;
+    @Mock
+    ConsultationSessionRepository sessionRepository;
+    @Mock
+    ContinuationStore store;
+    @Mock
+    QueueSessionCompletionService completionService;
+    @Mock
+    OperationalEventPublisher events;
 
     QueueContinuationServiceImpl service;
     Instant currentNow;
@@ -265,5 +274,6 @@ class QueueContinuationServiceImplTest {
         ReflectionTestUtils.setField(service, "clock", Clock.fixed(now, ZoneOffset.UTC));
     }
 
-    private record ContinuationSessionFixture(ConsultationSession session) {}
+    private record ContinuationSessionFixture(ConsultationSession session) {
+    }
 }

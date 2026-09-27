@@ -2,15 +2,17 @@ package fit.iuh.se.hschat.service.authorization.impl;
 
 import fit.iuh.se.hschat.entity.ConsultationSession;
 import fit.iuh.se.hschat.entity.EpisodeHealthRecordAuthorization;
-import fit.iuh.se.hschat.entity.enums.*;
+import fit.iuh.se.hschat.entity.enums.ConsultationStatus;
+import fit.iuh.se.hschat.entity.enums.EpisodeHealthRecordAuthorizationSource;
+import fit.iuh.se.hschat.entity.enums.EpisodeHealthRecordAuthorizedByType;
 import fit.iuh.se.hschat.repository.ConsultationSessionRepository;
 import fit.iuh.se.hschat.repository.EpisodeHealthRecordAuthorizationRepository;
 import fit.iuh.se.hshealthrecord.entity.HealthRecord;
 import fit.iuh.se.hshealthrecord.repository.HealthRecordRepository;
-import fit.iuh.se.hsuser.repository.UserAccountRepository;
+import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsuser.entity.UserAccount;
 import fit.iuh.se.hsuser.entity.enums.AccountStatus;
-import fit.iuh.se.hsshared.advice.entity.AppException;
+import fit.iuh.se.hsuser.repository.UserAccountRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,11 +30,16 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class EpisodeHealthRecordAuthorizationServiceImplTest {
 
-    @Mock EpisodeHealthRecordAuthorizationRepository authorizationRepository;
-    @Mock ConsultationSessionRepository sessionRepository;
-    @Mock HealthRecordRepository healthRecordRepository;
-    @Mock UserAccountRepository userAccountRepository;
-    @Mock fit.iuh.se.hsoperations.event.OperationalEventPublisher OperationalEventPublisher;
+    @Mock
+    EpisodeHealthRecordAuthorizationRepository authorizationRepository;
+    @Mock
+    ConsultationSessionRepository sessionRepository;
+    @Mock
+    HealthRecordRepository healthRecordRepository;
+    @Mock
+    UserAccountRepository userAccountRepository;
+    @Mock
+    fit.iuh.se.hsoperations.event.OperationalEventPublisher OperationalEventPublisher;
 
     EpisodeHealthRecordAuthorizationServiceImpl service;
 

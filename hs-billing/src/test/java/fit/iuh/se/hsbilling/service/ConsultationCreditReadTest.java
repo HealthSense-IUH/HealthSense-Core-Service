@@ -6,18 +6,25 @@ import fit.iuh.se.hsbilling.entity.CreditLedgerEntry;
 import fit.iuh.se.hsbilling.entity.CreditWallet;
 import fit.iuh.se.hsbilling.entity.enums.CreditOperation;
 import fit.iuh.se.hsbilling.entity.enums.CreditSourceType;
-import fit.iuh.se.hsbilling.repository.*;
+import fit.iuh.se.hsbilling.repository.CreditLedgerRepository;
+import fit.iuh.se.hsbilling.repository.CreditPackageRepository;
+import fit.iuh.se.hsbilling.repository.CreditReservationRepository;
+import fit.iuh.se.hsbilling.repository.CreditWalletRepository;
 import fit.iuh.se.hsbilling.service.impl.ConsultationCreditServiceImpl;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsuser.entity.UserAccount;
-import fit.iuh.se.hsuser.entity.enums.*;
+import fit.iuh.se.hsuser.entity.enums.AccountStatus;
+import fit.iuh.se.hsuser.entity.enums.UserRole;
 import fit.iuh.se.hsuser.repository.UserAccountRepository;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.data.domain.PageRequest;
+
 import java.util.Optional;
-import static org.junit.jupiter.api.Assertions.*;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 class ConsultationCreditReadTest {
@@ -29,7 +36,8 @@ class ConsultationCreditReadTest {
     private final ConsultationCreditService credits = new ConsultationCreditServiceImpl(
             wallets, ledger, reservations, packages, users, new Snowflake(24, 24));
 
-    @Test void newMemberReadsZeroWithoutWriting() {
+    @Test
+    void newMemberReadsZeroWithoutWriting() {
         when(users.findById(1L)).thenReturn(Optional.of(UserAccount.builder()
                 .id(1L).role(UserRole.MEMBER).status(AccountStatus.ACTIVE).build()));
         assertEquals(new CreditWalletResponse(0, 0, 0), credits.getWallet(1L));
@@ -39,7 +47,8 @@ class ConsultationCreditReadTest {
         verifyNoInteractions(ledger, reservations);
     }
 
-    @Test void serviceAuthorizationRejectsInactiveAndOtherRolesBeforeReadingBilling() {
+    @Test
+    void serviceAuthorizationRejectsInactiveAndOtherRolesBeforeReadingBilling() {
         var account = UserAccount.builder().id(1L).role(UserRole.MEMBER).status(AccountStatus.INACTIVE).build();
         when(users.findById(1L)).thenReturn(Optional.of(account));
         assertEquals(ErrorCode.ACCOUNT_DISABLED, assertThrows(AppException.class, () -> credits.getWallet(1L)).getErrorCode());
@@ -52,7 +61,8 @@ class ConsultationCreditReadTest {
         verifyNoInteractions(wallets, ledger, reservations, packages);
     }
 
-    @Test void admissionChecksAvailabilityWithoutMutatingWalletOrLedger() {
+    @Test
+    void admissionChecksAvailabilityWithoutMutatingWalletOrLedger() {
         activeMember(1L);
         var wallet = CreditWallet.builder().id(10L).memberId(1L).balance(3L).reserved(2L).version(0L).build();
         when(wallets.findByMemberIdForUpdate(1L)).thenReturn(Optional.of(wallet));
@@ -65,7 +75,8 @@ class ConsultationCreditReadTest {
         verifyNoInteractions(ledger, reservations);
     }
 
-    @Test void sessionChargeDeductsBalanceWithoutChangingReservedAndIsRecordedOnce() {
+    @Test
+    void sessionChargeDeductsBalanceWithoutChangingReservedAndIsRecordedOnce() {
         activeMember(1L);
         var wallet = CreditWallet.builder().id(10L).memberId(1L).balance(5L).reserved(2L).version(0L).build();
         when(wallets.findByMemberIdForUpdate(1L)).thenReturn(Optional.of(wallet));
@@ -85,7 +96,8 @@ class ConsultationCreditReadTest {
         assertEquals(2L, entry.getValue().getReservedAfter());
     }
 
-    @Test void admissionAndConfirmationBothRejectWhenAvailableCreditIsGone() {
+    @Test
+    void admissionAndConfirmationBothRejectWhenAvailableCreditIsGone() {
         activeMember(1L);
         var wallet = CreditWallet.builder().id(10L).memberId(1L).balance(2L).reserved(2L).version(0L).build();
         when(wallets.findByMemberIdForUpdate(1L)).thenReturn(Optional.of(wallet));

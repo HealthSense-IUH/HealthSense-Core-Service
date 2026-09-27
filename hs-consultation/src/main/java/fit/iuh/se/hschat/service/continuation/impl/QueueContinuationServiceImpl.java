@@ -3,15 +3,24 @@ package fit.iuh.se.hschat.service.continuation.impl;
 import fit.iuh.se.hschat.dto.request.SubmitContinuationDecisionRequest;
 import fit.iuh.se.hschat.dto.response.ContinuationDecisionResponse;
 import fit.iuh.se.hschat.entity.ConsultationSession;
-import fit.iuh.se.hschat.entity.enums.*;
+import fit.iuh.se.hschat.entity.enums.ConsultationCompletionReason;
+import fit.iuh.se.hschat.entity.enums.ConsultationFlowType;
+import fit.iuh.se.hschat.entity.enums.ConsultationStatus;
+import fit.iuh.se.hschat.entity.enums.ContinuationDecision;
 import fit.iuh.se.hschat.repository.ConsultationSessionRepository;
-import fit.iuh.se.hschat.service.continuation.*;
-import fit.iuh.se.hsshared.advice.entity.AppException;
-import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
+import fit.iuh.se.hschat.service.continuation.ContinuationState;
+import fit.iuh.se.hschat.service.continuation.ContinuationStore;
+import fit.iuh.se.hschat.service.continuation.QueueContinuationService;
+import fit.iuh.se.hschat.service.continuation.QueueSessionCompletionService;
 import fit.iuh.se.hsoperations.dto.command.NotificationIntent;
 import fit.iuh.se.hsoperations.dto.command.OperationalEventCommand;
-import fit.iuh.se.hsoperations.entity.enums.*;
+import fit.iuh.se.hsoperations.entity.enums.BusinessActorType;
+import fit.iuh.se.hsoperations.entity.enums.BusinessDomainType;
+import fit.iuh.se.hsoperations.entity.enums.BusinessEventType;
+import fit.iuh.se.hsoperations.entity.enums.NotificationType;
 import fit.iuh.se.hsoperations.event.OperationalEventPublisher;
+import fit.iuh.se.hsshared.advice.entity.AppException;
+import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -71,7 +80,7 @@ public class QueueContinuationServiceImpl implements QueueContinuationService {
     @Override
     @Transactional
     public ContinuationDecisionResponse decide(Long actorId, UserRole actorRole, Long sessionId,
-            int round, SubmitContinuationDecisionRequest request) {
+                                               int round, SubmitContinuationDecisionRequest request) {
         validateDecision(request.decision());
         ConsultationSession session = lockAndAuthorize(actorId, actorRole, sessionId);
         if (session.getContinuationRound() != round)
@@ -233,7 +242,7 @@ public class QueueContinuationServiceImpl implements QueueContinuationService {
     }
 
     private void recordDecision(ConsultationSession session, Long actorId, UserRole actorRole,
-            ContinuationDecision decision, ContinuationState state, Instant now) {
+                                ContinuationDecision decision, ContinuationState state, Instant now) {
         Map<String, String> metadata = timingMetadata(state);
         metadata.put("decision", decision.name());
         operationalEventPublisher.record(OperationalEventCommand.builder()
@@ -275,15 +284,19 @@ public class QueueContinuationServiceImpl implements QueueContinuationService {
 
     private void releaseAfterCommit(Long sessionId, int round) {
         Runnable release = () -> {
-            try { continuationStore.release(sessionId, round); }
-            catch (RuntimeException ignored) { /* keyed TTL provides cleanup; newer rounds use a different key */ }
+            try {
+                continuationStore.release(sessionId, round);
+            } catch (RuntimeException ignored) { /* keyed TTL provides cleanup; newer rounds use a different key */ }
         };
         if (!TransactionSynchronizationManager.isSynchronizationActive()) {
             release.run();
             return;
         }
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override public void afterCommit() { release.run(); }
+            @Override
+            public void afterCommit() {
+                release.run();
+            }
         });
     }
 }

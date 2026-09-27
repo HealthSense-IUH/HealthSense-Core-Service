@@ -1,7 +1,9 @@
 package fit.iuh.se.hsoperations.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import fit.iuh.se.hsoperations.repository.*;
+import fit.iuh.se.hsoperations.repository.BusinessAuditEventRepository;
+import fit.iuh.se.hsoperations.repository.NeedsActionItemRepository;
+import fit.iuh.se.hsoperations.repository.NotificationProjectionTaskRepository;
 import fit.iuh.se.hsoperations.service.OperationalEventService;
 import fit.iuh.se.hsoperations.service.impl.OperationalEventServiceImpl;
 import org.springframework.context.ApplicationEventPublisher;

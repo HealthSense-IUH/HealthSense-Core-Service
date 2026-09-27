@@ -2,7 +2,8 @@ package fit.iuh.se.hsoperations.service.impl;
 
 import fit.iuh.se.hsoperations.dto.response.NeedsActionResponse;
 import fit.iuh.se.hsoperations.entity.NeedsActionItem;
-import fit.iuh.se.hsoperations.entity.enums.*;
+import fit.iuh.se.hsoperations.entity.enums.NeedsActionStatus;
+import fit.iuh.se.hsoperations.entity.enums.NeedsActionType;
 import fit.iuh.se.hsoperations.repository.NeedsActionItemRepository;
 import fit.iuh.se.hsoperations.service.NeedsActionService;
 import fit.iuh.se.hsshared.advice.entity.AppException;
@@ -22,7 +23,8 @@ import java.time.Instant;
 public class NeedsActionServiceImpl implements NeedsActionService {
     private final NeedsActionItemRepository repository;
 
-    @Override @Transactional(readOnly = true)
+    @Override
+    @Transactional(readOnly = true)
     public PageResponse<NeedsActionResponse> find(UserRole role, NeedsActionStatus status, NeedsActionType type, Pageable pageable) {
         Specification<NeedsActionItem> spec = allowed(role);
         if (status != null) spec = spec.and((r, q, b) -> b.equal(r.get("status"), status));
@@ -30,16 +32,19 @@ public class NeedsActionServiceImpl implements NeedsActionService {
         return new PageResponse<>(repository.findAll(spec, pageable).map(NeedsActionResponse::from));
     }
 
-    @Override @Transactional(readOnly = true)
+    @Override
+    @Transactional(readOnly = true)
     public NeedsActionResponse get(UserRole role, Long id) {
         return repository.findOne(allowed(role).and((r, q, b) -> b.equal(r.get("id"), id)))
                 .map(NeedsActionResponse::from).orElseThrow(this::notFound);
     }
 
-    @Override @Transactional
+    @Override
+    @Transactional
     public NeedsActionResponse claim(UserRole role, Long actorId, Long id) {
         NeedsActionItem item = lockedAllowed(role, id);
-        if (item.getStatus() == NeedsActionStatus.RESOLVED) throw new AppException(ErrorCode.BAD_REQUEST, "Needs Action is resolved");
+        if (item.getStatus() == NeedsActionStatus.RESOLVED)
+            throw new AppException(ErrorCode.BAD_REQUEST, "Needs Action is resolved");
         if (item.getStatus() == NeedsActionStatus.CLAIMED && !actorId.equals(item.getClaimedBy()))
             throw new AppException(ErrorCode.DATA_INTEGRITY_VIOLATION, "Needs Action is already claimed");
         item.setStatus(NeedsActionStatus.CLAIMED);
@@ -48,7 +53,8 @@ public class NeedsActionServiceImpl implements NeedsActionService {
         return NeedsActionResponse.from(repository.save(item));
     }
 
-    @Override @Transactional
+    @Override
+    @Transactional
     public NeedsActionResponse resolve(UserRole role, Long actorId, Long id, String resolution) {
         NeedsActionItem item = lockedAllowed(role, id);
         if (item.getStatus() == NeedsActionStatus.RESOLVED) return NeedsActionResponse.from(item);
@@ -78,5 +84,7 @@ public class NeedsActionServiceImpl implements NeedsActionService {
                 || role == UserRole.CARE_COORDINATOR && item.getAssignedRole().equals("CARE_COORDINATOR");
     }
 
-    private AppException notFound() { return new AppException(ErrorCode.ENTITY_NOT_FOUND, "Needs Action not found"); }
+    private AppException notFound() {
+        return new AppException(ErrorCode.ENTITY_NOT_FOUND, "Needs Action not found");
+    }
 }

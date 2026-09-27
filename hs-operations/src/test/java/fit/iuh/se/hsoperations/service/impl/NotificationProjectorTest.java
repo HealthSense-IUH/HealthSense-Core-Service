@@ -3,18 +3,23 @@ package fit.iuh.se.hsoperations.service.impl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import fit.iuh.se.hsoperations.dto.command.NotificationIntent;
 import fit.iuh.se.hsoperations.entity.NotificationProjectionTask;
-import fit.iuh.se.hsoperations.entity.enums.*;
-import fit.iuh.se.hsoperations.repository.*;
+import fit.iuh.se.hsoperations.entity.enums.BusinessDomainType;
+import fit.iuh.se.hsoperations.entity.enums.NotificationProjectionStatus;
+import fit.iuh.se.hsoperations.entity.enums.NotificationType;
+import fit.iuh.se.hsoperations.repository.NotificationProjectionTaskRepository;
+import fit.iuh.se.hsoperations.repository.UserNotificationRepository;
 import fit.iuh.se.hsuser.entity.UserAccount;
-import fit.iuh.se.hsuser.entity.enums.*;
+import fit.iuh.se.hsuser.entity.enums.AccountStatus;
+import fit.iuh.se.hsuser.entity.enums.UserRole;
 import fit.iuh.se.hsuser.repository.UserAccountRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.*;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -22,9 +27,12 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class NotificationProjectorTest {
-    @Mock NotificationProjectionTaskRepository taskRepository;
-    @Mock UserNotificationRepository notificationRepository;
-    @Mock UserAccountRepository userAccountRepository;
+    @Mock
+    NotificationProjectionTaskRepository taskRepository;
+    @Mock
+    UserNotificationRepository notificationRepository;
+    @Mock
+    UserAccountRepository userAccountRepository;
 
     @Test
     void duplicateProjectionDoesNotDuplicateVisibleNotification() throws Exception {

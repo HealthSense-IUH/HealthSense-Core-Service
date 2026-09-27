@@ -7,19 +7,23 @@ import fit.iuh.se.hschat.dto.response.SessionExtensionResponse;
 import fit.iuh.se.hschat.entity.*;
 import fit.iuh.se.hschat.entity.enums.*;
 import fit.iuh.se.hschat.repository.*;
+import fit.iuh.se.hschat.service.ConsultationFlowGuard;
 import fit.iuh.se.hschat.service.agreement.CareServiceAgreementService;
 import fit.iuh.se.hschat.service.doctor.SupportScheduleValidator;
 import fit.iuh.se.hschat.service.renewal.ConsultationRenewalService;
-import fit.iuh.se.hschat.service.ConsultationFlowGuard;
+import fit.iuh.se.hsoperations.dto.command.NotificationIntent;
+import fit.iuh.se.hsoperations.dto.command.OperationalEventCommand;
+import fit.iuh.se.hsoperations.entity.enums.BusinessActorType;
+import fit.iuh.se.hsoperations.entity.enums.BusinessDomainType;
+import fit.iuh.se.hsoperations.entity.enums.BusinessEventType;
+import fit.iuh.se.hsoperations.entity.enums.NotificationType;
+import fit.iuh.se.hsoperations.event.OperationalEventPublisher;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsuser.entity.UserAccount;
 import fit.iuh.se.hsuser.entity.enums.AccountStatus;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
 import fit.iuh.se.hsuser.repository.UserAccountRepository;
-import fit.iuh.se.hsoperations.dto.command.*;
-import fit.iuh.se.hsoperations.entity.enums.*;
-import fit.iuh.se.hsoperations.event.OperationalEventPublisher;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -448,7 +452,7 @@ public class ConsultationRenewalServiceImpl implements ConsultationRenewalServic
                 || !Boolean.TRUE.equals(profile.getAcceptsOneOnOneCare())
                 || profile.getSpecialty() == null
                 || (carePackage.getRequiredSpecialty() != null
-                    && carePackage.getRequiredSpecialty() != profile.getSpecialty())
+                && carePackage.getRequiredSpecialty() != profile.getSpecialty())
                 || !scheduleValidator.isValid(profile.getAvailabilityJson(), profile.getTimezone(), true))
             throw new AppException(ErrorCode.DOCTOR_NOT_ELIGIBLE_FOR_CONSULTATION);
 
@@ -472,7 +476,7 @@ public class ConsultationRenewalServiceImpl implements ConsultationRenewalServic
     }
 
     private void auditRenewal(ConsultationRenewal renewal, BusinessEventType eventType, Long actorId,
-            UserRole actorRole, ConsultationRenewalStatus previous, ConsultationRenewalStatus next, String reason) {
+                              UserRole actorRole, ConsultationRenewalStatus previous, ConsultationRenewalStatus next, String reason) {
         String key = "renewal:" + renewal.getId() + ":" + eventType + ":" + next;
         OperationalEventPublisher.record(OperationalEventCommand.builder()
                 .domainType(BusinessDomainType.RENEWAL).domainId(renewal.getId()).eventType(eventType)
@@ -488,7 +492,7 @@ public class ConsultationRenewalServiceImpl implements ConsultationRenewalServic
     }
 
     private NotificationIntent renewalNotification(ConsultationRenewal renewal, Long recipient, String recipientType,
-            String message) {
+                                                   String message) {
         return new NotificationIntent(recipient, NotificationType.RENEWAL_STATUS_CHANGED, "Renewal update", message,
                 BusinessDomainType.RENEWAL, renewal.getId(),
                 "renewal:" + renewal.getId() + ":" + renewal.getStatus() + ":" + recipientType);

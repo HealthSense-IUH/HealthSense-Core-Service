@@ -1,18 +1,19 @@
 package fit.iuh.se.hsapplication.controller.chat;
 
 import fit.iuh.se.hsapplication.dto.auth.UserAuthentication;
-import fit.iuh.se.hschat.dto.request.CreateConsultationRequest;
 import fit.iuh.se.hschat.dto.request.ConfirmConsultationRequest;
+import fit.iuh.se.hschat.dto.request.CreateConsultationRequest;
 import fit.iuh.se.hschat.dto.request.SubmitConsultationMoreInfoRequest;
 import fit.iuh.se.hschat.dto.response.ConsultationRequestResponse;
-import fit.iuh.se.hschat.dto.response.CurrentQueueStateResponse;
 import fit.iuh.se.hschat.dto.response.ConsultationSessionResponse;
+import fit.iuh.se.hschat.dto.response.CurrentQueueStateResponse;
 import fit.iuh.se.hschat.service.request.ConsultationRequestService;
 import fit.iuh.se.hschat.service.session.QueueConsultationSessionService;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsshared.dto.response.ApiResponse;
 import fit.iuh.se.hsshared.dto.response.PageResponse;
+import fit.iuh.se.hsuser.entity.enums.UserRole;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import lombok.AccessLevel;
@@ -24,7 +25,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import fit.iuh.se.hsuser.entity.enums.UserRole;
 
 @Validated
 @RestController
