@@ -1,8 +1,11 @@
 package fit.iuh.se.hshealthrecord.service.user.impl;
 
+import fit.iuh.se.hshealthrecord.dto.message.RecordProcessingMessage;
 import fit.iuh.se.hshealthrecord.dto.request.AiCallbackRequest;
 import fit.iuh.se.hshealthrecord.dto.request.PresignedUrlRequest;
 import fit.iuh.se.hshealthrecord.dto.response.HealthRecordResponse;
+import fit.iuh.se.hshealthrecord.dto.response.HealthStatItemResponse;
+import fit.iuh.se.hshealthrecord.dto.response.HealthStatisticsResponse;
 import fit.iuh.se.hshealthrecord.dto.response.PresignedUrlResponse;
 import fit.iuh.se.hshealthrecord.entity.HealthRecord;
 import fit.iuh.se.hshealthrecord.entity.enums.RecordStatus;
@@ -10,24 +13,23 @@ import fit.iuh.se.hshealthrecord.event.HealthRecordAnalyzedEvent;
 import fit.iuh.se.hshealthrecord.event.HealthRecordAvailableForCareEvent;
 import fit.iuh.se.hshealthrecord.mapper.HealthRecordMapper;
 import fit.iuh.se.hshealthrecord.repository.HealthRecordRepository;
-import fit.iuh.se.hshealthrecord.dto.message.RecordProcessingMessage;
 import fit.iuh.se.hshealthrecord.service.user.HealthRecordService;
 import fit.iuh.se.hsshared.advice.entity.AppException;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.ApplicationEventPublisher;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsshared.dto.response.PageResponse;
 import fit.iuh.se.hsshared.service.s3.S3Service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+
 import java.io.IOException;
-import java.util.Optional;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -36,8 +38,8 @@ import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.List;
-import fit.iuh.se.hshealthrecord.dto.response.HealthStatItemResponse;
-import fit.iuh.se.hshealthrecord.dto.response.HealthStatisticsResponse;
+import java.util.Optional;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -61,7 +63,7 @@ public class HealthRecordServiceImpl implements HealthRecordService {
     @Transactional
     public PresignedUrlResponse createPresignedUploadUrl(Long userId, PresignedUrlRequest request) {
         log.info("Creating presigned URL for user {} with file {}", userId, request.getFileName());
-        
+
         String s3Key = s3Service.generateObjectKey(S3Service.FOLDER_RECORDS, userId, request.getFileName());
         String uploadUrl = s3Service.generatePresignedUploadUrl(s3Key, "text/csv");
 
@@ -102,7 +104,7 @@ public class HealthRecordServiceImpl implements HealthRecordService {
         rabbitTemplate.convertAndSend(exchange, routingKey, message);
         log.info("Sent RecordProcessingMessage to exchange '{}' with routingKey '{}': {}", exchange, routingKey, message);
         publishAvailableForCare(record);
-        
+
         return mapper.toResponse(record);
     }
 
@@ -206,7 +208,7 @@ public class HealthRecordServiceImpl implements HealthRecordService {
         record.setHrvFeaturesJson(request.getHrvFeaturesJson());
         record.setStatus(RecordStatus.COMPLETED);
         record = repository.save(record);
-        
+
         try {
             redisTemplate.delete("history:dates:" + record.getUserId());
         } catch (Exception e) {
@@ -253,7 +255,7 @@ public class HealthRecordServiceImpl implements HealthRecordService {
     @Transactional(readOnly = true)
     public HealthStatisticsResponse getHealthStatistics(Long userId, String period, String referenceDate, String timezone) {
         ZoneId zoneId = (timezone != null && !timezone.isEmpty()) ? ZoneId.of(timezone) : ZoneId.of("UTC");
-        
+
         // Parse reference date, default to now if not provided
         ZonedDateTime refZoned;
         try {
@@ -274,7 +276,7 @@ public class HealthRecordServiceImpl implements HealthRecordService {
         ZonedDateTime startZoned;
         ZonedDateTime endZoned;
         int numOfItems;
-        
+
         // Determine time boundaries
         switch (period.toUpperCase()) {
             case "DAY":
@@ -302,9 +304,9 @@ public class HealthRecordServiceImpl implements HealthRecordService {
 
         Instant from = startZoned.toInstant();
         Instant to = endZoned.toInstant();
-        
+
         List<HealthStatItemResponse> chartData = new ArrayList<>();
-        
+
         // Initialize chart data with empty values
         for (int i = 1; i <= numOfItems; i++) {
             String label = String.valueOf(i);
@@ -316,7 +318,7 @@ public class HealthRecordServiceImpl implements HealthRecordService {
             } else if (period.equalsIgnoreCase("YEAR")) {
                 label = "T" + i; // T1 to T12
             }
-            
+
             chartData.add(HealthStatItemResponse.builder()
                     .label(label)
                     .normalCount(0)
@@ -359,13 +361,13 @@ public class HealthRecordServiceImpl implements HealthRecordService {
         // Map projection data to chartData
         for (fit.iuh.se.hshealthrecord.repository.HealthStatProjection stat : aggregatedStats) {
             if (stat.getStatGroup() == null) continue;
-            
+
             int statGroup = stat.getStatGroup().intValue();
             int normalCount = stat.getNormalCount() != null ? stat.getNormalCount() : 0;
             int afibRiskCount = stat.getAfibRiskCount() != null ? stat.getAfibRiskCount() : 0;
             int uncertainCount = stat.getUncertainCount() != null ? stat.getUncertainCount() : 0;
             int afibSuspectedCount = stat.getAfibSuspectedCount() != null ? stat.getAfibSuspectedCount() : 0;
-            
+
             int index = switch (period.toUpperCase()) {
                 case "DAY" -> statGroup; // HOUR (0-23)
                 case "WEEK" -> statGroup - 1; // ISODOW (1-7) -> (0-6)
@@ -379,7 +381,7 @@ public class HealthRecordServiceImpl implements HealthRecordService {
                 item.setAfibRiskCount(afibRiskCount);
                 item.setUncertainCount(uncertainCount);
                 item.setAfibSuspectedCount(afibSuspectedCount);
-                
+
                 totalNormal += normalCount;
                 totalAfibRisk += afibRiskCount;
                 totalUncertain += uncertainCount;
@@ -405,17 +407,18 @@ public class HealthRecordServiceImpl implements HealthRecordService {
 
         return response;
     }
-    
+
     @Override
     @Transactional(readOnly = true)
     public List<String> getAvailableHistoryDates(Long userId, String timezone) {
         String pgTimezone = (timezone != null && !timezone.isEmpty()) ? timezone : "UTC";
         String cacheKey = "history:dates:" + userId;
-        
+
         try {
             String cachedData = redisTemplate.opsForValue().get(cacheKey);
             if (cachedData != null) {
-                return objectMapper.readValue(cachedData, new tools.jackson.core.type.TypeReference<List<String>>(){});
+                return objectMapper.readValue(cachedData, new tools.jackson.core.type.TypeReference<List<String>>() {
+                });
             }
         } catch (Exception e) {
             log.warn("Lỗi đọc cache lịch sử ngày: {}", e.getMessage());
@@ -440,23 +443,24 @@ public class HealthRecordServiceImpl implements HealthRecordService {
     @Transactional(readOnly = true)
     public List<HealthRecordResponse> getRecordsByDate(Long userId, String date, String timezone) {
         ZoneId zoneId = (timezone != null && !timezone.isEmpty()) ? ZoneId.of(timezone) : ZoneId.of("UTC");
-        
+
         LocalDate localDate;
         try {
             localDate = LocalDate.parse(date);
         } catch (Exception e) {
             throw new IllegalArgumentException("Invalid date format. Expected YYYY-MM-DD");
         }
-        
+
         LocalDate today = LocalDate.now(zoneId);
         boolean isPastDate = localDate.isBefore(today);
         String cacheKey = "history:daily:" + userId + ":" + date;
-        
+
         if (isPastDate) {
             try {
                 String cachedData = redisTemplate.opsForValue().get(cacheKey);
                 if (cachedData != null) {
-                    return objectMapper.readValue(cachedData, new tools.jackson.core.type.TypeReference<List<HealthRecordResponse>>(){});
+                    return objectMapper.readValue(cachedData, new tools.jackson.core.type.TypeReference<List<HealthRecordResponse>>() {
+                    });
                 }
             } catch (Exception e) {
                 log.warn("Lỗi đọc cache lịch sử chi tiết: {}", e.getMessage());
@@ -465,9 +469,9 @@ public class HealthRecordServiceImpl implements HealthRecordService {
 
         Instant startOfDay = localDate.atStartOfDay(zoneId).toInstant();
         Instant endOfDay = localDate.plusDays(1).atStartOfDay(zoneId).minusNanos(1).toInstant();
-        
+
         List<HealthRecord> records = repository.findByUserIdAndCreatedAtBetweenOrderByCreatedAtDesc(userId, startOfDay, endOfDay);
-        
+
         List<HealthRecordResponse> responses = new ArrayList<>();
         for (HealthRecord record : records) {
             responses.add(mapper.toResponse(record));

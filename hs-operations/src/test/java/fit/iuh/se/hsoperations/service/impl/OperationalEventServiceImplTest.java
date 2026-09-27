@@ -1,19 +1,28 @@
 package fit.iuh.se.hsoperations.service.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import fit.iuh.se.hsoperations.dto.command.*;
-import fit.iuh.se.hsoperations.entity.*;
+import fit.iuh.se.hsoperations.dto.command.NeedsActionIntent;
+import fit.iuh.se.hsoperations.dto.command.NotificationIntent;
+import fit.iuh.se.hsoperations.dto.command.OperationalEventCommand;
+import fit.iuh.se.hsoperations.entity.BusinessAuditEvent;
+import fit.iuh.se.hsoperations.entity.NeedsActionItem;
+import fit.iuh.se.hsoperations.entity.NotificationProjectionTask;
 import fit.iuh.se.hsoperations.entity.enums.*;
 import fit.iuh.se.hsoperations.event.NotificationProjectionRequested;
-import fit.iuh.se.hsoperations.repository.*;
+import fit.iuh.se.hsoperations.repository.BusinessAuditEventRepository;
+import fit.iuh.se.hsoperations.repository.NeedsActionItemRepository;
+import fit.iuh.se.hsoperations.repository.NotificationProjectionTaskRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.*;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -21,10 +30,14 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class OperationalEventServiceImplTest {
-    @Mock BusinessAuditEventRepository auditRepository;
-    @Mock NeedsActionItemRepository needsActionRepository;
-    @Mock NotificationProjectionTaskRepository projectionRepository;
-    @Mock ApplicationEventPublisher publisher;
+    @Mock
+    BusinessAuditEventRepository auditRepository;
+    @Mock
+    NeedsActionItemRepository needsActionRepository;
+    @Mock
+    NotificationProjectionTaskRepository projectionRepository;
+    @Mock
+    ApplicationEventPublisher publisher;
     OperationalEventServiceImpl service;
 
     @BeforeEach

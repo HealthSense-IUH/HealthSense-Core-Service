@@ -20,12 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.text.Normalizer;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -85,7 +80,9 @@ public class NutritionReferenceServiceImpl implements NutritionReferenceService 
                 NutrientMapper.of(food), foodPortions);
     }
 
-    /** Nhận id ("FISH") hoặc slug ("fish-seafood") của nhóm; trống là không lọc. */
+    /**
+     * Nhận id ("FISH") hoặc slug ("fish-seafood") của nhóm; trống là không lọc.
+     */
     private static String resolveGroup(String group, Map<String, NutritionFoodGroup> allGroups) {
         if (group == null || group.isBlank()) return null;
         String value = group.trim();

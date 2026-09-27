@@ -1,14 +1,21 @@
 package fit.iuh.se.hsoperations.dto.response;
 
 import fit.iuh.se.hsoperations.entity.BusinessAuditEvent;
-import fit.iuh.se.hsoperations.entity.enums.*;
+import fit.iuh.se.hsoperations.entity.enums.BusinessActorType;
+import fit.iuh.se.hsoperations.entity.enums.BusinessDomainType;
+import fit.iuh.se.hsoperations.entity.enums.BusinessEventType;
+
 import java.time.Instant;
 
 public record BusinessAuditEventResponse(Long id, BusinessDomainType domainType, Long domainId,
-        BusinessEventType eventType, BusinessActorType actorType, Long actorUserId, String actorRole,
-        Long requestId, Long agreementId, Long paymentId, Long sessionId, Long renewalId, Long refundId,
-        Long healthRecordId, Long memberId, Long doctorId, Long summaryId, String previousState,
-        String newState, String reason, String metadataJson, Long correctionOfEventId, Instant occurredAt) {
+                                         BusinessEventType eventType, BusinessActorType actorType, Long actorUserId,
+                                         String actorRole,
+                                         Long requestId, Long agreementId, Long paymentId, Long sessionId,
+                                         Long renewalId, Long refundId,
+                                         Long healthRecordId, Long memberId, Long doctorId, Long summaryId,
+                                         String previousState,
+                                         String newState, String reason, String metadataJson, Long correctionOfEventId,
+                                         Instant occurredAt) {
     public static BusinessAuditEventResponse from(BusinessAuditEvent e) {
         return new BusinessAuditEventResponse(e.getId(), e.getDomainType(), e.getDomainId(), e.getEventType(),
                 e.getActorType(), e.getActorUserId(), e.getActorRole(), e.getRequestId(), e.getAgreementId(),

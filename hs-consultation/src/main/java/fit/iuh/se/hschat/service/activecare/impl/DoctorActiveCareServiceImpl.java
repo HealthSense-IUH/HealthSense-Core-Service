@@ -18,17 +18,19 @@ import fit.iuh.se.hschat.service.authorization.EpisodeHealthRecordAuthorizationS
 import fit.iuh.se.hshealthrecord.entity.HealthRecord;
 import fit.iuh.se.hshealthrecord.mapper.HealthRecordMapper;
 import fit.iuh.se.hshealthrecord.repository.HealthRecordRepository;
+import fit.iuh.se.hsoperations.dto.command.OperationalEventCommand;
+import fit.iuh.se.hsoperations.entity.enums.BusinessActorType;
+import fit.iuh.se.hsoperations.entity.enums.BusinessDomainType;
+import fit.iuh.se.hsoperations.entity.enums.BusinessEventType;
+import fit.iuh.se.hsoperations.event.OperationalEventPublisher;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsshared.dto.response.PageResponse;
 import fit.iuh.se.hsshared.service.s3.S3Service;
 import fit.iuh.se.hsuser.entity.UserAccount;
 import fit.iuh.se.hsuser.entity.enums.AccountStatus;
-import fit.iuh.se.hsuser.repository.UserAccountRepository;
-import fit.iuh.se.hsoperations.dto.command.OperationalEventCommand;
-import fit.iuh.se.hsoperations.entity.enums.*;
-import fit.iuh.se.hsoperations.event.OperationalEventPublisher;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
+import fit.iuh.se.hsuser.repository.UserAccountRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -174,7 +176,7 @@ public class DoctorActiveCareServiceImpl implements DoctorActiveCareService {
     }
 
     private void auditRecordAccess(Long doctorId, ConsultationSession session, Long recordId,
-            BusinessEventType eventType) {
+                                   BusinessEventType eventType) {
         Instant bucket = Instant.now().truncatedTo(ChronoUnit.HOURS);
         OperationalEventPublisher.record(OperationalEventCommand.builder()
                 .domainType(BusinessDomainType.HEALTH_RECORD).domainId(recordId).eventType(eventType)

@@ -1,17 +1,17 @@
 package fit.iuh.se.hschat.service.message.impl;
 
 import fit.iuh.se.hschat.entity.ConsultationSession;
-import fit.iuh.se.hschat.entity.enums.ConsultationParticipantRole;
 import fit.iuh.se.hschat.entity.enums.ConsultationFlowType;
+import fit.iuh.se.hschat.entity.enums.ConsultationParticipantRole;
 import fit.iuh.se.hschat.entity.enums.ConsultationStatus;
-import fit.iuh.se.hschat.service.message.SupportHoursPolicy;
 import fit.iuh.se.hschat.service.continuation.ContinuationStore;
+import fit.iuh.se.hschat.service.message.SupportHoursPolicy;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.NonFinal;
-import org.springframework.beans.factory.annotation.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.time.*;

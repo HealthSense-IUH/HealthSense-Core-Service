@@ -3,6 +3,8 @@ package fit.iuh.se.hsuser.service.user.impl;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsshared.service.s3.S3Service;
+import fit.iuh.se.hsshared.service.s3.event.S3FileDeleteEvent;
+import fit.iuh.se.hsshared.service.s3.event.S3FileMoveEvent;
 import fit.iuh.se.hsshared.utils.TextNormalize;
 import fit.iuh.se.hsuser.dto.request.AvatarPresignedUrlRequest;
 import fit.iuh.se.hsuser.dto.request.UserProfileUpdateRequest;
@@ -19,8 +21,6 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import fit.iuh.se.hsshared.service.s3.event.S3FileDeleteEvent;
-import fit.iuh.se.hsshared.service.s3.event.S3FileMoveEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -84,7 +84,8 @@ public class UserServiceImpl implements UserService {
         String contentType = request.getContentType() != null ? request.getContentType().trim().toLowerCase() : "";
 
         if (!contentType.startsWith("image/") || contentType.equals("application/octet-stream")) {
-            if (lowerName.endsWith(".jpg") || lowerName.endsWith(".jpeg") || lowerName.endsWith(".jfif") || lowerName.endsWith(".pjpeg")) contentType = "image/jpeg";
+            if (lowerName.endsWith(".jpg") || lowerName.endsWith(".jpeg") || lowerName.endsWith(".jfif") || lowerName.endsWith(".pjpeg"))
+                contentType = "image/jpeg";
             else if (lowerName.endsWith(".png")) contentType = "image/png";
             else if (lowerName.endsWith(".webp")) contentType = "image/webp";
             else if (lowerName.endsWith(".gif")) contentType = "image/gif";
@@ -128,7 +129,8 @@ public class UserServiceImpl implements UserService {
         String contentType = request.getContentType() != null ? request.getContentType().trim().toLowerCase() : "";
 
         if (!contentType.startsWith("image/") && !contentType.equals("application/pdf") || contentType.equals("application/octet-stream")) {
-            if (lowerName.endsWith(".jpg") || lowerName.endsWith(".jpeg") || lowerName.endsWith(".jfif") || lowerName.endsWith(".pjpeg")) contentType = "image/jpeg";
+            if (lowerName.endsWith(".jpg") || lowerName.endsWith(".jpeg") || lowerName.endsWith(".jfif") || lowerName.endsWith(".pjpeg"))
+                contentType = "image/jpeg";
             else if (lowerName.endsWith(".png")) contentType = "image/png";
             else if (lowerName.endsWith(".webp")) contentType = "image/webp";
             else if (lowerName.endsWith(".heic") || lowerName.endsWith(".heif")) contentType = "image/heic";

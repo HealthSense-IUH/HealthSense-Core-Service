@@ -4,7 +4,6 @@ import fit.iuh.se.hsauth.dto.request.LoginRequest;
 import fit.iuh.se.hsauth.dto.request.MobileLogoutRequest;
 import fit.iuh.se.hsauth.dto.request.MobileRefreshRequest;
 import fit.iuh.se.hsauth.dto.request.RegisterRequest;
-import fit.iuh.se.hsauth.dto.response.LoginResponse;
 import fit.iuh.se.hsauth.dto.response.MobileLoginResponse;
 import fit.iuh.se.hsauth.dto.response.RegisterResponse;
 import fit.iuh.se.hsauth.dto.token.AuthenticationResult;

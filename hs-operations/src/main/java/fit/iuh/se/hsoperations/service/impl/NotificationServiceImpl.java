@@ -1,6 +1,7 @@
 package fit.iuh.se.hsoperations.service.impl;
 
-import fit.iuh.se.hsoperations.dto.response.*;
+import fit.iuh.se.hsoperations.dto.response.NotificationResponse;
+import fit.iuh.se.hsoperations.dto.response.UnreadNotificationCountResponse;
 import fit.iuh.se.hsoperations.entity.UserNotification;
 import fit.iuh.se.hsoperations.repository.UserNotificationRepository;
 import fit.iuh.se.hsoperations.service.NotificationService;
@@ -19,18 +20,21 @@ import java.time.Instant;
 public class NotificationServiceImpl implements NotificationService {
     private final UserNotificationRepository repository;
 
-    @Override @Transactional(readOnly = true)
+    @Override
+    @Transactional(readOnly = true)
     public PageResponse<NotificationResponse> findMine(Long recipientId, Pageable pageable) {
         return new PageResponse<>(repository.findByRecipientIdOrderByCreatedAtDesc(recipientId, pageable)
                 .map(NotificationResponse::from));
     }
 
-    @Override @Transactional(readOnly = true)
+    @Override
+    @Transactional(readOnly = true)
     public UnreadNotificationCountResponse unreadCount(Long recipientId) {
         return new UnreadNotificationCountResponse(repository.countByRecipientIdAndReadAtIsNull(recipientId));
     }
 
-    @Override @Transactional
+    @Override
+    @Transactional
     public NotificationResponse markRead(Long recipientId, Long notificationId) {
         UserNotification notification = repository.findByIdAndRecipientId(notificationId, recipientId)
                 .orElseThrow(() -> new AppException(ErrorCode.ENTITY_NOT_FOUND, "Notification not found"));
@@ -38,7 +42,8 @@ public class NotificationServiceImpl implements NotificationService {
         return NotificationResponse.from(repository.save(notification));
     }
 
-    @Override @Transactional
+    @Override
+    @Transactional
     public void markAllRead(Long recipientId) {
         repository.markAllRead(recipientId, Instant.now());
     }

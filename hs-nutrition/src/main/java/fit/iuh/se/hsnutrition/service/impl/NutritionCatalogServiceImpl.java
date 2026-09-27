@@ -20,12 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.text.Normalizer;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -79,7 +74,9 @@ public class NutritionCatalogServiceImpl implements NutritionCatalogService {
                 .toList();
     }
 
-    /** Phải khớp cách V22 tạo cột search_text: chữ thường, bỏ dấu, đ -> d, gộp khoảng trắng. */
+    /**
+     * Phải khớp cách V22 tạo cột search_text: chữ thường, bỏ dấu, đ -> d, gộp khoảng trắng.
+     */
     static String normalizeForSearch(String text) {
         String withoutMarks = Normalizer.normalize(text.toLowerCase(Locale.ROOT), Normalizer.Form.NFD)
                 .replaceAll("\\p{Mn}+", "")
@@ -93,8 +90,11 @@ public class NutritionCatalogServiceImpl implements NutritionCatalogService {
                 .orElseThrow(() -> new AppException(ErrorCode.ENTITY_NOT_FOUND, "Nutrition food group not found"));
     }
 
-    /** Số thực phẩm theo nhóm và nguồn, và số món có khuyến nghị theo nhóm. Chỉ vài chục dòng nên đếm hết một lần. */
-    private record GroupCounts(Map<String, Map<String, Long>> bySource, Map<String, Long> guidance) {}
+    /**
+     * Số thực phẩm theo nhóm và nguồn, và số món có khuyến nghị theo nhóm. Chỉ vài chục dòng nên đếm hết một lần.
+     */
+    private record GroupCounts(Map<String, Map<String, Long>> bySource, Map<String, Long> guidance) {
+    }
 
     private GroupCounts countFoods() {
         Map<String, Map<String, Long>> bySource = new HashMap<>();

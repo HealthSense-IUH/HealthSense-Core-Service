@@ -2,44 +2,40 @@ package fit.iuh.se.hsapplication.billing;
 
 import cn.hutool.core.lang.Snowflake;
 import cn.hutool.extra.spring.SpringUtil;
-import db.migration.V15__consultation_credit_foundation;
-import db.migration.V16__credit_mock_purchase_orders;
-import db.migration.V17__consultation_credit_lifecycle;
-import db.migration.V18__credit_administration_hardening;
-import db.migration.V19__credit_payos_payments;
-import db.migration.V20__charge_consultation_credit_on_session_confirmation;
+import db.migration.*;
 import fit.iuh.se.hsbilling.config.CreditPaymentConfiguration;
-import fit.iuh.se.hsbilling.event.CreditPurchaseCompleted;
-import fit.iuh.se.hsbilling.payment.MockCreditPaymentGateway;
-import fit.iuh.se.hsbilling.payment.CreditPaymentGateway;
-import fit.iuh.se.hsbilling.service.PaymentOrderCodeAllocator;
-import fit.iuh.se.hsbilling.service.CreditPurchaseService;
-import fit.iuh.se.hsbilling.service.CreditPurchaseCompletionService;
-import fit.iuh.se.hsbilling.service.impl.CreditPurchaseServiceImpl;
-import fit.iuh.se.hsbilling.entity.enums.*;
 import fit.iuh.se.hsbilling.dto.*;
-import fit.iuh.se.hsbilling.repository.*;
-import fit.iuh.se.hsbilling.service.ConsultationCreditService;
+import fit.iuh.se.hsbilling.entity.enums.*;
+import fit.iuh.se.hsbilling.event.CreditPurchaseCompleted;
+import fit.iuh.se.hsbilling.payment.CreditPaymentGateway;
+import fit.iuh.se.hsbilling.payment.MockCreditPaymentGateway;
+import fit.iuh.se.hsbilling.repository.CreditWalletRepository;
+import fit.iuh.se.hsbilling.service.*;
 import fit.iuh.se.hsbilling.service.impl.ConsultationCreditServiceImpl;
-import fit.iuh.se.hsbilling.service.CreditAdministrationService;
 import fit.iuh.se.hsbilling.service.impl.CreditAdministrationServiceImpl;
+import fit.iuh.se.hsbilling.service.impl.CreditPurchaseServiceImpl;
 import fit.iuh.se.hsoperations.event.OperationalEventPublisher;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsuser.entity.UserAccount;
-import fit.iuh.se.hsuser.entity.enums.*;
+import fit.iuh.se.hsuser.entity.enums.AccountStatus;
+import fit.iuh.se.hsuser.entity.enums.UserRole;
 import fit.iuh.se.hsuser.repository.UserAccountRepository;
 import jakarta.persistence.EntityManagerFactory;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.*;
-import org.springframework.context.annotation.*;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
-import org.springframework.orm.jpa.*;
+import org.springframework.orm.jpa.JpaTransactionManager;
+import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
-import org.springframework.transaction.*;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -51,9 +47,12 @@ import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-/** Opt in with BILLING_TEST_JDBC_URL/USER/PASSWORD; creates and drops ONLY its own random schema. */
+/**
+ * Opt in with BILLING_TEST_JDBC_URL/USER/PASSWORD; creates and drops ONLY its own random schema.
+ */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class ConsultationCreditPostgresTest {
     private AnnotationConfigApplicationContext context;
@@ -147,14 +146,33 @@ class ConsultationCreditPostgresTest {
             CreditPurchaseCompletionService.class, MockCreditPaymentGateway.class, CreditPaymentConfiguration.class,
             PaymentOrderCodeAllocator.class})
     static class TestConfiguration {
-        @Bean Snowflake snowflake() { return new Snowflake(25, 25); }
-        @Bean static SpringUtil springUtil() { return new SpringUtil(); }
-        @Bean OperationalEventPublisher operationalEventPublisher() { return mock(OperationalEventPublisher.class); }
-        @Bean CreditPaymentGateway creditPaymentGateway() { return mock(CreditPaymentGateway.class); }
-        @Bean TransactionTemplate transactionTemplate(PlatformTransactionManager manager) {
+        @Bean
+        Snowflake snowflake() {
+            return new Snowflake(25, 25);
+        }
+
+        @Bean
+        static SpringUtil springUtil() {
+            return new SpringUtil();
+        }
+
+        @Bean
+        OperationalEventPublisher operationalEventPublisher() {
+            return mock(OperationalEventPublisher.class);
+        }
+
+        @Bean
+        CreditPaymentGateway creditPaymentGateway() {
+            return mock(CreditPaymentGateway.class);
+        }
+
+        @Bean
+        TransactionTemplate transactionTemplate(PlatformTransactionManager manager) {
             return new TransactionTemplate(manager);
         }
-        @Bean LocalContainerEntityManagerFactoryBean entityManagerFactory(DataSource ds) {
+
+        @Bean
+        LocalContainerEntityManagerFactoryBean entityManagerFactory(DataSource ds) {
             var factory = new LocalContainerEntityManagerFactoryBean();
             factory.setDataSource(ds);
             factory.setPackagesToScan("fit.iuh.se.hsbilling.entity");
@@ -163,7 +181,9 @@ class ConsultationCreditPostgresTest {
                     "hibernate.jdbc.time_zone", "UTC"));
             return factory;
         }
-        @Bean PlatformTransactionManager transactionManager(EntityManagerFactory factory) {
+
+        @Bean
+        PlatformTransactionManager transactionManager(EntityManagerFactory factory) {
             return new JpaTransactionManager(factory);
         }
     }
@@ -182,16 +202,17 @@ class ConsultationCreditPostgresTest {
 
     private long entries(long member) {
         return jdbc.queryForObject("""
-            SELECT count(*) FROM credit_ledger_entries e JOIN credit_wallets w ON w.id=e.wallet_id
-            WHERE w.member_id=?
-            """, Long.class, member);
+                SELECT count(*) FROM credit_ledger_entries e JOIN credit_wallets w ON w.id=e.wallet_id
+                WHERE w.member_id=?
+                """, Long.class, member);
     }
 
     private void error(ErrorCode code, Runnable action) {
         assertEquals(code, assertThrows(AppException.class, action::run).getErrorCode());
     }
 
-    @Test void migrationRunsOnceAndHibernateValidatesTheSchema() {
+    @Test
+    void migrationRunsOnceAndHibernateValidatesTheSchema() {
         assertEquals(0, flyway.migrate().migrationsExecuted);
         assertNotNull(context.getBean(EntityManagerFactory.class));
         jdbc.update("insert into consultation_requests(id,credit_policy,credit_cost) values (?,?,?)",
@@ -203,7 +224,8 @@ class ConsultationCreditPostgresTest {
                 sequence.incrementAndGet(), "PER_SESSION_V1", 0));
     }
 
-    @Test void readingMissingWalletDoesNotCreateRowsAndInsufficientReserveRollsBack() {
+    @Test
+    void readingMissingWalletDoesNotCreateRowsAndInsufficientReserveRollsBack() {
         long member = member();
         assertEquals(new CreditWalletResponse(0, 0, 0), credits.getWallet(member));
         assertTrue(credits.getLedger(member, PageRequest.of(0, 10)).getContent().isEmpty());
@@ -212,7 +234,8 @@ class ConsultationCreditPostgresTest {
         assertEquals(0, entries(member));
     }
 
-    @Test void reserveCaptureRetryAndTransitions() {
+    @Test
+    void reserveCaptureRetryAndTransitions() {
         long member = member(), request = sequence.incrementAndGet(), session = sequence.incrementAndGet();
         fund(member, 5);
         assertEquals(new CreditWalletResponse(5, 1, 4), credits.reserve(member, request, 1).wallet());
@@ -226,7 +249,8 @@ class ConsultationCreditPostgresTest {
         error(ErrorCode.CREDIT_IDEMPOTENCY_CONFLICT, () -> credits.reserve(member, request, 2));
     }
 
-    @Test void v2AdmissionDoesNotReserveAndSessionChargeIsIdempotent() {
+    @Test
+    void v2AdmissionDoesNotReserveAndSessionChargeIsIdempotent() {
         long member = member(), request = sequence.incrementAndGet(), session = sequence.incrementAndGet();
         fund(member, 2);
 
@@ -247,7 +271,8 @@ class ConsultationCreditPostgresTest {
                 "select count(*) from credit_reservations where request_id=?", Long.class, request));
     }
 
-    @Test void v2ChargeCanBeRefundedWithoutAReservation() {
+    @Test
+    void v2ChargeCanBeRefundedWithoutAReservation() {
         long member = member(), request = sequence.incrementAndGet(), session = sequence.incrementAndGet();
         fund(member, 1);
         credits.requireAvailable(member, 1);
@@ -263,7 +288,8 @@ class ConsultationCreditPostgresTest {
                 Long.class, session));
     }
 
-    @Test void releaseRetryAndDeactivatedMemberCleanup() {
+    @Test
+    void releaseRetryAndDeactivatedMemberCleanup() {
         long member = member(), request = sequence.incrementAndGet();
         fund(member, 5);
         credits.reserve(member, request, 1);
@@ -276,7 +302,8 @@ class ConsultationCreditPostgresTest {
         assertEquals(3, entries(member));
     }
 
-    @Test void fundingIsIdempotentAndPurchaseSourceCannotBeReusedWithAnotherKey() {
+    @Test
+    void fundingIsIdempotentAndPurchaseSourceCannotBeReusedWithAnotherKey() {
         long member = member(), other = member(), order = sequence.incrementAndGet();
         String key = "purchase-" + order;
         credits.credit(member, 5, new CreditSource(order), key);
@@ -290,14 +317,16 @@ class ConsultationCreditPostgresTest {
         assertEquals(new CreditWalletResponse(0, 0, 0), credits.getWallet(other));
     }
 
-    @Test void concurrentFirstFundingDoesNotLoseUpdates() throws Exception {
+    @Test
+    void concurrentFirstFundingDoesNotLoseUpdates() throws Exception {
         long member = member();
         concurrent(() -> fund(member, 5), () -> fund(member, 7));
         assertEquals(new CreditWalletResponse(12, 0, 12), credits.getWallet(member));
         assertEquals(2, entries(member));
     }
 
-    @Test void concurrentDuplicateFundingCreditsOnlyOnce() throws Exception {
+    @Test
+    void concurrentDuplicateFundingCreditsOnlyOnce() throws Exception {
         long member = member(), order = sequence.incrementAndGet();
         Supplier<Object> task = () -> credits.credit(member, 5, new CreditSource(order), "same-" + order);
         concurrent(task, task);
@@ -305,19 +334,26 @@ class ConsultationCreditPostgresTest {
         assertEquals(1, entries(member));
     }
 
-    @Test void onlyOneConcurrentReservationCanTakeTheLastCredit() throws Exception {
+    @Test
+    void onlyOneConcurrentReservationCanTakeTheLastCredit() throws Exception {
         long member = member();
         fund(member, 1);
         Supplier<Object> task = () -> {
-            try { credits.reserve(member, sequence.incrementAndGet(), 1); return "held"; }
-            catch (AppException ex) { assertEquals(ErrorCode.INSUFFICIENT_CONSULTATION_CREDITS, ex.getErrorCode()); return "insufficient"; }
+            try {
+                credits.reserve(member, sequence.incrementAndGet(), 1);
+                return "held";
+            } catch (AppException ex) {
+                assertEquals(ErrorCode.INSUFFICIENT_CONSULTATION_CREDITS, ex.getErrorCode());
+                return "insufficient";
+            }
         };
         assertEquals(Set.of("held", "insufficient"), new HashSet<>(concurrent(task, task)));
         assertEquals(new CreditWalletResponse(1, 1, 0), credits.getWallet(member));
         assertEquals(2, entries(member));
     }
 
-    @Test void outerTransactionRollbackIncludesWalletLedgerAndReservation() {
+    @Test
+    void outerTransactionRollbackIncludesWalletLedgerAndReservation() {
         long member = member(), request = sequence.incrementAndGet();
         assertThrows(IllegalStateException.class, () -> tx.execute(status -> {
             fund(member, 5);
@@ -330,7 +366,8 @@ class ConsultationCreditPostgresTest {
         assertEquals(0L, jdbc.queryForObject("select count(*) from credit_reservations where request_id=?", Long.class, request));
     }
 
-    @Test void postgresConstraintsAndImmutableLedgerCannotBeBypassed() {
+    @Test
+    void postgresConstraintsAndImmutableLedgerCannotBeBypassed() {
         long member = member();
         fund(member, 1);
         assertThrows(org.springframework.dao.DataIntegrityViolationException.class,
@@ -346,7 +383,8 @@ class ConsultationCreditPostgresTest {
                 """, member));
     }
 
-    @Test void negativeAdjustmentUsesOnlyAvailableAndPreservesHeldCredits() {
+    @Test
+    void negativeAdjustmentUsesOnlyAvailableAndPreservesHeldCredits() {
         long member = member(), request = sequence.incrementAndGet();
         fund(member, 3);
         credits.reserve(member, request, 2);
@@ -362,9 +400,12 @@ class ConsultationCreditPostgresTest {
         assertEquals(result.wallet(), retry.wallet());
     }
 
-    @Test void concurrentAdminsCanRefundCapturedSessionOnlyOnce() throws Exception {
+    @Test
+    void concurrentAdminsCanRefundCapturedSessionOnlyOnce() throws Exception {
         long member = member(), request = sequence.incrementAndGet(), session = sequence.incrementAndGet();
-        fund(member, 2); credits.reserve(member, request, 1); credits.capture(member, request, session);
+        fund(member, 2);
+        credits.reserve(member, request, 1);
+        credits.capture(member, request, session);
         Supplier<Object> first = () -> administration.refundCapturedSession(901L, UserRole.ADMIN, member, session,
                 1, "service recovery", "refund-a-" + session);
         Supplier<Object> second = () -> administration.refundCapturedSession(902L, UserRole.SUPER_ADMIN, member, session,
@@ -377,13 +418,29 @@ class ConsultationCreditPostgresTest {
         assertEquals(check.walletBalance(), check.ledgerBalance());
     }
 
-    @Test void adjustmentCompetingWithReserveKeepsWalletInvariant() throws Exception {
-        long member = member(), request = sequence.incrementAndGet(); fund(member, 1);
-        Supplier<Object> reserve = () -> { try { credits.reserve(member, request, 1); return "reserved"; }
-            catch (AppException ex) { assertEquals(ErrorCode.INSUFFICIENT_CONSULTATION_CREDITS, ex.getErrorCode()); return "reserve-rejected"; } };
-        Supplier<Object> adjust = () -> { try { administration.adjust(700L, UserRole.ADMIN, member, -1,
-                "approved correction", "race-adjust-" + member); return "adjusted"; }
-            catch (AppException ex) { assertEquals(ErrorCode.INSUFFICIENT_CONSULTATION_CREDITS, ex.getErrorCode()); return "adjust-rejected"; } };
+    @Test
+    void adjustmentCompetingWithReserveKeepsWalletInvariant() throws Exception {
+        long member = member(), request = sequence.incrementAndGet();
+        fund(member, 1);
+        Supplier<Object> reserve = () -> {
+            try {
+                credits.reserve(member, request, 1);
+                return "reserved";
+            } catch (AppException ex) {
+                assertEquals(ErrorCode.INSUFFICIENT_CONSULTATION_CREDITS, ex.getErrorCode());
+                return "reserve-rejected";
+            }
+        };
+        Supplier<Object> adjust = () -> {
+            try {
+                administration.adjust(700L, UserRole.ADMIN, member, -1,
+                        "approved correction", "race-adjust-" + member);
+                return "adjusted";
+            } catch (AppException ex) {
+                assertEquals(ErrorCode.INSUFFICIENT_CONSULTATION_CREDITS, ex.getErrorCode());
+                return "adjust-rejected";
+            }
+        };
         var results = new HashSet<>(concurrent(reserve, adjust));
         assertTrue(results.equals(Set.of("reserved", "adjust-rejected"))
                 || results.equals(Set.of("reserve-rejected", "adjusted")));
@@ -392,7 +449,8 @@ class ConsultationCreditPostgresTest {
         assertTrue(administration.reconcile(UserRole.ADMIN, member).consistent());
     }
 
-    @Test void packageAdministrationDefaultsInactiveAndRejectsStaleVersion() {
+    @Test
+    void packageAdministrationDefaultsInactiveAndRejectsStaleVersion() {
         var created = administration.createPackage(800L, UserRole.ADMIN,
                 new AdminCreditPackageRequest("ADMIN_TEST_" + sequence.incrementAndGet(), "Admin fixture", null, 3L, 3000L, CreditPackageStatus.ACTIVE, null));
         assertEquals(CreditPackageStatus.INACTIVE, created.status());
@@ -404,7 +462,8 @@ class ConsultationCreditPostgresTest {
                 Long.valueOf(created.id()), new AdminCreditPackageRequest(null, "Stale", null, null, null, null, created.version())));
     }
 
-    @Test void adminOrderFiltersIncludeProviderAndPreserveSnapshot() {
+    @Test
+    void adminOrderFiltersIncludeProviderAndPreserveSnapshot() {
         long member = member(), pack = purchasePackage(4);
         var paid = purchases.createOrder(member, pack, "admin-search-" + member);
         var page = administration.getOrders(UserRole.ADMIN, member, CreditOrderStatus.PAID,
@@ -416,7 +475,8 @@ class ConsultationCreditPostgresTest {
         assertEquals(CreditPaymentProvider.MOCK, detail.attempts().getFirst().provider());
     }
 
-    @Test void invalidInputsAndOverflowDoNotChangeBalance() {
+    @Test
+    void invalidInputsAndOverflowDoNotChangeBalance() {
         long member = member();
         error(ErrorCode.INVALID_PARAMETER, () -> fund(member, 0));
         error(ErrorCode.INVALID_PARAMETER, () -> credits.reserve(member, -1L, 1));
@@ -427,9 +487,11 @@ class ConsultationCreditPostgresTest {
         assertEquals(1, entries(member));
     }
 
-    @Test void historyIsOwnedBoundedAndOrderedWithStableTieBreaker() {
+    @Test
+    void historyIsOwnedBoundedAndOrderedWithStableTieBreaker() {
         long member = member(), other = member();
-        fund(member, 5); fund(other, 7);
+        fund(member, 5);
+        fund(other, 7);
         credits.reserve(member, sequence.incrementAndGet(), 1);
         var first = credits.getLedger(member, PageRequest.of(0, 1));
         var second = credits.getLedger(member, PageRequest.of(1, 1));
@@ -442,7 +504,8 @@ class ConsultationCreditPostgresTest {
         error(ErrorCode.CREDIT_IDEMPOTENCY_CONFLICT, () -> credits.reserve(other, request, 1));
     }
 
-    @Test void serviceRejectsNonMembersAndInactiveAccounts() {
+    @Test
+    void serviceRejectsNonMembersAndInactiveAccounts() {
         long id = member();
         for (var role : UserRole.values()) {
             if (role == UserRole.MEMBER) continue;
@@ -458,13 +521,14 @@ class ConsultationCreditPostgresTest {
         error(ErrorCode.UNAUTHORIZED, () -> credits.getWallet(null));
     }
 
-    @Test void packageFixtureOnlyExposesActivePackagesInStableOrder() {
+    @Test
+    void packageFixtureOnlyExposesActivePackagesInStableOrder() {
         long member = member();
         for (int q : new int[]{1, 5, 10}) {
             jdbc.update("""
-                INSERT INTO credit_packages(id,code,name,credit_quantity,price_vnd,status)
-                VALUES (?,?,?,?,?,?)
-                """, sequence.incrementAndGet(), "TEST_" + q, "Test-only package " + q, q, q * 1000, q == 10 ? "INACTIVE" : "ACTIVE");
+                    INSERT INTO credit_packages(id,code,name,credit_quantity,price_vnd,status)
+                    VALUES (?,?,?,?,?,?)
+                    """, sequence.incrementAndGet(), "TEST_" + q, "Test-only package " + q, q, q * 1000, q == 10 ? "INACTIVE" : "ACTIVE");
         }
         assertEquals(List.of(1L, 5L), credits.getPackages(member).stream()
                 .filter(p -> p.code().startsWith("TEST_")).map(CreditPackageResponse::creditQuantity).toList());
@@ -483,7 +547,8 @@ class ConsultationCreditPostgresTest {
         return jdbc.queryForObject("select count(*) from credit_purchase_orders where member_id=?", Long.class, member);
     }
 
-    @Test void mockPurchaseSettlesExactlyOnceAndPublishesOnlyAfterCommit() {
+    @Test
+    void mockPurchaseSettlesExactlyOnceAndPublishesOnlyAfterCommit() {
         long member = member(), pack = purchasePackage(5);
         var result = tx.execute(status -> {
             var created = purchases.createOrder(member, pack, "first-buy");
@@ -506,7 +571,8 @@ class ConsultationCreditPostgresTest {
                 Long.valueOf(result.order().id())));
     }
 
-    @Test void concurrentPurchaseRetriesUseOneOrderAndOneCredit() throws Exception {
+    @Test
+    void concurrentPurchaseRetriesUseOneOrderAndOneCredit() throws Exception {
         long member = member(), pack = purchasePackage(5);
         Supplier<Object> task = () -> purchases.createOrder(member, pack, "same-click").order().id();
         assertEquals(1, new HashSet<>(concurrent(task, task)).size());
@@ -515,7 +581,8 @@ class ConsultationCreditPostgresTest {
         assertEquals(5, credits.getWallet(member).balance());
     }
 
-    @Test void independentPurchasesAccumulateAndKeyIsScopedToMember() throws Exception {
+    @Test
+    void independentPurchasesAccumulateAndKeyIsScopedToMember() throws Exception {
         long member = member(), other = member(), pack = purchasePackage(5);
         concurrent(() -> purchases.createOrder(member, pack, "click-a"), () -> purchases.createOrder(member, pack, "click-b"));
         purchases.createOrder(other, pack, "click-a");
@@ -525,7 +592,8 @@ class ConsultationCreditPostgresTest {
         assertEquals(2, entries(member));
     }
 
-    @Test void changedPayloadConflictsAndSnapshotSurvivesPackageEditsAndDeactivation() {
+    @Test
+    void changedPayloadConflictsAndSnapshotSurvivesPackageEditsAndDeactivation() {
         long member = member(), pack = purchasePackage(5), otherPack = purchasePackage(1);
         var original = purchases.createOrder(member, pack, "snapshot");
         jdbc.update("update credit_packages set price_vnd=90000,credit_quantity=9,name='changed',status='INACTIVE' where id=?", pack);
@@ -542,7 +610,8 @@ class ConsultationCreditPostgresTest {
         assertEquals(1, orderCount(member));
     }
 
-    @Test void ownershipRoleAndInputChecksProtectPurchases() {
+    @Test
+    void ownershipRoleAndInputChecksProtectPurchases() {
         long member = member(), other = member(), pack = purchasePackage(1);
         var order = purchases.createOrder(member, pack, "owned");
         error(ErrorCode.CREDIT_ORDER_NOT_FOUND, () -> purchases.getOrder(other, Long.valueOf(order.order().id())));
@@ -561,7 +630,8 @@ class ConsultationCreditPostgresTest {
         error(ErrorCode.ACCOUNT_DISABLED, () -> purchases.createOrder(other, pack, "inactive"));
     }
 
-    @Test void invalidOrPayosEvidenceCannotUseMockSettlement() {
+    @Test
+    void invalidOrPayosEvidenceCannotUseMockSettlement() {
         long member = member(), pack = purchasePackage(1);
         var order = purchases.createOrder(member, pack, "evidence");
         long orderId = Long.parseLong(order.order().id()), attemptId = Long.parseLong(order.payment().attemptId());
@@ -590,7 +660,8 @@ class ConsultationCreditPostgresTest {
         assertEquals(1, entries(member));
     }
 
-    @Test void failureWritingPaidOrderRollsBackOrderAttemptWalletLedgerAndEvent() {
+    @Test
+    void failureWritingPaidOrderRollsBackOrderAttemptWalletLedgerAndEvent() {
         long member = member(), pack = purchasePackage(5);
         jdbc.execute("""
                 CREATE FUNCTION fail_test_credit_settlement() RETURNS trigger LANGUAGE plpgsql AS $body$
@@ -615,7 +686,8 @@ class ConsultationCreditPostgresTest {
         assertEquals(5, purchases.createOrder(member, pack, "failed").wallet().balance());
     }
 
-    @Test void callerRollbackAlsoRollsBackMockPurchase() {
+    @Test
+    void callerRollbackAlsoRollsBackMockPurchase() {
         long member = member(), pack = purchasePackage(5);
         assertThrows(IllegalStateException.class, () -> tx.execute(status -> {
             purchases.createOrder(member, pack, "outer-rollback");
@@ -627,14 +699,15 @@ class ConsultationCreditPostgresTest {
         assertTrue(purchaseEvents.stream().noneMatch(e -> e.memberId().equals(member)));
     }
 
-    @Test void realPurchaseHttpFlowWritesTheIsolatedDatabase() throws Exception {
+    @Test
+    void realPurchaseHttpFlowWritesTheIsolatedDatabase() throws Exception {
         long member = member(), pack = purchasePackage(5);
         var principal = fit.iuh.se.hsapplication.dto.auth.UserAuthentication.builder().userId(member).role(UserRole.MEMBER).build();
         var authentication = org.springframework.security.authentication.UsernamePasswordAuthenticationToken.authenticated(
                 principal, null, List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_MEMBER")));
         var mvc = org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup(
-                new fit.iuh.se.hsapplication.controller.billing.CreditPurchaseController(purchases),
-                new fit.iuh.se.hsapplication.controller.billing.ConsultationCreditController(credits))
+                        new fit.iuh.se.hsapplication.controller.billing.CreditPurchaseController(purchases),
+                        new fit.iuh.se.hsapplication.controller.billing.ConsultationCreditController(credits))
                 .setCustomArgumentResolvers(new org.springframework.security.web.method.annotation.AuthenticationPrincipalArgumentResolver())
                 .setControllerAdvice(new fit.iuh.se.hsshared.advice.handler.GlobalExceptionHandler()).build();
         org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(authentication);
@@ -660,11 +733,12 @@ class ConsultationCreditPostgresTest {
             var ready = new CountDownLatch(2);
             var start = new CountDownLatch(1);
             List<Future<?>> futures = new ArrayList<>();
-            for (var task : List.of(first, second)) futures.add(pool.submit(() -> {
-                ready.countDown();
-                if (!start.await(10, TimeUnit.SECONDS)) throw new IllegalStateException("start timeout");
-                return task.get();
-            }));
+            for (var task : List.of(first, second))
+                futures.add(pool.submit(() -> {
+                    ready.countDown();
+                    if (!start.await(10, TimeUnit.SECONDS)) throw new IllegalStateException("start timeout");
+                    return task.get();
+                }));
             assertTrue(ready.await(10, TimeUnit.SECONDS));
             start.countDown();
             List<Object> results = new ArrayList<>();

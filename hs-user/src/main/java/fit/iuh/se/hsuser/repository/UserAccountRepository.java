@@ -3,20 +3,18 @@ package fit.iuh.se.hsuser.repository;
 import fit.iuh.se.hsuser.entity.UserAccount;
 import fit.iuh.se.hsuser.entity.enums.AccountStatus;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.EntityGraph;
-import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
-
-import jakarta.persistence.LockModeType;
-
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
-import java.util.Optional;
-import java.util.List;
 import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface UserAccountRepository extends JpaRepository<UserAccount, Long> {
@@ -28,21 +26,21 @@ public interface UserAccountRepository extends JpaRepository<UserAccount, Long> 
     boolean existsByEmail(String email);
 
     @Query("""
-        select u
-        from UserAccount u
-        join fetch u.profile
-        where u.email = :email
-    """)
+                select u
+                from UserAccount u
+                join fetch u.profile
+                where u.email = :email
+            """)
     Optional<UserAccount> findUserByEmail(String email);
 
     @EntityGraph(attributePaths = "profile")
     @Query("""
-        select u
-        from UserAccount u
-        where u.role = :role
-          and u.id <> :excludedId
-          and (:status is null or u.status = :status)
-    """)
+                select u
+                from UserAccount u
+                where u.role = :role
+                  and u.id <> :excludedId
+                  and (:status is null or u.status = :status)
+            """)
     Page<UserAccount> findUsers(
             UserRole role,
             AccountStatus status,
@@ -52,18 +50,18 @@ public interface UserAccountRepository extends JpaRepository<UserAccount, Long> 
 
     @EntityGraph(attributePaths = "profile")
     @Query("""
-        select u
-        from UserAccount u
-        where u.role = :role
-          and u.id <> :excludedId
-          and (:status is null or u.status = :status)
-          and (
-              cast(u.id as string) like concat('%', :keyword, '%')
-              or lower(u.email) like lower(concat('%', :keyword, '%'))
-              or lower(u.profile.displayName) like lower(concat('%', :keyword, '%'))
-              or u.profile.phone like concat('%', :keyword, '%')
-          )
-    """)
+                select u
+                from UserAccount u
+                where u.role = :role
+                  and u.id <> :excludedId
+                  and (:status is null or u.status = :status)
+                  and (
+                      cast(u.id as string) like concat('%', :keyword, '%')
+                      or lower(u.email) like lower(concat('%', :keyword, '%'))
+                      or lower(u.profile.displayName) like lower(concat('%', :keyword, '%'))
+                      or u.profile.phone like concat('%', :keyword, '%')
+                  )
+            """)
     Page<UserAccount> searchUsers(
             UserRole role,
             AccountStatus status,
@@ -80,11 +78,11 @@ public interface UserAccountRepository extends JpaRepository<UserAccount, Long> 
 
     @EntityGraph(attributePaths = "profile")
     @Query("""
-        select u
-        from UserAccount u
-        where u.role = :role
-          and u.status = :status
-    """)
+                select u
+                from UserAccount u
+                where u.role = :role
+                  and u.status = :status
+            """)
     Page<UserAccount> findDoctors(
             UserRole role,
             AccountStatus status,
@@ -93,17 +91,17 @@ public interface UserAccountRepository extends JpaRepository<UserAccount, Long> 
 
     @EntityGraph(attributePaths = "profile")
     @Query("""
-        select u
-        from UserAccount u
-        where u.role = :role
-          and u.status = :status
-          and (
-              cast(u.id as string) like concat('%', :keyword, '%')
-              or lower(u.email) like lower(concat('%', :keyword, '%'))
-              or lower(u.profile.displayName) like lower(concat('%', :keyword, '%'))
-              or u.profile.phone like concat('%', :keyword, '%')
-          )
-    """)
+                select u
+                from UserAccount u
+                where u.role = :role
+                  and u.status = :status
+                  and (
+                      cast(u.id as string) like concat('%', :keyword, '%')
+                      or lower(u.email) like lower(concat('%', :keyword, '%'))
+                      or lower(u.profile.displayName) like lower(concat('%', :keyword, '%'))
+                      or u.profile.phone like concat('%', :keyword, '%')
+                  )
+            """)
     Page<UserAccount> searchDoctors(
             UserRole role,
             AccountStatus status,

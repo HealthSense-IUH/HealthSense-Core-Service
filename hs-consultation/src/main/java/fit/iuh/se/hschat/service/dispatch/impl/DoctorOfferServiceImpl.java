@@ -1,29 +1,37 @@
 package fit.iuh.se.hschat.service.dispatch.impl;
 
+import fit.iuh.se.hsbilling.service.ConsultationCreditService;
 import fit.iuh.se.hschat.dto.response.DoctorConsultationOfferResponse;
 import fit.iuh.se.hschat.dto.response.MinimalMemberIntakeContext;
 import fit.iuh.se.hschat.entity.*;
 import fit.iuh.se.hschat.entity.enums.*;
-import fit.iuh.se.hschat.repository.*;
+import fit.iuh.se.hschat.repository.ConsultationQueueEntryRepository;
+import fit.iuh.se.hschat.repository.ConsultationRequestRepository;
+import fit.iuh.se.hschat.repository.ConsultationSessionRepository;
+import fit.iuh.se.hschat.repository.DoctorCareProfileRepository;
 import fit.iuh.se.hschat.service.dispatch.DoctorDispatchSelectionService;
 import fit.iuh.se.hschat.service.dispatch.DoctorOfferService;
 import fit.iuh.se.hschat.service.dispatch.event.DispatchRequested;
-import fit.iuh.se.hschat.service.dispatch.offer.*;
-import fit.iuh.se.hsshared.advice.entity.AppException;
-import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
+import fit.iuh.se.hschat.service.dispatch.offer.DoctorOffer;
+import fit.iuh.se.hschat.service.dispatch.offer.DoctorOfferState;
+import fit.iuh.se.hschat.service.dispatch.offer.DoctorOfferStore;
 import fit.iuh.se.hsoperations.dto.command.NotificationIntent;
 import fit.iuh.se.hsoperations.dto.command.OperationalEventCommand;
-import fit.iuh.se.hsoperations.entity.enums.*;
+import fit.iuh.se.hsoperations.entity.enums.BusinessActorType;
+import fit.iuh.se.hsoperations.entity.enums.BusinessDomainType;
+import fit.iuh.se.hsoperations.entity.enums.BusinessEventType;
+import fit.iuh.se.hsoperations.entity.enums.NotificationType;
 import fit.iuh.se.hsoperations.event.OperationalEventPublisher;
-import fit.iuh.se.hsuser.entity.enums.UserRole;
+import fit.iuh.se.hsshared.advice.entity.AppException;
+import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsuser.entity.enums.AccountStatus;
+import fit.iuh.se.hsuser.entity.enums.UserRole;
 import fit.iuh.se.hsuser.repository.UserAccountRepository;
-import fit.iuh.se.hsbilling.service.ConsultationCreditService;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,9 +58,14 @@ public class DoctorOfferServiceImpl implements DoctorOfferService {
     private final ApplicationEventPublisher applicationEvents;
     private final ConsultationCreditService consultationCredits;
 
-    @NonFinal @Value("${app.consultation.dispatch.doctor-offer-minutes:5}") long doctorOfferMinutes = 5;
-    @NonFinal @Value("${app.consultation.dispatch.member-confirmation-minutes:15}") long memberConfirmationMinutes = 15;
-    @NonFinal Clock clock = Clock.systemUTC();
+    @NonFinal
+    @Value("${app.consultation.dispatch.doctor-offer-minutes:5}")
+    long doctorOfferMinutes = 5;
+    @NonFinal
+    @Value("${app.consultation.dispatch.member-confirmation-minutes:15}")
+    long memberConfirmationMinutes = 15;
+    @NonFinal
+    Clock clock = Clock.systemUTC();
 
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -127,7 +140,7 @@ public class DoctorOfferServiceImpl implements DoctorOfferService {
                 || doctor.getDispatchStatus() != DoctorDispatchStatus.AVAILABLE
                 || doctor.getBusySessionId() != null
                 || sessionRepository.existsByDoctorIdAndStatusIn(doctorId,
-                        List.of(ConsultationStatus.SCHEDULED, ConsultationStatus.ACTIVE)))
+                List.of(ConsultationStatus.SCHEDULED, ConsultationStatus.ACTIVE)))
             throw new AppException(ErrorCode.DOCTOR_NOT_ELIGIBLE_FOR_CONSULTATION);
 
         if (offer.state() == DoctorOfferState.WAITING_MEMBER_CONFIRMATION) {
@@ -143,7 +156,8 @@ public class DoctorOfferServiceImpl implements DoctorOfferService {
         Instant now = Instant.now(clock);
         Instant memberDeadline = now.plus(Duration.ofMinutes(memberConfirmationMinutes));
         DoctorOfferStore.AcceptResult result = offerStore.accept(offerId, doctorId, now, memberDeadline);
-        if (result == DoctorOfferStore.AcceptResult.EXPIRED) throw new AppException(ErrorCode.CONSULTATION_OFFER_EXPIRED);
+        if (result == DoctorOfferStore.AcceptResult.EXPIRED)
+            throw new AppException(ErrorCode.CONSULTATION_OFFER_EXPIRED);
         if (result == DoctorOfferStore.AcceptResult.STALE) throw new AppException(ErrorCode.CONSULTATION_OFFER_STALE);
         DoctorOffer accepted = offerStore.findById(offerId)
                 .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_OFFER_STALE));
@@ -183,14 +197,16 @@ public class DoctorOfferServiceImpl implements DoctorOfferService {
         entry.setStatus(ConsultationQueueStatus.WAITING);
         doctor.setDispatchStatus(DoctorDispatchStatus.UNAVAILABLE);
         doctor.setDispatchStatusChangedAt(Instant.now(clock));
-        queueRepository.save(entry); profileRepository.save(doctor);
+        queueRepository.save(entry);
+        profileRepository.save(doctor);
         auditOffer(offer, BusinessEventType.DOCTOR_OFFER_REJECTED, doctorId,
                 ConsultationQueueStatus.OFFERING_DOCTOR, ConsultationQueueStatus.WAITING, List.of());
         applicationEvents.publishEvent(new DispatchRequested("doctor-rejected"));
         return response(withState(offer, DoctorOfferState.DOCTOR_REJECTED), request);
     }
 
-    @Override @Transactional
+    @Override
+    @Transactional
     public void processDoctorTimeout(String offerId) {
         selectionService.lockDispatchStateForOfferCommit();
         DoctorOffer offer = offerStore.findById(offerId).orElse(null);
@@ -203,13 +219,15 @@ public class DoctorOfferServiceImpl implements DoctorOfferService {
         entry.setStatus(ConsultationQueueStatus.WAITING);
         doctor.setDispatchStatus(DoctorDispatchStatus.UNAVAILABLE);
         doctor.setDispatchStatusChangedAt(Instant.now(clock));
-        queueRepository.save(entry); profileRepository.save(doctor);
+        queueRepository.save(entry);
+        profileRepository.save(doctor);
         auditOffer(offer, BusinessEventType.DOCTOR_OFFER_TIMEOUT, null,
                 ConsultationQueueStatus.OFFERING_DOCTOR, ConsultationQueueStatus.WAITING, List.of());
         applicationEvents.publishEvent(new DispatchRequested("doctor-timeout"));
     }
 
-    @Override @Transactional
+    @Override
+    @Transactional
     public void processMemberConfirmationTimeout(String offerId) {
         selectionService.lockDispatchStateForOfferCommit();
         DoctorOffer offer = offerStore.findById(offerId).orElse(null);
@@ -232,10 +250,15 @@ public class DoctorOfferServiceImpl implements DoctorOfferService {
                 || request.getStatus() != ConsultationRequestStatus.QUEUED) return;
         if (!offerStore.release(offer)) return;
         Instant now = Instant.now(clock);
-        entry.setStatus(ConsultationQueueStatus.TIMED_OUT); entry.setTimedOutAt(now);
-        request.setStatus(ConsultationRequestStatus.TIMED_OUT); request.setExpiredAt(now);
-        doctor.setDispatchStatus(DoctorDispatchStatus.AVAILABLE); doctor.setDispatchStatusChangedAt(now);
-        queueRepository.save(entry); requestRepository.save(request); profileRepository.save(doctor);
+        entry.setStatus(ConsultationQueueStatus.TIMED_OUT);
+        entry.setTimedOutAt(now);
+        request.setStatus(ConsultationRequestStatus.TIMED_OUT);
+        request.setExpiredAt(now);
+        doctor.setDispatchStatus(DoctorDispatchStatus.AVAILABLE);
+        doctor.setDispatchStatusChangedAt(now);
+        queueRepository.save(entry);
+        requestRepository.save(request);
+        profileRepository.save(doctor);
         if (usesLegacyReservation(request))
             consultationCredits.release(request.getMemberId(), request.getId(), "MEMBER_CONFIRMATION_TIMEOUT");
         auditOffer(offer, BusinessEventType.MEMBER_CONFIRMATION_TIMEOUT, null,
@@ -252,7 +275,8 @@ public class DoctorOfferServiceImpl implements DoctorOfferService {
                 && request.getCreditCost() != null && request.getCreditCost() > 0;
     }
 
-    @Override @Transactional
+    @Override
+    @Transactional
     public void reconcileMissingOffers() {
         selectionService.lockDispatchStateForOfferCommit();
         List<ConsultationQueueEntry> unresolved = queueRepository.findByStatusIn(List.of(
@@ -302,18 +326,22 @@ public class DoctorOfferServiceImpl implements DoctorOfferService {
     private void cleanupRedisOnRollback(DoctorOffer offer) {
         if (!TransactionSynchronizationManager.isSynchronizationActive()) return;
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override public void afterCompletion(int status) {
+            @Override
+            public void afterCompletion(int status) {
                 if (status == STATUS_ROLLED_BACK) {
-                    try { offerStore.release(offer); }
-                    catch (RuntimeException ex) { log.error("Could not clean rolled-back offer {}", offer.offerId(), ex); }
+                    try {
+                        offerStore.release(offer);
+                    } catch (RuntimeException ex) {
+                        log.error("Could not clean rolled-back offer {}", offer.offerId(), ex);
+                    }
                 }
             }
         });
     }
 
     private void auditOffer(DoctorOffer offer, BusinessEventType type, Long actorId,
-            ConsultationQueueStatus previous, ConsultationQueueStatus next, List<NotificationIntent> notifications) {
-        Map<String,String> metadata = new LinkedHashMap<>();
+                            ConsultationQueueStatus previous, ConsultationQueueStatus next, List<NotificationIntent> notifications) {
+        Map<String, String> metadata = new LinkedHashMap<>();
         metadata.put("offerId", offer.offerId());
         metadata.put("queueEntryId", offer.queueEntryId().toString());
         metadata.put("doctorOfferExpiresAt", offer.doctorOfferExpiresAt().toString());

@@ -9,29 +9,22 @@ import fit.iuh.se.hschat.entity.CareServicePackage;
 import fit.iuh.se.hschat.entity.ConsultationParticipant;
 import fit.iuh.se.hschat.entity.ConsultationSession;
 import fit.iuh.se.hschat.entity.DoctorCareProfile;
-import fit.iuh.se.hschat.entity.enums.CareServicePackageStatus;
-import fit.iuh.se.hschat.entity.enums.CareOperationalReviewReason;
-import fit.iuh.se.hschat.entity.enums.CareTerminationReason;
-import fit.iuh.se.hschat.entity.enums.ConsultationCompletionReason;
-import fit.iuh.se.hschat.entity.enums.ConsultationFlowType;
-import fit.iuh.se.hschat.entity.enums.ConsultationParticipantRole;
-import fit.iuh.se.hschat.entity.enums.ConsultationSourceType;
-import fit.iuh.se.hschat.entity.enums.ConsultationStatus;
+import fit.iuh.se.hschat.entity.enums.*;
 import fit.iuh.se.hschat.mapper.ConsultationMapper;
-import fit.iuh.se.hschat.repository.CareServicePackageRepository;
-import fit.iuh.se.hschat.repository.ConsultationParticipantRepository;
-import fit.iuh.se.hschat.repository.ConsultationMessageRepository;
-import fit.iuh.se.hschat.repository.ConsultationRequestRepository;
-import fit.iuh.se.hschat.repository.ConsultationSessionRepository;
-import fit.iuh.se.hschat.repository.DoctorCareProfileRepository;
-import fit.iuh.se.hschat.service.doctor.SupportScheduleValidator;
-import fit.iuh.se.hschat.service.authorization.EpisodeHealthRecordAuthorizationService;
-import fit.iuh.se.hschat.service.reservation.DoctorReservationService;
-import fit.iuh.se.hschat.service.finalsummary.FinalSummaryClosureService;
-import fit.iuh.se.hschat.service.session.ConsultationSessionService;
+import fit.iuh.se.hschat.repository.*;
 import fit.iuh.se.hschat.service.ConsultationFlowGuard;
+import fit.iuh.se.hschat.service.authorization.EpisodeHealthRecordAuthorizationService;
+import fit.iuh.se.hschat.service.doctor.SupportScheduleValidator;
+import fit.iuh.se.hschat.service.finalsummary.FinalSummaryClosureService;
 import fit.iuh.se.hschat.service.renewal.ConsultationRenewalService;
+import fit.iuh.se.hschat.service.reservation.DoctorReservationService;
+import fit.iuh.se.hschat.service.session.ConsultationSessionService;
 import fit.iuh.se.hshealthrecord.repository.HealthRecordRepository;
+import fit.iuh.se.hsoperations.dto.command.NeedsActionIntent;
+import fit.iuh.se.hsoperations.dto.command.NotificationIntent;
+import fit.iuh.se.hsoperations.dto.command.OperationalEventCommand;
+import fit.iuh.se.hsoperations.entity.enums.*;
+import fit.iuh.se.hsoperations.event.OperationalEventPublisher;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsshared.dto.response.PageResponse;
@@ -39,13 +32,10 @@ import fit.iuh.se.hsuser.entity.UserAccount;
 import fit.iuh.se.hsuser.entity.enums.AccountStatus;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
 import fit.iuh.se.hsuser.repository.UserAccountRepository;
-import fit.iuh.se.hsoperations.dto.command.*;
-import fit.iuh.se.hsoperations.entity.enums.*;
-import fit.iuh.se.hsoperations.event.OperationalEventPublisher;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
-import lombok.experimental.NonFinal;
 import lombok.experimental.FieldDefaults;
+import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -56,12 +46,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -386,8 +371,8 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
     }
 
     private void auditSession(ConsultationSession session, BusinessEventType eventType, Long actorId,
-            UserRole actorRole, ConsultationStatus previous, ConsultationStatus next, String reason,
-            NeedsActionIntent needsAction, NotificationType notificationType) {
+                              UserRole actorRole, ConsultationStatus previous, ConsultationStatus next, String reason,
+                              NeedsActionIntent needsAction, NotificationType notificationType) {
         String key = "session:" + session.getId() + ":" + eventType + ":" + next;
         List<NotificationIntent> notifications = notificationType == null ? new java.util.ArrayList<>()
                 : new java.util.ArrayList<>(List.of(

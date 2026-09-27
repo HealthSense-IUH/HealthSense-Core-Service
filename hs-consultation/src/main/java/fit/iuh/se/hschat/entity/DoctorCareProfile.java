@@ -1,7 +1,7 @@
 package fit.iuh.se.hschat.entity;
 
-import fit.iuh.se.hschat.entity.enums.DoctorSpecialty;
 import fit.iuh.se.hschat.entity.enums.DoctorDispatchStatus;
+import fit.iuh.se.hschat.entity.enums.DoctorSpecialty;
 import fit.iuh.se.hsshared.generator.SnowflakeGenerated;
 import fit.iuh.se.hsuser.entity.BaseEntity;
 import jakarta.persistence.*;

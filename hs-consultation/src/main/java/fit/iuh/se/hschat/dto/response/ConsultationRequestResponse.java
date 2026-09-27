@@ -1,10 +1,10 @@
 package fit.iuh.se.hschat.dto.response;
 
-import fit.iuh.se.hschat.entity.enums.ConsultationRequestStatus;
+import fit.iuh.se.hsbilling.entity.enums.CreditReservationStatus;
+import fit.iuh.se.hschat.entity.enums.ConsultationCreditPolicy;
 import fit.iuh.se.hschat.entity.enums.ConsultationFlowType;
 import fit.iuh.se.hschat.entity.enums.ConsultationQueueStatus;
-import fit.iuh.se.hschat.entity.enums.ConsultationCreditPolicy;
-import fit.iuh.se.hsbilling.entity.enums.CreditReservationStatus;
+import fit.iuh.se.hschat.entity.enums.ConsultationRequestStatus;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 

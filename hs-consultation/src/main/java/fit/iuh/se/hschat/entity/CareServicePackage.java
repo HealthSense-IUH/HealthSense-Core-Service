@@ -1,7 +1,7 @@
 package fit.iuh.se.hschat.entity;
 
-import fit.iuh.se.hschat.entity.enums.CareServicePackageStatus;
 import fit.iuh.se.hschat.entity.enums.CareServiceCode;
+import fit.iuh.se.hschat.entity.enums.CareServicePackageStatus;
 import fit.iuh.se.hschat.entity.enums.CareServiceSupportPolicy;
 import fit.iuh.se.hschat.entity.enums.DoctorSpecialty;
 import fit.iuh.se.hsshared.generator.SnowflakeGenerated;

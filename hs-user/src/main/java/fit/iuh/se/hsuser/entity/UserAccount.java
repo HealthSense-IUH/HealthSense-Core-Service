@@ -1,8 +1,8 @@
 package fit.iuh.se.hsuser.entity;
 
 import fit.iuh.se.hsshared.generator.SnowflakeGenerated;
-import fit.iuh.se.hsuser.entity.enums.UserRole;
 import fit.iuh.se.hsuser.entity.enums.AccountStatus;
+import fit.iuh.se.hsuser.entity.enums.UserRole;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;

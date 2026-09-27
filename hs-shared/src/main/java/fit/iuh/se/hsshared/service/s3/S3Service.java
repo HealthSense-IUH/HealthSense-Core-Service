@@ -4,17 +4,15 @@ import fit.iuh.se.hsshared.config.S3Config;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
-import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
-import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
-import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
-import software.amazon.awssdk.core.sync.RequestBody;
+
 import java.io.InputStream;
 import java.time.Duration;
 
@@ -36,13 +34,13 @@ public class S3Service {
     /**
      * Sinh Presigned PUT URL để client upload trực tiếp file lên S3
      *
-     * @param objectKey Tên file trên S3 (VD: avatars/1/1722000_photo.png)
+     * @param objectKey   Tên file trên S3 (VD: avatars/1/1722000_photo.png)
      * @param contentType Loại nội dung (VD: image/png, text/csv)
      * @return Presigned URL có thời hạn (mặc định 15 phút)
      */
     public String generatePresignedUploadUrl(String objectKey, String contentType) {
-        log.info("Generating Presigned Upload URL for key: {} in bucket: {} with contentType: {}", 
-                 objectKey, s3Config.getBucketName(), contentType);
+        log.info("Generating Presigned Upload URL for key: {} in bucket: {} with contentType: {}",
+                objectKey, s3Config.getBucketName(), contentType);
         try {
             PutObjectRequest objectRequest = PutObjectRequest.builder()
                     .bucket(s3Config.getBucketName())
@@ -74,19 +72,19 @@ public class S3Service {
             throw new IllegalArgumentException("Object key must not be blank");
         log.info("Generating Presigned Download URL for key: {} in bucket: {}", objectKey, s3Config.getBucketName());
         try {
-            software.amazon.awssdk.services.s3.model.GetObjectRequest getObjectRequest = 
+            software.amazon.awssdk.services.s3.model.GetObjectRequest getObjectRequest =
                     software.amazon.awssdk.services.s3.model.GetObjectRequest.builder()
-                    .bucket(s3Config.getBucketName())
-                    .key(objectKey)
-                    .build();
+                            .bucket(s3Config.getBucketName())
+                            .key(objectKey)
+                            .build();
 
-            software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest presignRequest = 
+            software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest presignRequest =
                     software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest.builder()
-                    .signatureDuration(Duration.ofMinutes(s3Config.getPresignedUrlTtlMinutes()))
-                    .getObjectRequest(getObjectRequest)
-                    .build();
+                            .signatureDuration(Duration.ofMinutes(s3Config.getPresignedUrlTtlMinutes()))
+                            .getObjectRequest(getObjectRequest)
+                            .build();
 
-            software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest presignedRequest = 
+            software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest presignedRequest =
                     s3Presigner.presignGetObject(presignRequest);
             return presignedRequest.url().toString();
         } catch (Exception e) {
@@ -111,12 +109,12 @@ public class S3Service {
         if (objectKey == null || objectKey.isBlank()) return null;
         if (objectKey.startsWith("http://") || objectKey.startsWith("https://")) return objectKey;
         if (s3Config.getEndpointUrl() != null && !s3Config.getEndpointUrl().isBlank()) {
-            String baseUrl = s3Config.getEndpointUrl().endsWith("/") 
-                    ? s3Config.getEndpointUrl().substring(0, s3Config.getEndpointUrl().length() - 1) 
+            String baseUrl = s3Config.getEndpointUrl().endsWith("/")
+                    ? s3Config.getEndpointUrl().substring(0, s3Config.getEndpointUrl().length() - 1)
                     : s3Config.getEndpointUrl();
             return String.format("%s/%s/%s", baseUrl, s3Config.getBucketName(), objectKey);
         }
-        return String.format("https://%s.s3.%s.amazonaws.com/%s", 
+        return String.format("https://%s.s3.%s.amazonaws.com/%s",
                 s3Config.getBucketName(), s3Config.getRegion(), objectKey);
     }
 
@@ -129,14 +127,14 @@ public class S3Service {
             return url; // Đã là objectKey (ví dụ: avatars/1/xxx.png)
         }
         if (s3Config.getEndpointUrl() != null && !s3Config.getEndpointUrl().isBlank()) {
-            String baseUrl = s3Config.getEndpointUrl().endsWith("/") 
+            String baseUrl = s3Config.getEndpointUrl().endsWith("/")
                     ? s3Config.getEndpointUrl() : s3Config.getEndpointUrl() + "/";
             String customPrefix = baseUrl + s3Config.getBucketName() + "/";
             if (url.startsWith(customPrefix)) {
                 return url.substring(customPrefix.length());
             }
         }
-        String publicPrefix = String.format("https://%s.s3.%s.amazonaws.com/", 
+        String publicPrefix = String.format("https://%s.s3.%s.amazonaws.com/",
                 s3Config.getBucketName(), s3Config.getRegion());
         if (url.startsWith(publicPrefix)) {
             return url.substring(publicPrefix.length());
@@ -153,14 +151,14 @@ public class S3Service {
         if (idxRecords != -1) return url.substring(idxRecords);
         int idxTmp = url.indexOf("tmp/");
         if (idxTmp != -1) return url.substring(idxTmp);
-        
+
         return null; // Không thuộc S3 bucket của dự án (ví dụ: ảnh từ Google/Facebook login)
     }
 
     /**
      * Di chuyển object từ đường dẫn tạm sang đường dẫn chính thức (Copy -> Delete)
      *
-     * @param sourceKey Đường dẫn source (VD: tmp/avatars/1/xxx.png)
+     * @param sourceKey      Đường dẫn source (VD: tmp/avatars/1/xxx.png)
      * @param destinationKey Đường dẫn đích (VD: avatars/1/xxx.png)
      * @return Public URL của object mới sau khi di chuyển
      */
@@ -215,10 +213,10 @@ public class S3Service {
         log.info("Direct uploading file to S3 key: {} in bucket: {} (size: {} bytes)", objectKey, s3Config.getBucketName(), contentLength);
         try {
             s3Client.putObject(PutObjectRequest.builder()
-                    .bucket(s3Config.getBucketName())
-                    .key(objectKey)
-                    .contentType(contentType)
-                    .build(),
+                            .bucket(s3Config.getBucketName())
+                            .key(objectKey)
+                            .contentType(contentType)
+                            .build(),
                     RequestBody.fromInputStream(inputStream, contentLength));
             log.info("Successfully direct uploaded file to S3: {}", objectKey);
             return getPublicUrl(objectKey);

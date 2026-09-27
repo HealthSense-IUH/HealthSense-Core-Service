@@ -1,12 +1,15 @@
 package fit.iuh.se.hsapplication.controller.operations;
 
 import fit.iuh.se.hsapplication.dto.auth.UserAuthentication;
-import fit.iuh.se.hsoperations.dto.response.*;
+import fit.iuh.se.hsoperations.dto.response.NotificationResponse;
+import fit.iuh.se.hsoperations.dto.response.UnreadNotificationCountResponse;
 import fit.iuh.se.hsoperations.service.NotificationService;
-import fit.iuh.se.hsshared.dto.response.*;
+import fit.iuh.se.hsshared.dto.response.ApiResponse;
+import fit.iuh.se.hsshared.dto.response.PageResponse;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -20,8 +23,8 @@ public class NotificationController {
 
     @GetMapping
     public ApiResponse<PageResponse<NotificationResponse>> findMine(@AuthenticationPrincipal UserAuthentication user,
-            @RequestParam(defaultValue = "1") @Min(1) int page,
-            @RequestParam(defaultValue = "20") @Min(1) int size) {
+                                                                    @RequestParam(defaultValue = "1") @Min(1) int page,
+                                                                    @RequestParam(defaultValue = "20") @Min(1) int size) {
         return new ApiResponse<>(service.findMine(user.getUserId(),
                 PageRequest.of(page - 1, size, Sort.by(Sort.Direction.DESC, "createdAt"))));
     }
@@ -33,7 +36,7 @@ public class NotificationController {
 
     @PatchMapping("/{notificationId}/read")
     public ApiResponse<NotificationResponse> markRead(@AuthenticationPrincipal UserAuthentication user,
-            @PathVariable Long notificationId) {
+                                                      @PathVariable Long notificationId) {
         return new ApiResponse<>(service.markRead(user.getUserId(), notificationId));
     }
 

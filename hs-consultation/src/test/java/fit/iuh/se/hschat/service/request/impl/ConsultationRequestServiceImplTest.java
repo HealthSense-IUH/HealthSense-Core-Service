@@ -1,82 +1,49 @@
 package fit.iuh.se.hschat.service.request.impl;
 
-import fit.iuh.se.hschat.dto.request.ApproveConsultationRequest;
-import fit.iuh.se.hschat.dto.request.CreateConsultationRequest;
-import fit.iuh.se.hschat.dto.request.RequestMoreConsultationInfoRequest;
-import fit.iuh.se.hschat.dto.request.RejectConsultationRequest;
-import fit.iuh.se.hschat.dto.request.SubmitConsultationMoreInfoRequest;
+import fit.iuh.se.hsbilling.service.ConsultationCreditService;
+import fit.iuh.se.hschat.dto.request.*;
 import fit.iuh.se.hschat.dto.response.ConsultationRequestResponse;
-import fit.iuh.se.hschat.dto.response.DoctorCandidateResponse;
 import fit.iuh.se.hschat.dto.response.CurrentQueueStateResponse;
-import fit.iuh.se.hschat.entity.CareServicePackage;
-import fit.iuh.se.hschat.entity.ConsultationMoreInfoCycle;
-import fit.iuh.se.hschat.entity.ConsultationRequest;
-import fit.iuh.se.hschat.entity.ConsultationSession;
-import fit.iuh.se.hschat.entity.DoctorCareProfile;
-import fit.iuh.se.hschat.entity.DoctorReservation;
-import fit.iuh.se.hschat.entity.ConsultationQueueCounter;
-import fit.iuh.se.hschat.entity.ConsultationQueueEntry;
-import fit.iuh.se.hschat.entity.ConsultationDispatchState;
-import fit.iuh.se.hschat.entity.enums.CareServicePackageStatus;
-import fit.iuh.se.hschat.entity.enums.ConsultationRequestStatus;
-import fit.iuh.se.hschat.entity.enums.ConsultationFlowType;
-import fit.iuh.se.hschat.entity.enums.ConsultationCreditPolicy;
-import fit.iuh.se.hschat.entity.enums.ConsultationQueueStatus;
-import fit.iuh.se.hschat.entity.enums.ConsultationStatus;
-import fit.iuh.se.hschat.entity.enums.CurrentConsultationPhase;
-import fit.iuh.se.hschat.entity.enums.DoctorDispatchStatus;
-import fit.iuh.se.hschat.entity.enums.DoctorIneligibilityReason;
-import fit.iuh.se.hschat.entity.enums.DoctorSpecialty;
-import fit.iuh.se.hschat.entity.enums.DoctorReservationReleaseReason;
+import fit.iuh.se.hschat.dto.response.DoctorCandidateResponse;
+import fit.iuh.se.hschat.entity.*;
+import fit.iuh.se.hschat.entity.enums.*;
 import fit.iuh.se.hschat.mapper.ConsultationMapper;
-import fit.iuh.se.hschat.repository.CareServicePackageRepository;
-import fit.iuh.se.hschat.repository.ConsultationMoreInfoCycleRepository;
-import fit.iuh.se.hschat.repository.ConsultationRequestRepository;
-import fit.iuh.se.hschat.repository.ConsultationSessionRepository;
-import fit.iuh.se.hschat.repository.DoctorCareProfileRepository;
-import fit.iuh.se.hschat.repository.ConsultationQueueEntryRepository;
-import fit.iuh.se.hschat.repository.ConsultationQueueCounterRepository;
-import fit.iuh.se.hschat.repository.ConsultationDispatchStateRepository;
-import fit.iuh.se.hschat.service.reservation.DoctorReservationService;
+import fit.iuh.se.hschat.repository.*;
 import fit.iuh.se.hschat.service.agreement.CareServiceAgreementService;
+import fit.iuh.se.hschat.service.dispatch.DoctorDispatchSelectionService;
+import fit.iuh.se.hschat.service.dispatch.offer.DoctorOfferStore;
 import fit.iuh.se.hschat.service.payment.PaymentCancellationService;
-import fit.iuh.se.hshealthrecord.repository.HealthRecordRepository;
+import fit.iuh.se.hschat.service.reservation.DoctorReservationService;
 import fit.iuh.se.hshealthrecord.entity.HealthRecord;
+import fit.iuh.se.hshealthrecord.repository.HealthRecordRepository;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.dto.response.PageResponse;
 import fit.iuh.se.hsuser.entity.UserAccount;
 import fit.iuh.se.hsuser.entity.enums.AccountStatus;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
 import fit.iuh.se.hsuser.repository.UserAccountRepository;
-import fit.iuh.se.hschat.service.dispatch.DoctorDispatchSelectionService;
-import fit.iuh.se.hschat.service.dispatch.offer.DoctorOfferStore;
-import fit.iuh.se.hsbilling.service.ConsultationCreditService;
-import org.springframework.context.ApplicationEventPublisher;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.util.ReflectionTestUtils;
-import jakarta.validation.Validation;
-import jakarta.validation.Validator;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
@@ -118,10 +85,14 @@ class ConsultationRequestServiceImplTest {
     ConsultationMapper mapper;
     @Mock
     fit.iuh.se.hsoperations.event.OperationalEventPublisher OperationalEventPublisher;
-    @Mock DoctorOfferStore doctorOfferStore;
-    @Mock DoctorDispatchSelectionService doctorDispatchSelectionService;
-    @Mock ApplicationEventPublisher applicationEventPublisher;
-    @Mock ConsultationCreditService consultationCreditService;
+    @Mock
+    DoctorOfferStore doctorOfferStore;
+    @Mock
+    DoctorDispatchSelectionService doctorDispatchSelectionService;
+    @Mock
+    ApplicationEventPublisher applicationEventPublisher;
+    @Mock
+    ConsultationCreditService consultationCreditService;
 
     ConsultationRequestServiceImpl service;
 

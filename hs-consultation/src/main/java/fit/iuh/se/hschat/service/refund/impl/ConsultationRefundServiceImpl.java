@@ -1,19 +1,25 @@
 package fit.iuh.se.hschat.service.refund.impl;
 
 import fit.iuh.se.hschat.dto.ProviderRefundResult;
-import fit.iuh.se.hschat.dto.request.*;
+import fit.iuh.se.hschat.dto.request.DecideRefundRequest;
+import fit.iuh.se.hschat.dto.request.RecommendRefundRequest;
+import fit.iuh.se.hschat.dto.request.ReconcileRefundRequest;
 import fit.iuh.se.hschat.dto.response.ConsultationRefundResponse;
 import fit.iuh.se.hschat.entity.*;
-import fit.iuh.se.hschat.entity.enums.*;
+import fit.iuh.se.hschat.entity.enums.ConsultationPaymentStatus;
+import fit.iuh.se.hschat.entity.enums.ConsultationRefundStatus;
+import fit.iuh.se.hschat.entity.enums.RefundRecommendation;
 import fit.iuh.se.hschat.repository.*;
 import fit.iuh.se.hschat.service.payment.PayOSPaymentGateway;
 import fit.iuh.se.hschat.service.refund.ConsultationRefundService;
+import fit.iuh.se.hsoperations.dto.command.NeedsActionIntent;
+import fit.iuh.se.hsoperations.dto.command.NotificationIntent;
+import fit.iuh.se.hsoperations.dto.command.OperationalEventCommand;
+import fit.iuh.se.hsoperations.entity.enums.*;
+import fit.iuh.se.hsoperations.event.OperationalEventPublisher;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
-import fit.iuh.se.hsoperations.dto.command.*;
-import fit.iuh.se.hsoperations.entity.enums.*;
-import fit.iuh.se.hsoperations.event.OperationalEventPublisher;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -260,7 +266,7 @@ public class ConsultationRefundServiceImpl implements ConsultationRefundService 
     }
 
     private void auditRefund(ConsultationRefund refund, BusinessEventType eventType, Long actorId, UserRole actorRole,
-            ConsultationRefundStatus previous, ConsultationRefundStatus next, String reason, NeedsActionIntent needsAction) {
+                             ConsultationRefundStatus previous, ConsultationRefundStatus next, String reason, NeedsActionIntent needsAction) {
         String key = "refund:" + refund.getId() + ":" + eventType + ":" + refund.getExecutionAttempts();
         OperationalEventPublisher.record(OperationalEventCommand.builder()
                 .domainType(BusinessDomainType.REFUND).domainId(refund.getId()).eventType(eventType)

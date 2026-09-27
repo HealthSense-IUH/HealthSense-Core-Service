@@ -1,39 +1,32 @@
 package fit.iuh.se.hschat.service.request.impl;
 
+import fit.iuh.se.hsbilling.entity.enums.CreditReservationStatus;
+import fit.iuh.se.hsbilling.service.ConsultationCreditService;
 import fit.iuh.se.hschat.dto.request.*;
 import fit.iuh.se.hschat.dto.response.*;
-import fit.iuh.se.hschat.entity.CareServicePackage;
-import fit.iuh.se.hschat.entity.ConsultationMoreInfoCycle;
-import fit.iuh.se.hschat.entity.ConsultationRequest;
-import fit.iuh.se.hschat.entity.ConsultationQueueCounter;
-import fit.iuh.se.hschat.entity.ConsultationQueueEntry;
-import fit.iuh.se.hschat.entity.ConsultationSession;
-import fit.iuh.se.hschat.entity.ConsultationDispatchState;
-import fit.iuh.se.hschat.entity.DoctorCareProfile;
+import fit.iuh.se.hschat.entity.*;
 import fit.iuh.se.hschat.entity.enums.*;
 import fit.iuh.se.hschat.mapper.ConsultationMapper;
-import fit.iuh.se.hschat.repository.CareServicePackageRepository;
-import fit.iuh.se.hschat.repository.ConsultationMoreInfoCycleRepository;
-import fit.iuh.se.hschat.repository.ConsultationRequestRepository;
-import fit.iuh.se.hschat.repository.ConsultationSessionRepository;
-import fit.iuh.se.hschat.repository.DoctorCareProfileRepository;
-import fit.iuh.se.hschat.repository.ConsultationQueueCounterRepository;
-import fit.iuh.se.hschat.repository.ConsultationQueueEntryRepository;
-import fit.iuh.se.hschat.repository.ConsultationDispatchStateRepository;
-import fit.iuh.se.hschat.service.request.ConsultationRequestService;
+import fit.iuh.se.hschat.repository.*;
 import fit.iuh.se.hschat.service.ConsultationFlowGuard;
+import fit.iuh.se.hschat.service.agreement.CareServiceAgreementService;
 import fit.iuh.se.hschat.service.dispatch.DoctorDispatchSelectionService;
 import fit.iuh.se.hschat.service.dispatch.event.DispatchRequested;
 import fit.iuh.se.hschat.service.dispatch.offer.DoctorOffer;
 import fit.iuh.se.hschat.service.dispatch.offer.DoctorOfferState;
 import fit.iuh.se.hschat.service.dispatch.offer.DoctorOfferStore;
-import fit.iuh.se.hschat.service.reservation.DoctorReservationService;
-import fit.iuh.se.hschat.service.agreement.CareServiceAgreementService;
 import fit.iuh.se.hschat.service.payment.PaymentCancellationService;
-import fit.iuh.se.hsbilling.entity.enums.CreditReservationStatus;
-import fit.iuh.se.hsbilling.service.ConsultationCreditService;
+import fit.iuh.se.hschat.service.request.ConsultationRequestService;
+import fit.iuh.se.hschat.service.reservation.DoctorReservationService;
 import fit.iuh.se.hshealthrecord.entity.HealthRecord;
 import fit.iuh.se.hshealthrecord.repository.HealthRecordRepository;
+import fit.iuh.se.hsoperations.dto.command.NotificationIntent;
+import fit.iuh.se.hsoperations.dto.command.OperationalEventCommand;
+import fit.iuh.se.hsoperations.entity.enums.BusinessActorType;
+import fit.iuh.se.hsoperations.entity.enums.BusinessDomainType;
+import fit.iuh.se.hsoperations.entity.enums.BusinessEventType;
+import fit.iuh.se.hsoperations.entity.enums.NotificationType;
+import fit.iuh.se.hsoperations.event.OperationalEventPublisher;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsshared.dto.response.PageResponse;
@@ -42,10 +35,6 @@ import fit.iuh.se.hsuser.entity.UserProfile;
 import fit.iuh.se.hsuser.entity.enums.AccountStatus;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
 import fit.iuh.se.hsuser.repository.UserAccountRepository;
-import fit.iuh.se.hsoperations.dto.command.NotificationIntent;
-import fit.iuh.se.hsoperations.dto.command.OperationalEventCommand;
-import fit.iuh.se.hsoperations.entity.enums.*;
-import fit.iuh.se.hsoperations.event.OperationalEventPublisher;
 import jakarta.persistence.criteria.Predicate;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -53,16 +42,16 @@ import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
@@ -570,13 +559,13 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
                 .findByStatusInAndPaymentDeadlineBefore(ACTIVE_RESERVATION_STATUSES, now);
         reservationService.expireOverdueReservations(now);
         expiredRequests.forEach(request -> {
-                    request.setStatus(ConsultationRequestStatus.EXPIRED);
-                    request.setExpiredAt(now);
-                    agreementService.invalidateCurrent(request.getId(), "Offer/payment window expired");
-                    requestRepository.save(request);
-                    auditRequest(request, BusinessEventType.REQUEST_EXPIRED, null, null,
-                            null, ConsultationRequestStatus.EXPIRED, "Offer/payment window expired", NotificationType.PAYMENT_FAILED);
-                });
+            request.setStatus(ConsultationRequestStatus.EXPIRED);
+            request.setExpiredAt(now);
+            agreementService.invalidateCurrent(request.getId(), "Offer/payment window expired");
+            requestRepository.save(request);
+            auditRequest(request, BusinessEventType.REQUEST_EXPIRED, null, null,
+                    null, ConsultationRequestStatus.EXPIRED, "Offer/payment window expired", NotificationType.PAYMENT_FAILED);
+        });
     }
 
     private ConsultationRequestResponse cancelQueueRequest(
@@ -677,16 +666,17 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
 
     private Optional<DoctorOffer> queueMemberOffer(ConsultationQueueEntry entry) {
         if (entry.getStatus() != ConsultationQueueStatus.WAITING_MEMBER_CONFIRMATION) return Optional.empty();
-        try { return doctorOfferStore.findByQueueEntryId(entry.getId()); }
-        catch (AppException ex) {
+        try {
+            return doctorOfferStore.findByQueueEntryId(entry.getId());
+        } catch (AppException ex) {
             if (ex.getErrorCode() == ErrorCode.DISPATCH_TEMPORARILY_UNAVAILABLE) return Optional.empty();
             throw ex;
         }
     }
 
     private void auditRequest(ConsultationRequest request, BusinessEventType eventType, Long actorId,
-            UserRole actorRole, ConsultationRequestStatus previous, ConsultationRequestStatus next,
-            String reason, NotificationType notificationType) {
+                              UserRole actorRole, ConsultationRequestStatus previous, ConsultationRequestStatus next,
+                              String reason, NotificationType notificationType) {
         List<NotificationIntent> notifications = new ArrayList<>();
         if (notificationType != null)
             notifications.add(new NotificationIntent(request.getMemberId(), notificationType,

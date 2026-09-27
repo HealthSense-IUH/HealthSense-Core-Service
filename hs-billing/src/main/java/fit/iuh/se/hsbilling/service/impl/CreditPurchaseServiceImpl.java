@@ -1,24 +1,39 @@
 package fit.iuh.se.hsbilling.service.impl;
 
 import fit.iuh.se.hsbilling.config.CreditPaymentConfiguration;
-import fit.iuh.se.hsbilling.dto.*;
-import fit.iuh.se.hsbilling.entity.*;
-import fit.iuh.se.hsbilling.entity.enums.*;
-import fit.iuh.se.hsbilling.payment.MockCreditPaymentGateway;
+import fit.iuh.se.hsbilling.dto.CreditOrderResponse;
+import fit.iuh.se.hsbilling.dto.CreditOrderSummary;
+import fit.iuh.se.hsbilling.dto.CreditPaymentSummary;
+import fit.iuh.se.hsbilling.entity.CreditPaymentAttempt;
+import fit.iuh.se.hsbilling.entity.CreditPurchaseOrder;
+import fit.iuh.se.hsbilling.entity.enums.CreditOrderStatus;
+import fit.iuh.se.hsbilling.entity.enums.CreditPackageStatus;
+import fit.iuh.se.hsbilling.entity.enums.CreditPaymentProvider;
+import fit.iuh.se.hsbilling.entity.enums.CreditPaymentStatus;
 import fit.iuh.se.hsbilling.payment.CreditPaymentGateway;
-import fit.iuh.se.hsbilling.repository.*;
-import fit.iuh.se.hsbilling.service.*;
+import fit.iuh.se.hsbilling.payment.MockCreditPaymentGateway;
+import fit.iuh.se.hsbilling.repository.CreditOrderRepository;
+import fit.iuh.se.hsbilling.repository.CreditPackageRepository;
+import fit.iuh.se.hsbilling.repository.CreditPaymentAttemptRepository;
+import fit.iuh.se.hsbilling.service.ConsultationCreditService;
+import fit.iuh.se.hsbilling.service.CreditPurchaseCompletionService;
+import fit.iuh.se.hsbilling.service.CreditPurchaseService;
+import fit.iuh.se.hsbilling.service.PaymentOrderCodeAllocator;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsshared.dto.response.PageResponse;
 import fit.iuh.se.hsuser.entity.UserAccount;
-import fit.iuh.se.hsuser.entity.enums.*;
+import fit.iuh.se.hsuser.entity.enums.AccountStatus;
+import fit.iuh.se.hsuser.entity.enums.UserRole;
 import fit.iuh.se.hsuser.repository.UserAccountRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
+
 import java.time.Instant;
 
 @Service
@@ -75,13 +90,15 @@ public class CreditPurchaseServiceImpl implements CreditPurchaseService {
                 .packageCode(pack.getCode()).packageName(pack.getName()).creditQuantity(pack.getCreditQuantity())
                 .amountVnd(pack.getPriceVnd()).currency("VND").status(CreditOrderStatus.PENDING_PAYMENT)
                 .idempotencyKey(key).requestFingerprint(fingerprint).build();
-        order.setCreatedAt(now); orders.saveAndFlush(order);
+        order.setCreatedAt(now);
+        orders.saveAndFlush(order);
         Long orderCode = provider == CreditPaymentProvider.PAYOS ? orderCodes.next() : null;
         Instant expiresAt = provider == CreditPaymentProvider.PAYOS ? now.plus(configuration.linkTtl()) : null;
         var attempt = CreditPaymentAttempt.builder().orderId(order.getId()).attemptNumber(1).provider(provider)
                 .status(provider == CreditPaymentProvider.PAYOS ? CreditPaymentStatus.CREATING : CreditPaymentStatus.PENDING)
                 .orderCode(orderCode).expiresAt(expiresAt).build();
-        attempt.setCreatedAt(now); attempts.saveAndFlush(attempt);
+        attempt.setCreatedAt(now);
+        attempts.saveAndFlush(attempt);
         return new Start(order.getId(), attempt.getId(), order.getAmountVnd(), true, orderCode, expiresAt);
     }
 
@@ -99,10 +116,12 @@ public class CreditPurchaseServiceImpl implements CreditPurchaseService {
                     attempts.saveAndFlush(attempt);
                 }
             });
-        } catch (AppException ex) { throw ex; }
-        catch (RuntimeException ex) {
+        } catch (AppException ex) {
+            throw ex;
+        } catch (RuntimeException ex) {
             transactions.executeWithoutResult(status -> attempts.findById(start.attemptId()).ifPresent(a -> {
-                a.setLastError("PayOS link creation outcome is unknown"); attempts.save(a);
+                a.setLastError("PayOS link creation outcome is unknown");
+                attempts.save(a);
             }));
             throw new AppException(ErrorCode.PAYMENT_PROVIDER_ERROR, "Unable to create PayOS checkout link");
         }
@@ -130,7 +149,8 @@ public class CreditPurchaseServiceImpl implements CreditPurchaseService {
 
     @Override
     public CreditOrderResponse cancelOrder(Long memberId, Long orderId) {
-        member(memberId); positiveId(orderId);
+        member(memberId);
+        positiveId(orderId);
         var order = orders.findByIdAndMemberId(orderId, memberId)
                 .orElseThrow(() -> new AppException(ErrorCode.CREDIT_ORDER_NOT_FOUND));
         if (order.getStatus() != CreditOrderStatus.PENDING_PAYMENT) return response(order);
@@ -138,8 +158,11 @@ public class CreditPurchaseServiceImpl implements CreditPurchaseService {
                 .orElseThrow(() -> new AppException(ErrorCode.DATA_INTEGRITY_VIOLATION));
         if (attempt.getProvider() != CreditPaymentProvider.PAYOS || attempt.getOrderCode() == null)
             throw new AppException(ErrorCode.INVALID_CREDIT_PAYMENT);
-        try { payOSGateway.cancelPaymentLink(attempt.getOrderCode(), "Member requested cancellation"); }
-        catch (RuntimeException ex) { throw new AppException(ErrorCode.PAYMENT_PROVIDER_ERROR, "Unable to cancel PayOS checkout"); }
+        try {
+            payOSGateway.cancelPaymentLink(attempt.getOrderCode(), "Member requested cancellation");
+        } catch (RuntimeException ex) {
+            throw new AppException(ErrorCode.PAYMENT_PROVIDER_ERROR, "Unable to cancel PayOS checkout");
+        }
         transactions.executeWithoutResult(status -> {
             var lockedOrder = orders.findByIdForUpdate(orderId)
                     .orElseThrow(() -> new AppException(ErrorCode.CREDIT_ORDER_NOT_FOUND));
@@ -150,7 +173,8 @@ public class CreditPurchaseServiceImpl implements CreditPurchaseService {
                 lockedOrder.setStatus(CreditOrderStatus.CANCELLED);
                 lockedAttempt.setStatus(CreditPaymentStatus.CANCELLED);
                 lockedAttempt.setCancelledAt(Instant.now());
-                orders.saveAndFlush(lockedOrder); attempts.saveAndFlush(lockedAttempt);
+                orders.saveAndFlush(lockedOrder);
+                attempts.saveAndFlush(lockedAttempt);
             }
         });
         return getOrder(memberId, orderId);
@@ -181,5 +205,6 @@ public class CreditPurchaseServiceImpl implements CreditPurchaseService {
     }
 
     private record Start(Long orderId, Long attemptId, long amountVnd, boolean created,
-            Long orderCode, Instant expiresAt) {}
+                         Long orderCode, Instant expiresAt) {
+    }
 }

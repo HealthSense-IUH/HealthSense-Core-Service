@@ -4,8 +4,8 @@ import fit.iuh.se.hschat.entity.ConsultationFinalSummary;
 import fit.iuh.se.hschat.entity.ConsultationSession;
 import fit.iuh.se.hschat.entity.enums.ConsultationFinalSummaryStatus;
 import fit.iuh.se.hschat.entity.enums.ConsultationStatus;
-import fit.iuh.se.hschat.repository.ConsultationFinalSummaryRepository;
 import fit.iuh.se.hschat.repository.ConsultationFinalSummaryAddendumRepository;
+import fit.iuh.se.hschat.repository.ConsultationFinalSummaryRepository;
 import fit.iuh.se.hschat.repository.ConsultationSessionRepository;
 import fit.iuh.se.hschat.service.authorization.EpisodeHealthRecordAuthorizationService;
 import fit.iuh.se.hsshared.advice.entity.AppException;
@@ -26,11 +26,16 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class CareHistoryServiceImplTest {
 
-    @Mock ConsultationSessionRepository sessionRepository;
-    @Mock ConsultationFinalSummaryRepository summaryRepository;
-    @Mock ConsultationFinalSummaryAddendumRepository addendumRepository;
-    @Mock EpisodeHealthRecordAuthorizationService authorizationService;
-    @Mock fit.iuh.se.hsoperations.event.OperationalEventPublisher OperationalEventPublisher;
+    @Mock
+    ConsultationSessionRepository sessionRepository;
+    @Mock
+    ConsultationFinalSummaryRepository summaryRepository;
+    @Mock
+    ConsultationFinalSummaryAddendumRepository addendumRepository;
+    @Mock
+    EpisodeHealthRecordAuthorizationService authorizationService;
+    @Mock
+    fit.iuh.se.hsoperations.event.OperationalEventPublisher OperationalEventPublisher;
 
     CareHistoryServiceImpl service;
 

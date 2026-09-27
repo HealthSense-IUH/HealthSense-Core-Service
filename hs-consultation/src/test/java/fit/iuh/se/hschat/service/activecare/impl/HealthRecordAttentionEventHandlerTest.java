@@ -3,7 +3,9 @@ package fit.iuh.se.hschat.service.activecare.impl;
 import fit.iuh.se.hschat.entity.ConsultationHealthRecordAttention;
 import fit.iuh.se.hschat.entity.ConsultationSession;
 import fit.iuh.se.hschat.entity.enums.ConsultationStatus;
-import fit.iuh.se.hschat.repository.*;
+import fit.iuh.se.hschat.repository.ConsultationHealthRecordAttentionRepository;
+import fit.iuh.se.hschat.repository.ConsultationSessionRepository;
+import fit.iuh.se.hschat.repository.EpisodeHealthRecordAuthorizationRepository;
 import fit.iuh.se.hshealthrecord.entity.HealthRecord;
 import fit.iuh.se.hshealthrecord.entity.enums.PredictionLabel;
 import fit.iuh.se.hshealthrecord.event.HealthRecordAnalyzedEvent;
@@ -11,26 +13,31 @@ import fit.iuh.se.hshealthrecord.repository.HealthRecordRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.ArgumentCaptor;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
-import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class HealthRecordAttentionEventHandlerTest {
 
-    @Mock ConsultationSessionRepository sessionRepository;
-    @Mock ConsultationHealthRecordAttentionRepository attentionRepository;
-    @Mock HealthRecordRepository healthRecordRepository;
-    @Mock EpisodeHealthRecordAuthorizationRepository authorizationRepository;
-    @Mock fit.iuh.se.hsoperations.event.OperationalEventPublisher OperationalEventPublisher;
+    @Mock
+    ConsultationSessionRepository sessionRepository;
+    @Mock
+    ConsultationHealthRecordAttentionRepository attentionRepository;
+    @Mock
+    HealthRecordRepository healthRecordRepository;
+    @Mock
+    EpisodeHealthRecordAuthorizationRepository authorizationRepository;
+    @Mock
+    fit.iuh.se.hsoperations.event.OperationalEventPublisher OperationalEventPublisher;
 
     HealthRecordAttentionEventHandler handler;
 

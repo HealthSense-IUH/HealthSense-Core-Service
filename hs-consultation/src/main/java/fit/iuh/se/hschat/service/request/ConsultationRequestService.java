@@ -1,15 +1,7 @@
 package fit.iuh.se.hschat.service.request;
 
-import fit.iuh.se.hschat.dto.request.ApproveConsultationRequest;
-import fit.iuh.se.hschat.dto.request.CreateConsultationRequest;
-import fit.iuh.se.hschat.dto.request.RejectConsultationRequest;
-import fit.iuh.se.hschat.dto.request.RequestMoreConsultationInfoRequest;
-import fit.iuh.se.hschat.dto.request.SubmitConsultationMoreInfoRequest;
-import fit.iuh.se.hschat.dto.response.ConsultationRequestReviewResponse;
-import fit.iuh.se.hschat.dto.response.DoctorCandidateResponse;
-import fit.iuh.se.hschat.dto.response.ConsultationRequestResponse;
-import fit.iuh.se.hschat.dto.response.CurrentQueueStateResponse;
-import fit.iuh.se.hschat.dto.response.ConsultationQueueStatisticsResponse;
+import fit.iuh.se.hschat.dto.request.*;
+import fit.iuh.se.hschat.dto.response.*;
 import fit.iuh.se.hschat.entity.enums.ConsultationRequestStatus;
 import fit.iuh.se.hschat.entity.enums.DoctorSpecialty;
 import fit.iuh.se.hsshared.dto.response.PageResponse;

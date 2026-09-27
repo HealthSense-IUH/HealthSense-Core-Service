@@ -1,7 +1,10 @@
 package fit.iuh.se.hschat.service.message.impl;
 
 import fit.iuh.se.hschat.entity.ConsultationSession;
-import fit.iuh.se.hschat.entity.enums.*;
+import fit.iuh.se.hschat.entity.enums.ConsultationFlowType;
+import fit.iuh.se.hschat.entity.enums.ConsultationParticipantRole;
+import fit.iuh.se.hschat.entity.enums.ConsultationStatus;
+import fit.iuh.se.hschat.entity.enums.ContinuationDecision;
 import fit.iuh.se.hschat.service.continuation.ContinuationState;
 import fit.iuh.se.hschat.service.continuation.ContinuationStore;
 import org.junit.jupiter.api.Test;
@@ -11,20 +14,24 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class SnapshotSupportHoursPolicyTest {
     private final ContinuationStore store = mock(ContinuationStore.class);
     private final SnapshotSupportHoursPolicy policy = new SnapshotSupportHoursPolicy(store);
 
-    @Test void activeQueueSessionAllowsBothParticipantsInsideInitialBlock() {
+    @Test
+    void activeQueueSessionAllowsBothParticipantsInsideInitialBlock() {
         ConsultationSession session = queueSession(Instant.now().plusSeconds(60));
         assertTrue(policy.canSendNow(session, ConsultationParticipantRole.MEMBER));
         assertTrue(policy.canSendNow(session, ConsultationParticipantRole.DOCTOR));
     }
 
-    @Test void queueSessionChatClosesAtExpiredBlockRegardlessOfRole() {
+    @Test
+    void queueSessionChatClosesAtExpiredBlockRegardlessOfRole() {
         Instant now = Instant.parse("2026-09-06T03:00:00Z");
         policy.clock = Clock.fixed(now, ZoneOffset.UTC);
         ConsultationSession session = queueSession(now.minusSeconds(301));
@@ -32,7 +39,8 @@ class SnapshotSupportHoursPolicyTest {
         assertFalse(policy.canSendNow(session, ConsultationParticipantRole.DOCTOR));
     }
 
-    @Test void queueSessionChatRemainsWritableDuringOpenedGrace() {
+    @Test
+    void queueSessionChatRemainsWritableDuringOpenedGrace() {
         Instant now = Instant.parse("2026-09-06T03:00:00Z");
         Instant endedAt = now.minusSeconds(60);
         policy.clock = Clock.fixed(now, ZoneOffset.UTC);
@@ -45,7 +53,8 @@ class SnapshotSupportHoursPolicyTest {
         assertTrue(policy.canSendNow(session, ConsultationParticipantRole.DOCTOR));
     }
 
-    @Test void queueSessionChatFailsClosedWhenGraceStateIsMissing() {
+    @Test
+    void queueSessionChatFailsClosedWhenGraceStateIsMissing() {
         Instant now = Instant.parse("2026-09-06T03:00:00Z");
         policy.clock = Clock.fixed(now, ZoneOffset.UTC);
         ConsultationSession session = queueSession(now.minusSeconds(60));

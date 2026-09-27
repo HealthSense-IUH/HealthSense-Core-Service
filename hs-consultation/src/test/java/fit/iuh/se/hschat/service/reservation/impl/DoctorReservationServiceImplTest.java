@@ -1,6 +1,9 @@
 package fit.iuh.se.hschat.service.reservation.impl;
 
-import fit.iuh.se.hschat.entity.*;
+import fit.iuh.se.hschat.entity.CareServicePackage;
+import fit.iuh.se.hschat.entity.ConsultationRequest;
+import fit.iuh.se.hschat.entity.DoctorCareProfile;
+import fit.iuh.se.hschat.entity.DoctorReservation;
 import fit.iuh.se.hschat.entity.enums.*;
 import fit.iuh.se.hschat.repository.*;
 import fit.iuh.se.hschat.service.doctor.SupportScheduleValidator;
@@ -18,7 +21,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -29,14 +35,22 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class DoctorReservationServiceImplTest {
 
-    @Mock DoctorReservationRepository reservationRepository;
-    @Mock ConsultationRequestRepository requestRepository;
-    @Mock ConsultationSessionRepository sessionRepository;
-    @Mock UserAccountRepository userAccountRepository;
-    @Mock DoctorCareProfileRepository profileRepository;
-    @Mock CareServicePackageRepository packageRepository;
-    @Mock SupportScheduleValidator scheduleValidator;
-    @Mock fit.iuh.se.hsoperations.event.OperationalEventPublisher OperationalEventPublisher;
+    @Mock
+    DoctorReservationRepository reservationRepository;
+    @Mock
+    ConsultationRequestRepository requestRepository;
+    @Mock
+    ConsultationSessionRepository sessionRepository;
+    @Mock
+    UserAccountRepository userAccountRepository;
+    @Mock
+    DoctorCareProfileRepository profileRepository;
+    @Mock
+    CareServicePackageRepository packageRepository;
+    @Mock
+    SupportScheduleValidator scheduleValidator;
+    @Mock
+    fit.iuh.se.hsoperations.event.OperationalEventPublisher OperationalEventPublisher;
 
     DoctorReservationServiceImpl service;
 

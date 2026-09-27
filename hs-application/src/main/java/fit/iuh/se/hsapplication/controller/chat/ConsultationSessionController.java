@@ -1,14 +1,14 @@
 package fit.iuh.se.hsapplication.controller.chat;
 
 import fit.iuh.se.hsapplication.dto.auth.UserAuthentication;
-import fit.iuh.se.hschat.dto.response.ConsultationFinalSummaryResponse;
-import fit.iuh.se.hschat.dto.response.ConsultationSessionResponse;
-import fit.iuh.se.hschat.dto.response.EpisodeHealthRecordAuthorizationResponse;
 import fit.iuh.se.hschat.dto.request.RequestSessionTerminationRequest;
 import fit.iuh.se.hschat.dto.request.SubmitContinuationDecisionRequest;
+import fit.iuh.se.hschat.dto.response.ConsultationFinalSummaryResponse;
+import fit.iuh.se.hschat.dto.response.ConsultationSessionResponse;
 import fit.iuh.se.hschat.dto.response.ContinuationDecisionResponse;
-import fit.iuh.se.hschat.service.continuation.QueueContinuationService;
+import fit.iuh.se.hschat.dto.response.EpisodeHealthRecordAuthorizationResponse;
 import fit.iuh.se.hschat.service.authorization.EpisodeHealthRecordAuthorizationService;
+import fit.iuh.se.hschat.service.continuation.QueueContinuationService;
 import fit.iuh.se.hschat.service.finalsummary.ConsultationFinalSummaryService;
 import fit.iuh.se.hschat.service.session.ConsultationSessionService;
 import fit.iuh.se.hsshared.dto.response.ApiResponse;

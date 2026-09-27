@@ -3,7 +3,8 @@ package fit.iuh.se.hschat.service.doctor.impl;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class DeclaredSupportScheduleValidatorTest {
 

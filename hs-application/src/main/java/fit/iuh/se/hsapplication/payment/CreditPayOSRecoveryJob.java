@@ -1,13 +1,17 @@
 package fit.iuh.se.hsapplication.payment;
 
-import fit.iuh.se.hsbilling.entity.enums.*;
+import fit.iuh.se.hsbilling.entity.enums.CreditOrderStatus;
+import fit.iuh.se.hsbilling.entity.enums.CreditPaymentProvider;
+import fit.iuh.se.hsbilling.entity.enums.CreditPaymentStatus;
 import fit.iuh.se.hsbilling.payment.CreditPaymentGateway;
-import fit.iuh.se.hsbilling.repository.*;
+import fit.iuh.se.hsbilling.repository.CreditOrderRepository;
+import fit.iuh.se.hsbilling.repository.CreditPaymentAttemptRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionTemplate;
+
 import java.time.Instant;
 import java.util.List;
 
@@ -52,9 +56,11 @@ public class CreditPayOSRecoveryJob {
             if (attempt.getStatus() == CreditPaymentStatus.PAID) return;
             var order = orders.findByIdForUpdate(attempt.getOrderId()).orElse(null);
             if (order == null || order.getStatus() == CreditOrderStatus.PAID) return;
-            attempt.setStatus(attemptStatus); attempt.setLastError(error);
+            attempt.setStatus(attemptStatus);
+            attempt.setLastError(error);
             order.setStatus(orderStatus);
-            attempts.saveAndFlush(attempt); orders.saveAndFlush(order);
+            attempts.saveAndFlush(attempt);
+            orders.saveAndFlush(order);
         }));
     }
 }

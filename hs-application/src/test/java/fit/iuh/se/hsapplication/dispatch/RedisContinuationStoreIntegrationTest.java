@@ -13,7 +13,8 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.concurrent.CompletableFuture;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest(properties = {
         "app.consultation.dispatch.scheduler-delay-ms=3600000",
@@ -22,7 +23,8 @@ import static org.junit.jupiter.api.Assertions.*;
 @ActiveProfiles("dev")
 class RedisContinuationStoreIntegrationTest {
 
-    @Autowired ContinuationStore store;
+    @Autowired
+    ContinuationStore store;
 
     @Test
     void luaStateIsAtomicImmutableDeadlineAwareAndOwnershipSafeOnRealRedis() {

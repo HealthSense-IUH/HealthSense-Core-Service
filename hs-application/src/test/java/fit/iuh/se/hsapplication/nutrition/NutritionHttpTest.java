@@ -14,12 +14,16 @@ import fit.iuh.se.hsnutrition.dto.NutritionReferenceFoodResponse;
 import fit.iuh.se.hsnutrition.dto.NutritionReferenceFoodSummaryResponse;
 import fit.iuh.se.hsnutrition.service.NutritionCatalogService;
 import fit.iuh.se.hsnutrition.service.NutritionReferenceService;
-import fit.iuh.se.hsshared.dto.response.PageResponse;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
+import fit.iuh.se.hsshared.dto.response.PageResponse;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
-import org.junit.jupiter.api.*;
-import org.springframework.context.annotation.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.mock.web.MockServletContext;
@@ -33,6 +37,7 @@ import org.springframework.web.context.support.AnnotationConfigWebApplicationCon
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
+
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,16 +46,20 @@ import static org.mockito.Mockito.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** The JSON field names asserted here are the Frontend contract in src/types/nutrition.ts. */
+/**
+ * The JSON field names asserted here are the Frontend contract in src/types/nutrition.ts.
+ */
 class NutritionHttpTest {
     private AnnotationConfigWebApplicationContext context;
     private MockMvc mvc;
     private NutritionCatalogService catalog;
     private NutritionReferenceService reference;
 
-    @BeforeEach void start() {
+    @BeforeEach
+    void start() {
         context = new AnnotationConfigWebApplicationContext();
         context.setServletContext(new MockServletContext());
         TestPropertySourceUtils.addInlinedPropertiesToEnvironment(context,
@@ -62,7 +71,10 @@ class NutritionHttpTest {
         reference = context.getBean(NutritionReferenceService.class);
     }
 
-    @AfterEach void stop() { if (context != null) context.close(); }
+    @AfterEach
+    void stop() {
+        if (context != null) context.close();
+    }
 
     @Configuration(proxyBeanMethods = false)
     @EnableWebMvc
@@ -70,11 +82,30 @@ class NutritionHttpTest {
             fit.iuh.se.hsshared.advice.handler.GlobalExceptionHandler.class,
             RateLimitFilter.class, RestAuthenticationEntryPoint.class, RestAccessDeniedHandler.class})
     static class Config {
-        @Bean NutritionCatalogService catalog() { return mock(NutritionCatalogService.class); }
-        @Bean NutritionReferenceService reference() { return mock(NutritionReferenceService.class); }
-        @Bean JwtDecoder decoder() { return mock(JwtDecoder.class); }
-        @Bean RateLimiterService rateLimiter() { return mock(RateLimiterService.class); }
-        @Bean ObjectMapper mapper() { return JsonMapper.builder().build(); }
+        @Bean
+        NutritionCatalogService catalog() {
+            return mock(NutritionCatalogService.class);
+        }
+
+        @Bean
+        NutritionReferenceService reference() {
+            return mock(NutritionReferenceService.class);
+        }
+
+        @Bean
+        JwtDecoder decoder() {
+            return mock(JwtDecoder.class);
+        }
+
+        @Bean
+        RateLimiterService rateLimiter() {
+            return mock(RateLimiterService.class);
+        }
+
+        @Bean
+        ObjectMapper mapper() {
+            return JsonMapper.builder().build();
+        }
     }
 
     private UsernamePasswordAuthenticationToken actor(UserRole role) {
@@ -95,7 +126,8 @@ class NutritionHttpTest {
                 null);
     }
 
-    @Test void anonymousIsRejectedAndEveryRoleCanRead() throws Exception {
+    @Test
+    void anonymousIsRejectedAndEveryRoleCanRead() throws Exception {
         when(catalog.getGroups()).thenReturn(List.of());
         for (String path : List.of("/api/nutrition/groups", "/api/nutrition/groups/FISH/foods",
                 "/api/nutrition/foods/milk-low-fat-1", "/api/nutrition/foods/search?q=sua"))
@@ -105,7 +137,8 @@ class NutritionHttpTest {
                     .andExpect(status().isOk());
     }
 
-    @Test void foodJsonUsesTheFrontendFieldNames() throws Exception {
+    @Test
+    void foodJsonUsesTheFrontendFieldNames() throws Exception {
         when(catalog.getFood("milk-low-fat-1")).thenReturn(milk());
         mvc.perform(get("/api/nutrition/foods/milk-low-fat-1").with(authentication(actor(UserRole.MEMBER))))
                 .andExpect(status().isOk())
@@ -130,7 +163,8 @@ class NutritionHttpTest {
                 .andExpect(jsonPath("$.data.evidenceSources[0].authors").doesNotExist());
     }
 
-    @Test void groupJsonCarriesFoodCountsPerSource() throws Exception {
+    @Test
+    void groupJsonCarriesFoodCountsPerSource() throws Exception {
         Map<String, Long> sources = new LinkedHashMap<>();
         sources.put("VN_FCT", 61L);
         sources.put("USDA_FNDDS", 152L);
@@ -148,7 +182,8 @@ class NutritionHttpTest {
                 .andExpect(jsonPath("$.data[0].imageUrl").doesNotExist());
     }
 
-    @Test void searchPathIsNotMistakenForAFoodId() throws Exception {
+    @Test
+    void searchPathIsNotMistakenForAFoodId() throws Exception {
         when(catalog.searchFoods("ca hoi")).thenReturn(List.of(milk()));
         mvc.perform(get("/api/nutrition/foods/search").param("q", "ca hoi")
                         .with(authentication(actor(UserRole.MEMBER))))
@@ -158,14 +193,16 @@ class NutritionHttpTest {
         verify(catalog, never()).getFood(anyString());
     }
 
-    @Test void unknownFoodIsNotFound() throws Exception {
+    @Test
+    void unknownFoodIsNotFound() throws Exception {
         when(catalog.getFood("nope")).thenThrow(new AppException(ErrorCode.ENTITY_NOT_FOUND, "Nutrition food not found"));
         mvc.perform(get("/api/nutrition/foods/nope").with(authentication(actor(UserRole.MEMBER))))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value(3000));
     }
 
-    @Test void referenceEndpointsRequireLoginAndUseDefaultPaging() throws Exception {
+    @Test
+    void referenceEndpointsRequireLoginAndUseDefaultPaging() throws Exception {
         for (String path : List.of("/api/nutrition/reference/foods", "/api/nutrition/reference/foods/2707124"))
             mvc.perform(get(path)).andExpect(status().isUnauthorized());
         when(reference.searchFoods("", null, null, 1, 20)).thenReturn(new PageResponse<>(new PageImpl<>(List.of(),
@@ -175,7 +212,8 @@ class NutritionHttpTest {
         verify(reference).searchFoods("", null, null, 1, 20);
     }
 
-    @Test void referenceSearchJsonIsAPageOfSummaries() throws Exception {
+    @Test
+    void referenceSearchJsonIsAPageOfSummaries() throws Exception {
         var pho = new NutritionReferenceFoodSummaryResponse("2707124", "USDA_FNDDS", "28310330",
                 "Soup, pho, with meat", "Phở có thịt", "MIXED_DISH", "Món ăn hỗn hợp", 77.0, 5.81, 5.6, null);
         when(reference.searchFoods("pho", "MIXED_DISH", "USDA_FNDDS", 2, 10)).thenReturn(
@@ -203,7 +241,8 @@ class NutritionHttpTest {
                 .andExpect(jsonPath("$.data.content[0].fatTotalG").doesNotExist());
     }
 
-    @Test void referenceDetailJsonUsesTheFrontendFieldNames() throws Exception {
+    @Test
+    void referenceDetailJsonUsesTheFrontendFieldNames() throws Exception {
         when(reference.getFood("2707124")).thenReturn(new NutritionReferenceFoodResponse("2707124", "28310330",
                 "Soup, pho, with meat", "Phở có thịt", "MIXED_DISH", "Món ăn hỗn hợp", "Ramen and Asian broth-based soups",
                 "USDA_FNDDS", "2021-2023", 12.5,

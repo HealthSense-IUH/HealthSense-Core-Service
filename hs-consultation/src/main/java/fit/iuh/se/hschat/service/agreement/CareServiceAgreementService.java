@@ -1,11 +1,7 @@
 package fit.iuh.se.hschat.service.agreement;
 
 import fit.iuh.se.hschat.dto.response.CareServiceAgreementResponse;
-import fit.iuh.se.hschat.entity.CareServiceAgreement;
-import fit.iuh.se.hschat.entity.ConsultationRequest;
-import fit.iuh.se.hschat.entity.ConsultationRenewal;
-import fit.iuh.se.hschat.entity.CareServicePackage;
-import fit.iuh.se.hschat.entity.DoctorCareProfile;
+import fit.iuh.se.hschat.entity.*;
 
 public interface CareServiceAgreementService {
 

@@ -1,9 +1,15 @@
 package fit.iuh.se.hschat.service.refund.impl;
 
 import fit.iuh.se.hschat.dto.ProviderRefundResult;
-import fit.iuh.se.hschat.dto.request.*;
-import fit.iuh.se.hschat.entity.*;
-import fit.iuh.se.hschat.entity.enums.*;
+import fit.iuh.se.hschat.dto.request.DecideRefundRequest;
+import fit.iuh.se.hschat.dto.request.RecommendRefundRequest;
+import fit.iuh.se.hschat.entity.CareServiceAgreement;
+import fit.iuh.se.hschat.entity.ConsultationPayment;
+import fit.iuh.se.hschat.entity.ConsultationRefund;
+import fit.iuh.se.hschat.entity.enums.ConsultationPaymentProvider;
+import fit.iuh.se.hschat.entity.enums.ConsultationPaymentStatus;
+import fit.iuh.se.hschat.entity.enums.ConsultationRefundStatus;
+import fit.iuh.se.hschat.entity.enums.RefundRecommendation;
 import fit.iuh.se.hschat.repository.*;
 import fit.iuh.se.hschat.service.payment.PayOSPaymentGateway;
 import fit.iuh.se.hsshared.advice.entity.AppException;
@@ -18,18 +24,26 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ConsultationRefundServiceImplTest {
-    @Mock ConsultationRefundRepository refundRepository;
-    @Mock ConsultationPaymentRepository paymentRepository;
-    @Mock CareServiceAgreementRepository agreementRepository;
-    @Mock ConsultationRequestRepository requestRepository;
-    @Mock ConsultationRenewalRepository renewalRepository;
-    @Mock PayOSPaymentGateway paymentGateway;
-    @Mock fit.iuh.se.hsoperations.event.OperationalEventPublisher OperationalEventPublisher;
+    @Mock
+    ConsultationRefundRepository refundRepository;
+    @Mock
+    ConsultationPaymentRepository paymentRepository;
+    @Mock
+    CareServiceAgreementRepository agreementRepository;
+    @Mock
+    ConsultationRequestRepository requestRepository;
+    @Mock
+    ConsultationRenewalRepository renewalRepository;
+    @Mock
+    PayOSPaymentGateway paymentGateway;
+    @Mock
+    fit.iuh.se.hsoperations.event.OperationalEventPublisher OperationalEventPublisher;
     ConsultationRefundServiceImpl service;
 
     @BeforeEach
@@ -152,13 +166,17 @@ class ConsultationRefundServiceImplTest {
 
     private RecommendRefundRequest recommendation(RefundRecommendation value, BigDecimal amount) {
         RecommendRefundRequest request = new RecommendRefundRequest();
-        request.setRecommendation(value); request.setRecommendedAmount(amount); request.setReason("Policy review");
+        request.setRecommendation(value);
+        request.setRecommendedAmount(amount);
+        request.setReason("Policy review");
         return request;
     }
 
     private DecideRefundRequest decision(boolean approved, BigDecimal amount) {
         DecideRefundRequest request = new DecideRefundRequest();
-        request.setApproved(approved); request.setApprovedAmount(amount); request.setReason("Final decision");
+        request.setApproved(approved);
+        request.setApprovedAmount(amount);
+        request.setReason("Final decision");
         return request;
     }
 }

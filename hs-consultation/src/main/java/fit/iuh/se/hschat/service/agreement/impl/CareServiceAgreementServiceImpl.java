@@ -4,13 +4,17 @@ import fit.iuh.se.hschat.dto.response.CareServiceAgreementResponse;
 import fit.iuh.se.hschat.entity.*;
 import fit.iuh.se.hschat.entity.enums.*;
 import fit.iuh.se.hschat.repository.*;
-import fit.iuh.se.hschat.service.agreement.CareServiceAgreementService;
 import fit.iuh.se.hschat.service.ConsultationFlowGuard;
+import fit.iuh.se.hschat.service.agreement.CareServiceAgreementService;
+import fit.iuh.se.hsoperations.dto.command.NotificationIntent;
+import fit.iuh.se.hsoperations.dto.command.OperationalEventCommand;
+import fit.iuh.se.hsoperations.entity.enums.BusinessActorType;
+import fit.iuh.se.hsoperations.entity.enums.BusinessDomainType;
+import fit.iuh.se.hsoperations.entity.enums.BusinessEventType;
+import fit.iuh.se.hsoperations.entity.enums.NotificationType;
+import fit.iuh.se.hsoperations.event.OperationalEventPublisher;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
-import fit.iuh.se.hsoperations.dto.command.*;
-import fit.iuh.se.hsoperations.entity.enums.*;
-import fit.iuh.se.hsoperations.event.OperationalEventPublisher;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -302,8 +306,8 @@ public class CareServiceAgreementServiceImpl implements CareServiceAgreementServ
     }
 
     private void auditAgreement(CareServiceAgreement agreement, BusinessEventType eventType, Long actorId,
-            UserRole actorRole, CareServiceAgreementStatus previous, CareServiceAgreementStatus next,
-            String reason, NotificationType notificationType) {
+                                UserRole actorRole, CareServiceAgreementStatus previous, CareServiceAgreementStatus next,
+                                String reason, NotificationType notificationType) {
         String transitionKey = "agreement:" + agreement.getId() + ":" + eventType;
         OperationalEventPublisher.record(OperationalEventCommand.builder()
                 .domainType(BusinessDomainType.AGREEMENT).domainId(agreement.getId()).eventType(eventType)

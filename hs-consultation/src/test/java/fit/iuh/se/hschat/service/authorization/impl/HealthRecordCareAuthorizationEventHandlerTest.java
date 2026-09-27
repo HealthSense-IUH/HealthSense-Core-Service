@@ -4,7 +4,8 @@ import fit.iuh.se.hschat.service.authorization.EpisodeHealthRecordAuthorizationS
 import fit.iuh.se.hshealthrecord.event.HealthRecordAvailableForCareEvent;
 import org.junit.jupiter.api.Test;
 
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 class HealthRecordCareAuthorizationEventHandlerTest {
 

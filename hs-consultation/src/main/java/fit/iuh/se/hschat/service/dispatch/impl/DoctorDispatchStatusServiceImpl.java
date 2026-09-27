@@ -8,19 +8,19 @@ import fit.iuh.se.hschat.entity.enums.ConsultationStatus;
 import fit.iuh.se.hschat.entity.enums.DoctorDispatchStatus;
 import fit.iuh.se.hschat.repository.ConsultationSessionRepository;
 import fit.iuh.se.hschat.repository.DoctorCareProfileRepository;
-import fit.iuh.se.hschat.service.dispatch.DoctorDispatchStatusService;
 import fit.iuh.se.hschat.service.dispatch.DoctorDispatchSelectionService;
+import fit.iuh.se.hschat.service.dispatch.DoctorDispatchStatusService;
 import fit.iuh.se.hschat.service.dispatch.DoctorOfferService;
+import fit.iuh.se.hschat.service.dispatch.event.DoctorDispatchStatusChanged;
 import fit.iuh.se.hschat.service.dispatch.offer.DoctorOfferState;
 import fit.iuh.se.hschat.service.dispatch.offer.DoctorOfferStore;
-import fit.iuh.se.hschat.service.dispatch.event.DoctorDispatchStatusChanged;
-import fit.iuh.se.hsshared.advice.entity.AppException;
-import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsoperations.dto.command.OperationalEventCommand;
 import fit.iuh.se.hsoperations.entity.enums.BusinessActorType;
 import fit.iuh.se.hsoperations.entity.enums.BusinessDomainType;
 import fit.iuh.se.hsoperations.entity.enums.BusinessEventType;
 import fit.iuh.se.hsoperations.event.OperationalEventPublisher;
+import fit.iuh.se.hsshared.advice.entity.AppException;
+import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsuser.entity.UserAccount;
 import fit.iuh.se.hsuser.entity.enums.AccountStatus;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
@@ -29,8 +29,8 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
-import org.springframework.stereotype.Service;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
@@ -163,10 +163,9 @@ public class DoctorDispatchStatusServiceImpl implements DoctorDispatchStatusServ
             try {
                 effectivelyDispatchable = profile.getBusySessionId() == null
                         && !sessionRepository.existsByDoctorIdAndStatusIn(
-                                profile.getDoctorId(), INCOMPATIBLE_SESSION_STATUSES)
+                        profile.getDoctorId(), INCOMPATIBLE_SESSION_STATUSES)
                         && offerStore.heldDoctorIds(List.of(profile.getDoctorId())).isEmpty();
-            }
-            catch (AppException ex) {
+            } catch (AppException ex) {
                 if (ex.getErrorCode() != ErrorCode.DISPATCH_TEMPORARILY_UNAVAILABLE) throw ex;
             }
         }
@@ -180,7 +179,7 @@ public class DoctorDispatchStatusServiceImpl implements DoctorDispatchStatusServ
     }
 
     private void auditStatusChange(DoctorCareProfile profile, Long doctorId,
-            DoctorDispatchStatus previous, DoctorDispatchStatus next, Instant changedAt) {
+                                   DoctorDispatchStatus previous, DoctorDispatchStatus next, Instant changedAt) {
         operationalEventPublisher.record(OperationalEventCommand.builder()
                 .domainType(BusinessDomainType.ACCOUNT)
                 .domainId(doctorId)

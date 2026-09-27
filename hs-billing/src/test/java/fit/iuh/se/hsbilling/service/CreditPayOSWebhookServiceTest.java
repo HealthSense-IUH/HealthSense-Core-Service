@@ -1,23 +1,35 @@
 package fit.iuh.se.hsbilling.service;
 
-import fit.iuh.se.hsbilling.entity.*;
-import fit.iuh.se.hsbilling.entity.enums.*;
-import fit.iuh.se.hsbilling.repository.*;
+import fit.iuh.se.hsbilling.entity.CreditPaymentAttempt;
+import fit.iuh.se.hsbilling.entity.CreditPurchaseOrder;
+import fit.iuh.se.hsbilling.entity.enums.CreditOrderStatus;
+import fit.iuh.se.hsbilling.entity.enums.CreditPaymentProvider;
+import fit.iuh.se.hsbilling.entity.enums.CreditPaymentStatus;
+import fit.iuh.se.hsbilling.repository.CreditOrderRepository;
+import fit.iuh.se.hsbilling.repository.CreditPaymentAttemptRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.*;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+
 import java.util.Optional;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(org.mockito.junit.jupiter.MockitoExtension.class)
 class CreditPayOSWebhookServiceTest {
-    @Mock CreditPaymentAttemptRepository attempts;
-    @Mock CreditOrderRepository orders;
-    @Mock CreditPurchaseCompletionService completion;
-    @InjectMocks CreditPayOSWebhookService service;
+    @Mock
+    CreditPaymentAttemptRepository attempts;
+    @Mock
+    CreditOrderRepository orders;
+    @Mock
+    CreditPurchaseCompletionService completion;
+    @InjectMocks
+    CreditPayOSWebhookService service;
 
-    @Test void verifiedMatchingWebhookUsesSingleCompletionBoundary() {
+    @Test
+    void verifiedMatchingWebhookUsesSingleCompletionBoundary() {
         var attempt = CreditPaymentAttempt.builder().id(20L).orderId(10L).attemptNumber(1)
                 .provider(CreditPaymentProvider.PAYOS).status(CreditPaymentStatus.PENDING)
                 .orderCode(123L).paymentLinkId("link-1").build();
@@ -34,7 +46,8 @@ class CreditPayOSWebhookServiceTest {
                         && e.paymentLinkId().equals("link-1") && e.amountVnd() == 50000));
     }
 
-    @Test void unknownOrderIsLeftForLegacyRouterAndMismatchRequiresReview() {
+    @Test
+    void unknownOrderIsLeftForLegacyRouterAndMismatchRequiresReview() {
         when(attempts.findByOrderCode(999L)).thenReturn(Optional.empty());
         assertFalse(service.handle(999L, 1L, "VND", "x", "00", "ref"));
 

@@ -3,31 +3,28 @@ package fit.iuh.se.hschat.service.payment.impl;
 import fit.iuh.se.hschat.dto.PayOSPaymentLink;
 import fit.iuh.se.hschat.dto.VerifiedPayOSPayment;
 import fit.iuh.se.hschat.dto.response.ConsultationPaymentResponse;
-import fit.iuh.se.hschat.entity.ConsultationParticipant;
-import fit.iuh.se.hschat.entity.ConsultationPayment;
-import fit.iuh.se.hschat.entity.ConsultationRequest;
-import fit.iuh.se.hschat.entity.ConsultationRenewal;
-import fit.iuh.se.hschat.entity.ConsultationSession;
-import fit.iuh.se.hschat.entity.CareServiceAgreement;
+import fit.iuh.se.hschat.entity.*;
 import fit.iuh.se.hschat.entity.enums.*;
 import fit.iuh.se.hschat.repository.ConsultationParticipantRepository;
 import fit.iuh.se.hschat.repository.ConsultationPaymentRepository;
 import fit.iuh.se.hschat.repository.ConsultationRequestRepository;
 import fit.iuh.se.hschat.repository.ConsultationSessionRepository;
-import fit.iuh.se.hschat.service.payment.ConsultationPaymentService;
 import fit.iuh.se.hschat.service.ConsultationFlowGuard;
-import fit.iuh.se.hschat.service.payment.PayOSPaymentGateway;
 import fit.iuh.se.hschat.service.agreement.CareServiceAgreementService;
 import fit.iuh.se.hschat.service.authorization.EpisodeHealthRecordAuthorizationService;
+import fit.iuh.se.hschat.service.payment.ConsultationPaymentService;
+import fit.iuh.se.hschat.service.payment.PayOSPaymentGateway;
+import fit.iuh.se.hschat.service.refund.RefundReviewCaseService;
+import fit.iuh.se.hschat.service.renewal.ConsultationRenewalService;
 import fit.iuh.se.hschat.service.reservation.DoctorReservationInvalidException;
 import fit.iuh.se.hschat.service.reservation.DoctorReservationService;
-import fit.iuh.se.hschat.service.renewal.ConsultationRenewalService;
-import fit.iuh.se.hschat.service.refund.RefundReviewCaseService;
-import fit.iuh.se.hsshared.advice.entity.AppException;
-import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
-import fit.iuh.se.hsoperations.dto.command.*;
+import fit.iuh.se.hsoperations.dto.command.NeedsActionIntent;
+import fit.iuh.se.hsoperations.dto.command.NotificationIntent;
+import fit.iuh.se.hsoperations.dto.command.OperationalEventCommand;
 import fit.iuh.se.hsoperations.entity.enums.*;
 import fit.iuh.se.hsoperations.event.OperationalEventPublisher;
+import fit.iuh.se.hsshared.advice.entity.AppException;
+import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -39,12 +36,12 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.payos.model.webhooks.Webhook;
-import java.util.concurrent.ThreadLocalRandom;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 @Service
 @RequiredArgsConstructor
@@ -88,8 +85,7 @@ public class ConsultationPaymentServiceImpl implements ConsultationPaymentServic
 
         validateRequestReadyForPayment(request);
         CareServiceAgreement agreement = agreementService.requireAcceptedForUpdate(request);
-        if (!reservationService.revalidateBeforePayment(request))
-        {
+        if (!reservationService.revalidateBeforePayment(request)) {
             agreementService.invalidateCurrent(requestId, "Doctor or reservation became invalid before payment");
             throw new DoctorReservationInvalidException();
         }
@@ -618,8 +614,8 @@ public class ConsultationPaymentServiceImpl implements ConsultationPaymentServic
     }
 
     private void auditPayment(ConsultationPayment payment, BusinessEventType eventType, BusinessActorType actorType,
-            Long actorId, ConsultationPaymentStatus previous, ConsultationPaymentStatus next, String reason,
-            NotificationType notificationType, NeedsActionIntent needsAction) {
+                              Long actorId, ConsultationPaymentStatus previous, ConsultationPaymentStatus next, String reason,
+                              NotificationType notificationType, NeedsActionIntent needsAction) {
         String key = "payment:" + payment.getId() + ":" + eventType + ":" + next;
         List<NotificationIntent> notifications = new java.util.ArrayList<>();
         if (notificationType != null)
@@ -655,7 +651,8 @@ public class ConsultationPaymentServiceImpl implements ConsultationPaymentServic
     private String paymentNotificationMessage(NotificationType type) {
         return switch (type) {
             case PAYMENT_CONFIRMED -> "Your payment was verified.";
-            case PAYMENT_REQUIRES_REVIEW -> "Your payment was received and requires operational review. Care was not activated.";
+            case PAYMENT_REQUIRES_REVIEW ->
+                    "Your payment was received and requires operational review. Care was not activated.";
             case PAYMENT_FAILED -> "The payment attempt failed, was cancelled, or expired.";
             default -> "A payment link is available for your accepted care agreement.";
         };

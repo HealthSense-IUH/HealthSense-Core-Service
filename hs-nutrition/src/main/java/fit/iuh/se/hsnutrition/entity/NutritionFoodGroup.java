@@ -1,7 +1,12 @@
 package fit.iuh.se.hsnutrition.entity;
 
-import jakarta.persistence.*;
-import lombok.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.hibernate.annotations.Immutable;
 
@@ -16,12 +21,22 @@ import org.hibernate.annotations.Immutable;
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class NutritionFoodGroup {
-    @Id @Column(length = 40) String id;
-    @Column(nullable = false, unique = true, length = 60) String slug;
-    @Column(nullable = false, length = 120) String name;
-    @Column(length = 500) String description;
-    /** Tên icon lucide-react mà Frontend hiển thị. */
-    @Column(length = 40) String icon;
-    @Column(name = "image_url", length = 500) String imageUrl;
-    @Column(name = "display_order", nullable = false) int displayOrder;
+    @Id
+    @Column(length = 40)
+    String id;
+    @Column(nullable = false, unique = true, length = 60)
+    String slug;
+    @Column(nullable = false, length = 120)
+    String name;
+    @Column(length = 500)
+    String description;
+    /**
+     * Tên icon lucide-react mà Frontend hiển thị.
+     */
+    @Column(length = 40)
+    String icon;
+    @Column(name = "image_url", length = 500)
+    String imageUrl;
+    @Column(name = "display_order", nullable = false)
+    int displayOrder;
 }

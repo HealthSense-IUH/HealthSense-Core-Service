@@ -1,7 +1,10 @@
 package fit.iuh.se.hsoperations.service.impl;
 
 import fit.iuh.se.hsoperations.entity.NeedsActionItem;
-import fit.iuh.se.hsoperations.entity.enums.*;
+import fit.iuh.se.hsoperations.entity.enums.BusinessDomainType;
+import fit.iuh.se.hsoperations.entity.enums.NeedsActionPriority;
+import fit.iuh.se.hsoperations.entity.enums.NeedsActionStatus;
+import fit.iuh.se.hsoperations.entity.enums.NeedsActionType;
 import fit.iuh.se.hsoperations.repository.NeedsActionItemRepository;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsuser.entity.enums.UserRole;
@@ -17,7 +20,8 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class NeedsActionServiceImplTest {
-    @Mock NeedsActionItemRepository repository;
+    @Mock
+    NeedsActionItemRepository repository;
 
     @Test
     void claimAndResolveAreDurableAndRoleScoped() {

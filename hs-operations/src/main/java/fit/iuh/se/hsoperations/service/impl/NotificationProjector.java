@@ -5,8 +5,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import fit.iuh.se.hsoperations.dto.command.NotificationIntent;
 import fit.iuh.se.hsoperations.entity.NotificationProjectionTask;
 import fit.iuh.se.hsoperations.entity.UserNotification;
-import fit.iuh.se.hsoperations.entity.enums.*;
-import fit.iuh.se.hsoperations.repository.*;
+import fit.iuh.se.hsoperations.entity.enums.NotificationDeliveryStatus;
+import fit.iuh.se.hsoperations.entity.enums.NotificationProjectionStatus;
+import fit.iuh.se.hsoperations.repository.NotificationProjectionTaskRepository;
+import fit.iuh.se.hsoperations.repository.UserNotificationRepository;
 import fit.iuh.se.hsuser.entity.UserAccount;
 import fit.iuh.se.hsuser.entity.enums.AccountStatus;
 import fit.iuh.se.hsuser.repository.UserAccountRepository;
@@ -34,7 +36,8 @@ public class NotificationProjector {
         task.setStatus(NotificationProjectionStatus.PROCESSING);
         task.setAttempts(task.getAttempts() + 1);
         try {
-            List<NotificationIntent> intents = objectMapper.readValue(task.getPayloadJson(), new TypeReference<>() {});
+            List<NotificationIntent> intents = objectMapper.readValue(task.getPayloadJson(), new TypeReference<>() {
+            });
             for (NotificationIntent intent : intents) {
                 if (intent.recipientId() != null) {
                     saveNotification(intent, intent.recipientId(), intent.idempotencyKey());
