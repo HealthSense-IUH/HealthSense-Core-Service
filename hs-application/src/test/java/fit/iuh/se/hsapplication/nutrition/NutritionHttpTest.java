@@ -161,20 +161,20 @@ class NutritionHttpTest {
         for (String path : List.of("/api/nutrition/reference/foods", "/api/nutrition/reference/foods/2707124",
                 "/api/nutrition/reference/categories"))
             mvc.perform(get(path)).andExpect(status().isUnauthorized());
-        when(reference.searchFoods("", null, 1, 20)).thenReturn(new PageResponse<>(new PageImpl<>(List.of(),
+        when(reference.searchFoods("", null, null, 1, 20)).thenReturn(new PageResponse<>(new PageImpl<>(List.of(),
                 PageRequest.of(0, 20), 0)));
         mvc.perform(get("/api/nutrition/reference/foods").with(authentication(actor(UserRole.DOCTOR))))
                 .andExpect(status().isOk());
-        verify(reference).searchFoods("", null, 1, 20);
+        verify(reference).searchFoods("", null, null, 1, 20);
     }
 
     @Test void referenceSearchJsonIsAPageOfSummaries() throws Exception {
-        var pho = new NutritionReferenceFoodSummaryResponse("2707124", "28310330", "Soup, pho, with meat",
-                "Ramen and Asian broth-based soups", 77.0, 5.81, 5.6, null);
-        when(reference.searchFoods("pho", "Ramen and Asian broth-based soups", 2, 10)).thenReturn(
+        var pho = new NutritionReferenceFoodSummaryResponse("2707124", "USDA_FNDDS", "28310330",
+                "Soup, pho, with meat", null, "Ramen and Asian broth-based soups", 77.0, 5.81, 5.6, null);
+        when(reference.searchFoods("pho", "Ramen and Asian broth-based soups", "USDA_FNDDS", 2, 10)).thenReturn(
                 new PageResponse<>(new PageImpl<>(List.of(pho), PageRequest.of(1, 10), 11)));
         mvc.perform(get("/api/nutrition/reference/foods").param("q", "pho")
-                        .param("category", "Ramen and Asian broth-based soups").param("page", "2").param("size", "10")
+                        .param("category", "Ramen and Asian broth-based soups").param("source", "USDA_FNDDS").param("page", "2").param("size", "10")
                         .with(authentication(actor(UserRole.MEMBER))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.page").value(2))
@@ -184,6 +184,8 @@ class NutritionHttpTest {
                 .andExpect(jsonPath("$.data.hasMore").value(false))
                 .andExpect(jsonPath("$.data.content[0].id").value("2707124"))
                 .andExpect(jsonPath("$.data.content[0].sourceFoodCode").value("28310330"))
+                .andExpect(jsonPath("$.data.content[0].source").value("USDA_FNDDS"))
+                .andExpect(jsonPath("$.data.content[0].nameVi").doesNotExist())
                 .andExpect(jsonPath("$.data.content[0].energyKcal").value(77.0))
                 .andExpect(jsonPath("$.data.content[0].carbohydrateG").value(5.6))
                 .andExpect(jsonPath("$.data.content[0].fatTotalG").doesNotExist());
@@ -191,14 +193,16 @@ class NutritionHttpTest {
 
     @Test void referenceDetailJsonUsesTheFrontendFieldNames() throws Exception {
         when(reference.getFood("2707124")).thenReturn(new NutritionReferenceFoodResponse("2707124", "28310330",
-                "Soup, pho, with meat", "Ramen and Asian broth-based soups", "USDA_FNDDS", "2021-2023",
+                "Soup, pho, with meat", "Phở bò", "Ramen and Asian broth-based soups", "USDA_FNDDS", "2021-2023", 12.5,
                 List.of(new NutrientValue("energy", "Năng lượng", 77, "kcal", true)),
                 List.of(new NutritionReferenceFoodResponse.Portion("1 cup", 245, false),
                         new NutritionReferenceFoodResponse.Portion("Quantity not specified", 245, true))));
-        when(reference.getCategories()).thenReturn(List.of(new NutritionReferenceCategoryResponse("Milk, whole", 12)));
+        when(reference.getCategories()).thenReturn(List.of(new NutritionReferenceCategoryResponse("VN_FCT", "Quả chín", 56)));
         mvc.perform(get("/api/nutrition/reference/foods/2707124").with(authentication(actor(UserRole.MEMBER))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.sourceVersion").value("2021-2023"))
+                .andExpect(jsonPath("$.data.nameVi").value("Phở bò"))
+                .andExpect(jsonPath("$.data.wastePct").value(12.5))
                 .andExpect(jsonPath("$.data.nutrients[0].isKey").value(true))
                 .andExpect(jsonPath("$.data.portions[0].description").value("1 cup"))
                 .andExpect(jsonPath("$.data.portions[0].gramWeight").value(245.0))
@@ -206,7 +210,8 @@ class NutritionHttpTest {
                 .andExpect(jsonPath("$.data.portions[1].default").doesNotExist());
         mvc.perform(get("/api/nutrition/reference/categories").with(authentication(actor(UserRole.MEMBER))))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[0].name").value("Milk, whole"))
-                .andExpect(jsonPath("$.data[0].foodCount").value(12));
+                .andExpect(jsonPath("$.data[0].source").value("VN_FCT"))
+                .andExpect(jsonPath("$.data[0].name").value("Quả chín"))
+                .andExpect(jsonPath("$.data[0].foodCount").value(56));
     }
 }

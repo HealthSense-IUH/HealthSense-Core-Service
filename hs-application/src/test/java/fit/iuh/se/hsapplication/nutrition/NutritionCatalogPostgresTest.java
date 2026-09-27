@@ -62,7 +62,7 @@ class NutritionCatalogPostgresTest {
         flyway = Flyway.configure().dataSource(scoped).schemas(schema).defaultSchema(schema)
                 .locations("classpath:db/migration").baselineVersion("20").load();
         flyway.baseline();
-        assertEquals(2, flyway.migrate().migrationsExecuted);
+        assertEquals(3, flyway.migrate().migrationsExecuted);
         context = new AnnotationConfigApplicationContext();
         context.registerBean(DataSource.class, () -> scoped);
         context.register(TestConfiguration.class);
@@ -120,7 +120,7 @@ class NutritionCatalogPostgresTest {
     @Test void migrationsRunOnceAndHibernateValidatesTheSchema() {
         assertEquals(0, flyway.migrate().migrationsExecuted);
         assertNotNull(context.getBean(EntityManagerFactory.class));
-        assertEquals(5431, jdbc.queryForObject("select count(*) from nutrition_foods", Long.class));
+        assertEquals(5957, jdbc.queryForObject("select count(*) from nutrition_foods", Long.class));
         assertEquals(0, jdbc.queryForObject(
                 "select count(*) from nutrition_guidance_foods where nutrition_food_id is null", Long.class));
     }
@@ -221,55 +221,55 @@ class NutritionCatalogPostgresTest {
     }
 
     @Test void browsingWithoutAQueryListsEveryFoodByName() {
-        var first = reference.searchFoods("", null, 1, 20);
-        assertEquals(5431, first.getTotalElements());
-        assertEquals(272, first.getTotalPages());
+        var first = reference.searchFoods("", null, null, 1, 20);
+        assertEquals(5957, first.getTotalElements());
+        assertEquals(298, first.getTotalPages());
         assertTrue(first.isHasMore());
-        assertEquals(jdbc.queryForList("select name from nutrition_foods order by name, id limit 20", String.class),
-                names(first));
-        var last = reference.searchFoods(null, null, 272, 20);
-        assertEquals(11, last.getContent().size());
+        assertEquals(jdbc.queryForList("select cast(id as text) from nutrition_foods order by coalesce(name_vi, name), id limit 20",
+                String.class), first.getContent().stream().map(NutritionReferenceFoodSummaryResponse::id).toList());
+        var last = reference.searchFoods(null, null, null, 298, 20);
+        assertEquals(17, last.getContent().size());
         assertFalse(last.isHasMore());
-        assertTrue(reference.searchFoods("", null, 273, 20).getContent().isEmpty());
+        assertTrue(reference.searchFoods("", null, null, 299, 20).getContent().isEmpty());
     }
 
     @Test void searchMatchesWordPrefixesInAnyOrder() {
-        var page = reference.searchFoods("salm bak", null, 1, 50);
+        var page = reference.searchFoods("salm bak", null, null, 1, 50);
         assertFalse(page.getContent().isEmpty());
         assertTrue(names(page).contains("Fish, salmon, baked or broiled"));
         assertTrue(names(page).stream().map(String::toLowerCase).allMatch(n -> n.contains("salm") && n.contains("bak")),
                 "every token must match: " + names(page));
-        assertEquals(page.getTotalElements(), reference.searchFoods("BAKED salmon", null, 1, 50).getTotalElements());
+        assertEquals(page.getTotalElements(), reference.searchFoods("BAKED salmon", null, null, 1, 50).getTotalElements());
     }
 
     @Test void searchStripsVietnameseDiacritics() {
-        var pho = reference.searchFoods("phở", null, 1, 20);
+        var pho = reference.searchFoods("phở", null, "USDA_FNDDS", 1, 20);
         assertEquals(Set.of("Soup, pho, with meat", "Soup, pho, no meat"), new HashSet<>(names(pho)));
     }
 
     @Test void categoryFilterWorksAloneAndWithASearch() {
         String category = "Ramen and Asian broth-based soups";
         long inCategory = jdbc.queryForObject("select count(*) from nutrition_foods where category = ?", Long.class, category);
-        var all = reference.searchFoods("", category, 1, 50);
+        var all = reference.searchFoods("", category, null, 1, 50);
         assertEquals(inCategory, all.getTotalElements());
         assertTrue(all.getContent().stream().allMatch(f -> category.equals(f.category())));
-        assertEquals(2, reference.searchFoods("pho", category, 1, 20).getTotalElements());
-        assertEquals(0, reference.searchFoods("pho", "Milk, whole", 1, 20).getTotalElements());
-        assertEquals(0, reference.searchFoods("", "No such category", 1, 20).getTotalElements());
+        assertEquals(2, reference.searchFoods("pho", category, null, 1, 20).getTotalElements());
+        assertEquals(0, reference.searchFoods("pho", "Milk, whole", null, 1, 20).getTotalElements());
+        assertEquals(0, reference.searchFoods("", "No such category", null, 1, 20).getTotalElements());
     }
 
     @Test void searchInputCannotInjectTsquerySyntax() {
-        assertEquals(reference.searchFoods("salmon baked", null, 1, 20).getTotalElements(),
-                reference.searchFoods("salmon & (baked | !", null, 1, 20).getTotalElements());
-        assertEquals(0, reference.searchFoods("&&& :* |", null, 1, 20).getTotalElements());
-        assertEquals(0, reference.searchFoods("with the", null, 1, 20).getTotalElements(), "stop words only");
-        assertEquals(0, reference.searchFoods("'; drop table nutrition_foods; --", null, 1, 20).getTotalElements());
-        assertEquals(5431, jdbc.queryForObject("select count(*) from nutrition_foods", Long.class));
+        assertEquals(reference.searchFoods("salmon baked", null, null, 1, 20).getTotalElements(),
+                reference.searchFoods("salmon & (baked | !", null, null, 1, 20).getTotalElements());
+        assertEquals(0, reference.searchFoods("&&& :* |", null, null, 1, 20).getTotalElements());
+        assertEquals(0, reference.searchFoods("with the", null, null, 1, 20).getTotalElements(), "stop words only");
+        assertEquals(0, reference.searchFoods("'; drop table nutrition_foods; --", null, null, 1, 20).getTotalElements());
+        assertEquals(5957, jdbc.queryForObject("select count(*) from nutrition_foods", Long.class));
     }
 
     @Test void summaryCarriesTheFourMainNutrientsPer100Grams() {
         // "with" is an English stop word, so this also matches "Soup, pho, no meat"; pick the row by code.
-        var pho = reference.searchFoods("pho with meat", null, 1, 5).getContent().stream()
+        var pho = reference.searchFoods("pho with meat", "Ramen and Asian broth-based soups", null, 1, 5).getContent().stream()
                 .filter(f -> f.sourceFoodCode().equals("28310330")).findFirst().orElseThrow();
         assertEquals(column("28310330", "energy_kcal"), pho.energyKcal());
         assertEquals(column("28310330", "protein_g"), pho.proteinG());
@@ -292,16 +292,68 @@ class NutritionCatalogPostgresTest {
 
     @Test void categoriesCoverEveryFood() {
         List<NutritionReferenceCategoryResponse> categories = reference.getCategories();
-        assertEquals(jdbc.queryForObject("select count(distinct category) from nutrition_foods", Long.class),
-                categories.size());
-        assertEquals(5431, categories.stream().mapToLong(NutritionReferenceCategoryResponse::foodCount).sum());
+        assertEquals(jdbc.queryForObject("select count(*) from (select distinct source, category from nutrition_foods) c",
+                Long.class), categories.size());
+        assertEquals(5957, categories.stream().mapToLong(NutritionReferenceCategoryResponse::foodCount).sum());
+        assertEquals("VN_FCT", categories.getFirst().source(), "Vietnamese groups are listed first");
+        assertEquals(14, categories.stream().filter(c -> c.source().equals("VN_FCT")).count());
     }
 
     @Test void invalidPagingIsRejected() {
-        error(ErrorCode.INVALID_PARAMETER, () -> reference.searchFoods("", null, 0, 20));
-        error(ErrorCode.INVALID_PARAMETER, () -> reference.searchFoods("", null, 1, 0));
-        error(ErrorCode.INVALID_PARAMETER, () -> reference.searchFoods("", null, 1, 51));
-        error(ErrorCode.INVALID_PARAMETER, () -> reference.searchFoods("x".repeat(101), null, 1, 20));
+        error(ErrorCode.INVALID_PARAMETER, () -> reference.searchFoods("", null, null, 0, 20));
+        error(ErrorCode.INVALID_PARAMETER, () -> reference.searchFoods("", null, null, 1, 0));
+        error(ErrorCode.INVALID_PARAMETER, () -> reference.searchFoods("", null, null, 1, 51));
+        error(ErrorCode.INVALID_PARAMETER, () -> reference.searchFoods("x".repeat(101), null, null, 1, 20));
+    }
+
+    // ---------------------------------------------------------------- Vietnamese food composition table (V23)
+
+    @Test void vietnameseFoodsAreSearchableWithOrWithoutDiacritics() {
+        for (String q : List.of("rau muống", "rau muong", "RAU MUONG")) {
+            var page = reference.searchFoods(q, null, null, 1, 20);
+            assertTrue(page.getContent().stream().anyMatch(f -> "Rau muống".equals(f.nameVi()) && "VN_FCT".equals(f.source())),
+                    q + " -> " + page.getContent());
+        }
+        assertTrue(reference.searchFoods("gio lua", null, null, 1, 20).getContent().stream()
+                .anyMatch(f -> "Giò lụa".equals(f.nameVi())));
+        assertEquals(2, reference.searchFoods("mam tom", null, "VN_FCT", 1, 20).getTotalElements());
+        // English name printed in the book is searchable too
+        assertTrue(reference.searchFoods("water spinach", null, "VN_FCT", 1, 20).getContent().stream()
+                .anyMatch(f -> "Rau muống".equals(f.nameVi())));
+    }
+
+    @Test void sourceFilterSeparatesTheTwoDatabases() {
+        assertEquals(526, reference.searchFoods("", null, "VN_FCT", 1, 20).getTotalElements());
+        assertEquals(5431, reference.searchFoods("", null, "USDA_FNDDS", 1, 20).getTotalElements());
+        assertTrue(reference.searchFoods("pho", null, "VN_FCT", 1, 20).getContent().stream()
+                .allMatch(f -> f.source().equals("VN_FCT")));
+        error(ErrorCode.INVALID_PARAMETER, () -> reference.searchFoods("", null, "OTHER", 1, 20));
+    }
+
+    @Test void vietnameseDetailKeepsTheBookValuesAndCrudeFiberSeparately() {
+        NutritionReferenceFoodResponse rau = reference.getFood("900004083");
+        assertEquals("Rau muống", rau.nameVi());
+        assertEquals("VN_FCT", rau.source());
+        assertEquals("2007", rau.sourceVersion());
+        assertEquals("Rau, quả, củ dùng làm rau", rau.category());
+        assertEquals(37.5, rau.wastePct());
+        assertTrue(rau.portions().isEmpty());
+        var byCode = rau.nutrients().stream().collect(java.util.stream.Collectors.toMap(NutrientValue::nutrientCode, n -> n));
+        assertEquals(25, byCode.get("energy").amount());
+        assertEquals(3.2, byCode.get("protein").amount());
+        assertEquals(37, byCode.get("sodium").amount());
+        assertEquals(331, byCode.get("potassium").amount());
+        assertEquals(1, byCode.get("fiber_crude").amount());
+        assertFalse(byCode.containsKey("fiber"), "the book has no dietary fiber, only crude fiber");
+        assertFalse(byCode.containsKey("caffeine"), "missing values are omitted, not shown as 0");
+        // A book value of "-" (no data) is NULL, not 0: Giò lụa has no sodium in the table
+        assertFalse(reference.getFood("900007069").nutrients().stream().anyMatch(n -> n.nutrientCode().equals("sodium")));
+    }
+
+    @Test void guidanceCatalogStillPointsAtUsdaFoods() {
+        assertEquals(29, jdbc.queryForObject("""
+                select count(*) from nutrition_guidance_foods g join nutrition_foods f on f.id = g.nutrition_food_id
+                where f.source = 'USDA_FNDDS'""", Long.class));
     }
 
     private static Set<String> ids(List<NutritionFoodResponse> foods) {

@@ -7,7 +7,10 @@ import org.hibernate.annotations.Immutable;
 
 import java.math.BigDecimal;
 
-/** Thành phần dinh dưỡng trên 100 g (V21, nguồn USDA FNDDS). Dữ liệu tham chiếu, chỉ đọc. */
+/**
+ * Thành phần dinh dưỡng trên 100 g phần ăn được. Dữ liệu tham chiếu, chỉ đọc, gồm hai nguồn:
+ * USDA FNDDS (V21, source = USDA_FNDDS) và Bảng thành phần thực phẩm Việt Nam 2007 (V23, source = VN_FCT).
+ */
 @Entity
 @Immutable
 @Table(name = "nutrition_foods")
@@ -22,11 +25,15 @@ public class NutritionFood {
     @Column(nullable = false) String name;
     @Column(name = "name_vi") String nameVi;
     @Column(length = 160) String category;
+    /** Tỉ lệ thải bỏ khi sơ chế (%), chỉ nguồn VN_FCT có. */
+    @Column(name = "waste_pct") BigDecimal wastePct;
 
     @Column(name = "energy_kcal") BigDecimal energyKcal;
     @Column(name = "protein_g") BigDecimal proteinG;
     @Column(name = "carbohydrate_g") BigDecimal carbohydrateG;
     @Column(name = "fiber_g") BigDecimal fiberG;
+    /** Xơ thô (celluloza) của nguồn VN_FCT; khác phương pháp với xơ tiêu hóa fiber_g của USDA. */
+    @Column(name = "fiber_crude_g") BigDecimal fiberCrudeG;
     @Column(name = "sugars_g") BigDecimal sugarsG;
     @Column(name = "fat_total_g") BigDecimal fatTotalG;
     @Column(name = "fat_saturated_g") BigDecimal fatSaturatedG;

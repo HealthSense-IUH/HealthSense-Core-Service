@@ -9,8 +9,8 @@ import java.util.Objects;
 import java.util.function.Function;
 
 /**
- * 18 chất Frontend hiển thị, đúng thứ tự và tên của NutrientCode trong src/types/nutrition.ts.
- * EPA/DHA lưu theo gram (FNDDS) nhưng hiển thị theo mg, nên nhân 1000.
+ * Các chất Frontend hiển thị, đúng thứ tự và tên của NutrientCode trong src/types/nutrition.ts.
+ * Chất nào nguồn không có (NULL) thì bỏ qua. EPA/DHA lưu theo gram nhưng hiển thị theo mg, nên nhân 1000.
  */
 final class NutrientMapper {
     private static final List<Nutrient> NUTRIENTS = List.of(
@@ -18,6 +18,7 @@ final class NutrientMapper {
             new Nutrient("protein", "Chất đạm (Protein)", "g", NutritionFood::getProteinG, 1, true),
             new Nutrient("carbohydrate", "Carbohydrate", "g", NutritionFood::getCarbohydrateG, 1, true),
             new Nutrient("fiber", "Chất xơ tiêu hóa", "g", NutritionFood::getFiberG, 1, false),
+            new Nutrient("fiber_crude", "Chất xơ thô (celluloza)", "g", NutritionFood::getFiberCrudeG, 1, false),
             new Nutrient("sugars", "Đường tổng", "g", NutritionFood::getSugarsG, 1, false),
             new Nutrient("fat_total", "Tổng chất béo", "g", NutritionFood::getFatTotalG, 1, true),
             new Nutrient("fat_saturated", "Chất béo bão hòa", "g", NutritionFood::getFatSaturatedG, 1, true),

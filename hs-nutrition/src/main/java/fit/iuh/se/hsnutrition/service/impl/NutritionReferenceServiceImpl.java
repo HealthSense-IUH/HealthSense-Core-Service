@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -31,12 +32,14 @@ public class NutritionReferenceServiceImpl implements NutritionReferenceService 
     static final int MAX_QUERY_LENGTH = 100;
     static final int MAX_CATEGORY_LENGTH = 160;
     static final int MAX_QUERY_TOKENS = 8;
+    static final Set<String> SOURCES = Set.of(SOURCE_USDA, SOURCE_VIETNAM);
 
     private final NutritionFoodRepository foods;
     private final NutritionFoodPortionRepository portions;
 
     @Override
-    public PageResponse<NutritionReferenceFoodSummaryResponse> searchFoods(String query, String category, int page, int size) {
+    public PageResponse<NutritionReferenceFoodSummaryResponse> searchFoods(String query, String category, String source,
+                                                                           int page, int size) {
         if (page < 1 || size < 1 || size > MAX_PAGE_SIZE)
             throw new AppException(ErrorCode.INVALID_PARAMETER,
                     "page must be positive and size must be between 1 and " + MAX_PAGE_SIZE);
@@ -44,16 +47,19 @@ public class NutritionReferenceServiceImpl implements NutritionReferenceService 
             throw new AppException(ErrorCode.INVALID_PARAMETER, "q must be at most " + MAX_QUERY_LENGTH + " characters");
         if (category != null && category.length() > MAX_CATEGORY_LENGTH)
             throw new AppException(ErrorCode.INVALID_PARAMETER, "category is too long");
+        String sourceFilter = source == null || source.isBlank() ? null : source.trim();
+        if (sourceFilter != null && !SOURCES.contains(sourceFilter))
+            throw new AppException(ErrorCode.INVALID_PARAMETER, "source must be one of " + SOURCES);
 
         Pageable pageable = PageRequest.of(page - 1, size);
         String categoryFilter = category == null || category.isBlank() ? null : category.trim();
         if (query == null || query.isBlank())
-            return new PageResponse<>(foods.browse(categoryFilter, pageable).map(this::toSummary));
+            return new PageResponse<>(foods.browse(categoryFilter, sourceFilter, pageable).map(this::toSummary));
 
         String tsquery = toPrefixTsQuery(query);
         // Chỉ toàn ký tự đặc biệt: không có gì để tìm, trả trang rỗng thay vì trả về mọi món.
         if (tsquery == null) return new PageResponse<>(new PageImpl<>(List.of(), pageable, 0));
-        return new PageResponse<>(foods.search(tsquery, categoryFilter, pageable).map(this::toSummary));
+        return new PageResponse<>(foods.search(tsquery, categoryFilter, sourceFilter, pageable).map(this::toSummary));
     }
 
     @Override
@@ -65,13 +71,14 @@ public class NutritionReferenceServiceImpl implements NutritionReferenceService 
                 .map(p -> new Portion(p.getDescription(), NutrientMapper.amount(p.getGramWeight()), p.isDefaultPortion()))
                 .toList();
         return new NutritionReferenceFoodResponse(String.valueOf(food.getId()), food.getSourceFoodCode(), food.getName(),
-                food.getCategory(), food.getSource(), food.getSourceVersion(), NutrientMapper.of(food), foodPortions);
+                food.getNameVi(), food.getCategory(), food.getSource(), food.getSourceVersion(),
+                NutrientMapper.amount(food.getWastePct()), NutrientMapper.of(food), foodPortions);
     }
 
     @Override
     public List<NutritionReferenceCategoryResponse> getCategories() {
         return foods.countByCategory().stream()
-                .map(row -> new NutritionReferenceCategoryResponse((String) row[0], (Long) row[1]))
+                .map(row -> new NutritionReferenceCategoryResponse((String) row[0], (String) row[1], (Long) row[2]))
                 .toList();
     }
 
@@ -97,8 +104,9 @@ public class NutritionReferenceServiceImpl implements NutritionReferenceService 
     }
 
     private NutritionReferenceFoodSummaryResponse toSummary(NutritionFood food) {
-        return new NutritionReferenceFoodSummaryResponse(String.valueOf(food.getId()), food.getSourceFoodCode(),
-                food.getName(), food.getCategory(), NutrientMapper.amount(food.getEnergyKcal()),
+        return new NutritionReferenceFoodSummaryResponse(String.valueOf(food.getId()), food.getSource(),
+                food.getSourceFoodCode(), food.getName(), food.getNameVi(), food.getCategory(),
+                NutrientMapper.amount(food.getEnergyKcal()),
                 NutrientMapper.amount(food.getProteinG()), NutrientMapper.amount(food.getCarbohydrateG()),
                 NutrientMapper.amount(food.getFatTotalG()));
     }

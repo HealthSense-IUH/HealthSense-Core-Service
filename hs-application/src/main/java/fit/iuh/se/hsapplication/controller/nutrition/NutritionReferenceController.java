@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/** Tra cứu toàn bộ cơ sở dữ liệu dinh dưỡng tham chiếu (USDA FNDDS); chỉ đọc, mọi người dùng đã đăng nhập. */
+/** Tra cứu cơ sở dữ liệu dinh dưỡng tham chiếu (USDA FNDDS + Bảng TPTP Việt Nam 2007); chỉ đọc, mọi người dùng đã đăng nhập. */
 @RestController
 @RequestMapping("/api/nutrition/reference")
 @RequiredArgsConstructor
@@ -22,9 +22,10 @@ public class NutritionReferenceController {
     public ApiResponse<PageResponse<NutritionReferenceFoodSummaryResponse>> foods(
             @RequestParam(defaultValue = "") String q,
             @RequestParam(required = false) String category,
+            @RequestParam(required = false) String source,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size) {
-        return new ApiResponse<>(reference.searchFoods(q, category, page, size));
+        return new ApiResponse<>(reference.searchFoods(q, category, source, page, size));
     }
 
     @GetMapping("/foods/{id}")
