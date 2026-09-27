@@ -49,6 +49,8 @@ id_ed25519
 .env.*
 
 *.sql
+# Ngoai le: Flyway migration phai duoc commit, neu khong CI/production se khong chay.
+!**/db/migration/**/*.sql
 
 docs/
 artifacts/

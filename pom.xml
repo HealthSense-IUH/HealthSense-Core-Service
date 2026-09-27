@@ -36,6 +36,7 @@
         <module>hs-shared</module>
         <module>hs-user</module>
         <module>hs-billing</module>
+        <module>hs-nutrition</module>
         <module>hs-operations</module>
         <module>hs-auth</module>
         <module>hs-consultation</module>

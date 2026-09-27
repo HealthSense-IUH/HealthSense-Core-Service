@@ -14,6 +14,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableJpaRepositories(basePackages = {
         "fit.iuh.se.hsuser.repository",
         "fit.iuh.se.hsbilling.repository",
+        "fit.iuh.se.hsnutrition.repository",
         "fit.iuh.se.hsoperations.repository",
         "fit.iuh.se.hshealthrecord.repository",
         "fit.iuh.se.hschat.repository"
