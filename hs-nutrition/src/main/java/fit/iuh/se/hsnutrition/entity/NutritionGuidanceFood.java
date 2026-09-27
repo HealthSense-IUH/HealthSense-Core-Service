@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Món trong danh mục có khuyến nghị (V22). Chỉ giữ nội dung tư vấn; số liệu dinh dưỡng
+ * Món trong danh mục có khuyến nghị (V22). Chỉ giữ nội dung tư vấn; số liệu dinh dưỡng và nhóm
  * luôn đọc từ {@link NutritionFood} qua nutrition_food_id để không có hai nguồn lệch nhau.
  */
 @Entity
@@ -21,10 +21,6 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class NutritionGuidanceFood {
     @Id @Column(length = 60) String id;
-
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "group_id", nullable = false)
-    NutritionFoodGroup group;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "nutrition_food_id", nullable = false)

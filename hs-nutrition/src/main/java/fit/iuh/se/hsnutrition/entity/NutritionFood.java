@@ -22,9 +22,16 @@ public class NutritionFood {
     @Column(nullable = false, length = 30) String source;
     @Column(name = "source_version", nullable = false, length = 30) String sourceVersion;
     @Column(name = "source_food_code", nullable = false, length = 20) String sourceFoodCode;
+    /** Tên gốc của nguồn (USDA: tiếng Anh). */
     @Column(nullable = false) String name;
+    /** Tên tiếng Việt: tên trong sách với VN_FCT, tên dịch (V25) với USDA. */
     @Column(name = "name_vi") String nameVi;
+    /** Phân loại gốc của nguồn (USDA: nhóm WWEIA; Việt Nam: nhóm của sách). Nhóm chung nằm ở {@link #group}. */
     @Column(length = 160) String category;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "group_id", nullable = false)
+    NutritionFoodGroup group;
     /** Tỉ lệ thải bỏ khi sơ chế (%), chỉ nguồn VN_FCT có. */
     @Column(name = "waste_pct") BigDecimal wastePct;
 
