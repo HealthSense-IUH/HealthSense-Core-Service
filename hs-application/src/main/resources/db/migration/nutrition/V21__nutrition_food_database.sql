@@ -65,7 +65,7 @@ CREATE INDEX idx_nutrition_food_portion_food ON nutrition_food_portions (food_id
 -- =====================================================================
 -- Du lieu: USDA FoodData Central, Survey Foods (FNDDS) 2021-2023
 -- Giay phep: public domain (CC0). https://fdc.nal.usda.gov/download-datasets
--- Phan duoi day sinh tu dong tu file surveyDownload.json cua USDA (bo 1 mon khong co du lieu).
+-- Phan duoi day sinh tu dong boi scripts/nutrition/generate_fndds_migration.py
 -- 5431 mon, 22191 khau phan. KHONG sua tay.
 -- =====================================================================
 
