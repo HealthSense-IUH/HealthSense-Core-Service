@@ -101,29 +101,29 @@ FROM (VALUES
     ('11511300', 'Sữa sô-cô-la không béo (tách béo)'), -- Chocolate milk, fat free (skim)
     ('11511400', 'Sữa sô-cô-la ít béo (1%)'), -- Chocolate milk, low fat (1%)
     ('11511550', 'Sữa sô-cô-la giảm đường, loại chung'), -- Chocolate milk, reduced sugar, NFS
-    ('11512005', 'Sô-cô-la nóng/ca cao, loại chung'), -- Hot chocolate / cocoa, NFS
-    ('11512010', 'Sô-cô-la nóng/ca cao, pha với sữa nguyên kem hoặc sữa giảm béo (2%)'), -- Hot chocolate / cocoa, made with whole or reduced fat (2%) milk
-    ('11512020', 'Sô-cô-la nóng/ca cao, pha với sữa ít béo (1%) hoặc sữa không béo (tách béo)'), -- Hot chocolate / cocoa, made with lowfat (1%) or fat free (skim) milk
-    ('11512030', 'Sô-cô-la nóng/ca cao, pha với sữa thực vật'), -- Hot chocolate / cocoa, made with non-dairy milk
-    ('11512100', 'Sô-cô-la nóng/ca cao, có kem tươi đánh bông'), -- Hot chocolate / cocoa, with whipped cream
+    ('11512005', 'Sô-cô-la nóng / ca cao, loại chung'), -- Hot chocolate / cocoa, NFS
+    ('11512010', 'Sô-cô-la nóng / ca cao, pha với sữa nguyên kem hoặc sữa giảm béo (2%)'), -- Hot chocolate / cocoa, made with whole or reduced fat (2%) milk
+    ('11512020', 'Sô-cô-la nóng / ca cao, pha với sữa ít béo (1%) hoặc sữa không béo (tách béo)'), -- Hot chocolate / cocoa, made with lowfat (1%) or fat free (skim) milk
+    ('11512030', 'Sô-cô-la nóng / ca cao, pha với sữa thực vật'), -- Hot chocolate / cocoa, made with non-dairy milk
+    ('11512100', 'Sô-cô-la nóng / ca cao, có kem tươi đánh bông'), -- Hot chocolate / cocoa, with whipped cream
     ('11513380', 'Sữa sô-cô-la Nesquik, không rõ loại sữa'), -- Chocolate milk, Nesquik, NS as to type of milk
     ('11513385', 'Sữa sô-cô-la Nesquik, pha với sữa thực vật'), -- Chocolate milk, Nesquik, made with non-dairy milk
     ('11513801', 'Sữa sô-cô-la giảm đường, nguyên kem'), -- Chocolate milk, reduced sugar, whole
     ('11513802', 'Sữa sô-cô-la giảm đường, giảm béo (2%)'), -- Chocolate milk, reduced sugar, reduced fat (2%)
     ('11513803', 'Sữa sô-cô-la giảm đường, ít béo (1%)'), -- Chocolate milk, reduced sugar, low fat (1%)
     ('11513804', 'Sữa sô-cô-la giảm đường, không béo (tách béo)'), -- Chocolate milk, reduced sugar, fat free (skim)
-    ('11514100', 'Sô-cô-la nóng/ca cao từ bột pha sẵn, pha với nước'), -- Hot chocolate / cocoa, dry mix, made with water
-    ('11514110', 'Sô-cô-la nóng/ca cao từ bột pha sẵn, pha với sữa nguyên kem hoặc sữa giảm béo (2%)'), -- Hot chocolate / cocoa, dry mix, made with whole or reduced fat (2%) milk
-    ('11514130', 'Sô-cô-la nóng/ca cao từ bột pha sẵn, pha với sữa ít béo (1%) hoặc sữa không béo (tách béo)'), -- Hot chocolate / cocoa, dry mix, made with lowfat (1%) or fat free (skim) milk
-    ('11514150', 'Sô-cô-la nóng/ca cao từ bột pha sẵn, pha với sữa thực vật'), -- Hot chocolate / cocoa, dry mix , made with non-dairy milk
-    ('11514160', 'Sô-cô-la nóng/ca cao từ bột pha sẵn, pha với nước, có kem tươi đánh bông'), -- Hot chocolate / cocoa, dry mix, made with water, with whipped cream
-    ('11514310', 'Sô-cô-la nóng/ca cao từ bột pha sẵn, giảm đường, pha với nước'), -- Hot chocolate / cocoa, dry mix, reduced sugar, made with water
-    ('11514320', 'Sô-cô-la nóng/ca cao từ bột pha sẵn, giảm đường, pha với sữa nguyên kem hoặc sữa giảm béo (2%)'), -- Hot chocolate / cocoa, dry mix, reduced sugar, made with whole or reduced fat (2%) milk
-    ('11514325', 'Sô-cô-la nóng/ca cao giảm đường, pha với sữa thực vật'), -- Hot chocolate / cocoa, reduced sugar, made with non-dairy milk
-    ('11514330', 'Sô-cô-la nóng/ca cao giảm đường, pha với sữa nguyên kem hoặc sữa giảm béo (2%)'), -- Hot chocolate / cocoa, reduced sugar, made with whole or reduced fat (2%) milk
-    ('11514340', 'Sô-cô-la nóng/ca cao từ bột pha sẵn, giảm đường, pha với sữa ít béo (1%) hoặc sữa không béo (tách béo)'), -- Hot chocolate / cocoa, dry mix, reduced sugar, made with lowfat (1%) or fat free (skim) milk
-    ('11514350', 'Sô-cô-la nóng/ca cao giảm đường, pha với sữa ít béo (1%) hoặc sữa không béo (tách béo)'), -- Hot chocolate / cocoa, reduced sugar, made with lowfat (1%) or fat free (skim) milk
-    ('11514360', 'Sô-cô-la nóng/ca cao từ bột pha sẵn, giảm đường, pha với sữa thực vật'), -- Hot chocolate / cocoa, dry mix, reduced sugar, made with non-dairy milk
+    ('11514100', 'Sô-cô-la nóng / ca cao từ bột pha sẵn, pha với nước'), -- Hot chocolate / cocoa, dry mix, made with water
+    ('11514110', 'Sô-cô-la nóng / ca cao từ bột pha sẵn, pha với sữa nguyên kem hoặc sữa giảm béo (2%)'), -- Hot chocolate / cocoa, dry mix, made with whole or reduced fat (2%) milk
+    ('11514130', 'Sô-cô-la nóng / ca cao từ bột pha sẵn, pha với sữa ít béo (1%) hoặc sữa không béo (tách béo)'), -- Hot chocolate / cocoa, dry mix, made with lowfat (1%) or fat free (skim) milk
+    ('11514150', 'Sô-cô-la nóng / ca cao từ bột pha sẵn, pha với sữa thực vật'), -- Hot chocolate / cocoa, dry mix , made with non-dairy milk
+    ('11514160', 'Sô-cô-la nóng / ca cao từ bột pha sẵn, pha với nước, có kem tươi đánh bông'), -- Hot chocolate / cocoa, dry mix, made with water, with whipped cream
+    ('11514310', 'Sô-cô-la nóng / ca cao từ bột pha sẵn, giảm đường, pha với nước'), -- Hot chocolate / cocoa, dry mix, reduced sugar, made with water
+    ('11514320', 'Sô-cô-la nóng / ca cao từ bột pha sẵn, giảm đường, pha với sữa nguyên kem hoặc sữa giảm béo (2%)'), -- Hot chocolate / cocoa, dry mix, reduced sugar, made with whole or reduced fat (2%) milk
+    ('11514325', 'Sô-cô-la nóng / ca cao giảm đường, pha với sữa thực vật'), -- Hot chocolate / cocoa, reduced sugar, made with non-dairy milk
+    ('11514330', 'Sô-cô-la nóng / ca cao giảm đường, pha với sữa nguyên kem hoặc sữa giảm béo (2%)'), -- Hot chocolate / cocoa, reduced sugar, made with whole or reduced fat (2%) milk
+    ('11514340', 'Sô-cô-la nóng / ca cao từ bột pha sẵn, giảm đường, pha với sữa ít béo (1%) hoặc sữa không béo (tách béo)'), -- Hot chocolate / cocoa, dry mix, reduced sugar, made with lowfat (1%) or fat free (skim) milk
+    ('11514350', 'Sô-cô-la nóng / ca cao giảm đường, pha với sữa ít béo (1%) hoặc sữa không béo (tách béo)'), -- Hot chocolate / cocoa, reduced sugar, made with lowfat (1%) or fat free (skim) milk
+    ('11514360', 'Sô-cô-la nóng / ca cao từ bột pha sẵn, giảm đường, pha với sữa thực vật'), -- Hot chocolate / cocoa, dry mix, reduced sugar, made with non-dairy milk
     ('11519040', 'Sữa dâu, loại chung'), -- Strawberry milk, NFS
     ('11519050', 'Sữa dâu nguyên kem'), -- Strawberry milk, whole
     ('11519105', 'Sữa dâu giảm béo (2%)'), -- Strawberry milk, reduced fat (2%)
@@ -192,7 +192,7 @@ FROM (VALUES
     ('11710967', 'Sữa công thức cho trẻ sơ sinh, nhãn hàng siêu thị, loại advantage hoặc tender, dạng bột, pha với nước máy'), -- Infant formula, store brand, advantage or tender, powder, made with tap water
     ('11710968', 'Sữa công thức cho trẻ sơ sinh, nhãn hàng siêu thị, loại advantage hoặc tender, dạng bột, pha với nước đóng chai'), -- Infant formula, store brand, advantage or tender, powder, made with bottled water
     ('11710969', 'Sữa công thức cho trẻ sơ sinh, nhãn hàng siêu thị, loại advantage hoặc tender, dạng bột, pha với nước dành cho trẻ sơ sinh'), -- Infant formula, store brand, advantage or tender, powder, made with baby water
-    ('11710970', 'Sữa công thức cho trẻ sơ sinh, nhãn hàng siêu thị, loại gentle hoặc sensitivity (dịu nhẹ/nhạy cảm)'), -- Infant formula, store brand, gentle or sensitivity
+    ('11710970', 'Sữa công thức cho trẻ sơ sinh, nhãn hàng siêu thị, loại gentle hoặc sensitivity (dịu nhẹ / nhạy cảm)'), -- Infant formula, store brand, gentle or sensitivity
     ('11710980', 'Sữa công thức cho trẻ sơ sinh, nhãn hàng siêu thị, có bổ sung bột gạo'), -- Infant formula, store brand, added rice
     ('11720311', 'Sữa công thức cho trẻ sơ sinh Enfamil ProSobee, dạng nước pha sẵn'), -- Infant formula, Enfamil ProSobee, ready-to-feed
     ('11720317', 'Sữa công thức cho trẻ sơ sinh Enfamil ProSobee, dạng bột, pha với nước máy'), -- Infant formula, Enfamil ProSobee, powder, made with tap water
@@ -540,7 +540,7 @@ FROM (VALUES
     ('23150100', 'Thịt dê'), -- Goat
     ('23201010', 'Cốt lết bê'), -- Veal, chop
     ('23220010', 'Thịt bê xay'), -- Veal, ground
-    ('23220020', 'Đùi gà giả (thịt lợn/bê xiên que tạo hình đùi gà)'), -- Mock chicken legs
+    ('23220020', 'Đùi gà giả (thịt lợn / bê xiên que tạo hình đùi gà)'), -- Mock chicken legs
     ('23310000', 'Thịt thỏ'), -- Rabbit
     ('23321000', 'Thịt nai, loại chung'), -- Venison, NFS
     ('23321200', 'Bít tết thịt nai'), -- Venison, steak
@@ -578,18 +578,18 @@ FROM (VALUES
     ('24103080', 'Gà nướng vỉ có sốt, không rõ phần, bỏ da'), -- Chicken, NS as to part, grilled with sauce, skin not eaten
     ('24104049', 'Gà xào, không rõ phần, ăn cả da'), -- Chicken, NS as to part, sauteed, skin eaten
     ('24104051', 'Gà xào, không rõ phần, bỏ da'), -- Chicken, NS as to part, sauteed, skin not eaten
-    ('24107070', 'Gà chiên tẩm bột, không rõ phần, ăn cả da/lớp tẩm bột'), -- Chicken, NS as to part, fried, coated, skin / coating eaten
-    ('24107071', 'Gà chiên tẩm bột, không rõ phần, bỏ da/lớp tẩm bột'), -- Chicken, NS as to part, fried, coated, skin / coating not eaten
-    ('24107080', 'Gà nướng lò tẩm bột, không rõ phần, ăn cả da/lớp tẩm bột'), -- Chicken, NS as to part, baked, coated, skin / coating eaten
-    ('24107081', 'Gà nướng lò tẩm bột, không rõ phần, bỏ da/lớp tẩm bột'), -- Chicken, NS as to part, baked, coated, skin / coating not eaten
+    ('24107070', 'Gà chiên tẩm bột, không rõ phần, ăn cả da / lớp tẩm bột'), -- Chicken, NS as to part, fried, coated, skin / coating eaten
+    ('24107071', 'Gà chiên tẩm bột, không rõ phần, bỏ da / lớp tẩm bột'), -- Chicken, NS as to part, fried, coated, skin / coating not eaten
+    ('24107080', 'Gà nướng lò tẩm bột, không rõ phần, ăn cả da / lớp tẩm bột'), -- Chicken, NS as to part, baked, coated, skin / coating eaten
+    ('24107081', 'Gà nướng lò tẩm bột, không rõ phần, bỏ da / lớp tẩm bột'), -- Chicken, NS as to part, baked, coated, skin / coating not eaten
     ('24120110', 'Ức gà, không rõ cách chế biến, ăn cả da'), -- Chicken breast, NS as to cooking method, skin eaten
     ('24120120', 'Ức gà, không rõ cách chế biến, bỏ da'), -- Chicken breast, NS as to cooking method, skin not eaten
     ('24122130', 'Ức gà nướng lò, nướng hoặc quay, ăn cả da, chế biến từ gà sống'), -- Chicken breast, baked, broiled, or roasted, skin eaten, from raw
     ('24122131', 'Ức gà nướng lò, nướng hoặc quay, bỏ da, chế biến từ gà sống'), -- Chicken breast, baked, broiled, or roasted, skin not eaten, from raw
     ('24122140', 'Ức gà nướng lò hoặc nướng, ăn cả da, từ loại nấu sẵn'), -- Chicken breast, baked or broiled, skin eaten, from pre-cooked
     ('24122141', 'Ức gà nướng lò hoặc nướng, bỏ da, từ loại nấu sẵn'), -- Chicken breast, baked or broiled, skin not eaten, from pre-cooked
-    ('24122150', 'Ức gà nướng lò hoặc nướng, ăn cả da, từ đồ ăn nhanh/nhà hàng'), -- Chicken breast, baked or broiled, skin eaten, from fast food / restaurant
-    ('24122151', 'Ức gà nướng lò hoặc nướng, bỏ da, từ đồ ăn nhanh/nhà hàng'), -- Chicken breast, baked or broiled, skin not eaten, from fast food / restaurant
+    ('24122150', 'Ức gà nướng lò hoặc nướng, ăn cả da, từ đồ ăn nhanh / nhà hàng'), -- Chicken breast, baked or broiled, skin eaten, from fast food / restaurant
+    ('24122151', 'Ức gà nướng lò hoặc nướng, bỏ da, từ đồ ăn nhanh / nhà hàng'), -- Chicken breast, baked or broiled, skin not eaten, from fast food / restaurant
     ('24122160', 'Ức gà ướp, nướng lò, nướng hoặc quay, ăn cả da, chế biến từ gà sống'), -- Chicken breast, baked, broiled, or roasted with marinade, skin eaten, from raw
     ('24122161', 'Ức gà ướp, nướng lò, nướng hoặc quay, bỏ da, chế biến từ gà sống'), -- Chicken breast, baked, broiled, or roasted with marinade, skin not eaten, from raw
     ('24122170', 'Ức gà quay xiên (rotisserie), ăn cả da'), -- Chicken breast, rotisserie, skin eaten
@@ -602,15 +602,15 @@ FROM (VALUES
     ('24123311', 'Ức gà nướng vỉ có sốt, bỏ da'), -- Chicken breast, grilled with sauce, skin not eaten
     ('24124200', 'Ức gà xào, ăn cả da'), -- Chicken breast, sauteed, skin eaten
     ('24124201', 'Ức gà xào, bỏ da'), -- Chicken breast, sauteed, skin not eaten
-    ('24127200', 'Ức gà chiên tẩm bột, ăn cả da/lớp tẩm bột, chế biến từ gà sống'), -- Chicken breast, fried, coated, skin / coating eaten, from raw
-    ('24127201', 'Ức gà chiên tẩm bột, bỏ da/lớp tẩm bột, chế biến từ gà sống'), -- Chicken breast, fried, coated, skin / coating not eaten, from raw
+    ('24127200', 'Ức gà chiên tẩm bột, ăn cả da / lớp tẩm bột, chế biến từ gà sống'), -- Chicken breast, fried, coated, skin / coating eaten, from raw
+    ('24127201', 'Ức gà chiên tẩm bột, bỏ da / lớp tẩm bột, chế biến từ gà sống'), -- Chicken breast, fried, coated, skin / coating not eaten, from raw
     ('24127202', 'Ức gà chiên tẩm bột, lột da trước khi chế biến, ăn cả lớp tẩm bột, chế biến từ gà sống'), -- Chicken breast, fried, coated, prepared skinless, coating eaten, from raw
-    ('24127210', 'Ức gà chiên tẩm bột, ăn cả da/lớp tẩm bột, từ loại nấu sẵn'), -- Chicken breast, fried, coated, skin / coating eaten, from pre-cooked
-    ('24127211', 'Ức gà chiên tẩm bột, bỏ da/lớp tẩm bột, từ loại nấu sẵn'), -- Chicken breast, fried, coated, skin / coating not eaten, from pre-cooked
-    ('24127220', 'Ức gà chiên tẩm bột, ăn cả da/lớp tẩm bột, từ đồ ăn nhanh/nhà hàng'), -- Chicken breast, fried, coated, skin / coating eaten, from fast food / restaurant
-    ('24127221', 'Ức gà chiên tẩm bột, bỏ da/lớp tẩm bột, từ đồ ăn nhanh/nhà hàng'), -- Chicken breast, fried, coated, skin / coating not eaten, from fast food / restaurant
-    ('24127500', 'Ức gà nướng lò tẩm bột, ăn cả da/lớp tẩm bột'), -- Chicken breast, baked, coated, skin / coating eaten
-    ('24127501', 'Ức gà nướng lò tẩm bột, bỏ da/lớp tẩm bột'), -- Chicken breast, baked, coated, skin / coating not eaten
+    ('24127210', 'Ức gà chiên tẩm bột, ăn cả da / lớp tẩm bột, từ loại nấu sẵn'), -- Chicken breast, fried, coated, skin / coating eaten, from pre-cooked
+    ('24127211', 'Ức gà chiên tẩm bột, bỏ da / lớp tẩm bột, từ loại nấu sẵn'), -- Chicken breast, fried, coated, skin / coating not eaten, from pre-cooked
+    ('24127220', 'Ức gà chiên tẩm bột, ăn cả da / lớp tẩm bột, từ đồ ăn nhanh / nhà hàng'), -- Chicken breast, fried, coated, skin / coating eaten, from fast food / restaurant
+    ('24127221', 'Ức gà chiên tẩm bột, bỏ da / lớp tẩm bột, từ đồ ăn nhanh / nhà hàng'), -- Chicken breast, fried, coated, skin / coating not eaten, from fast food / restaurant
+    ('24127500', 'Ức gà nướng lò tẩm bột, ăn cả da / lớp tẩm bột'), -- Chicken breast, baked, coated, skin / coating eaten
+    ('24127501', 'Ức gà nướng lò tẩm bột, bỏ da / lớp tẩm bột'), -- Chicken breast, baked, coated, skin / coating not eaten
     ('24130210', 'Đùi gà (tỏi và má đùi), không rõ cách chế biến, ăn cả da'), -- Chicken leg, drumstick and thigh, NS as to cooking method, skin eaten
     ('24130220', 'Đùi gà (tỏi và má đùi), không rõ cách chế biến, bỏ da'), -- Chicken leg, drumstick and thigh, NS as to cooking method, skin not eaten
     ('24132230', 'Đùi gà (tỏi và má đùi) nướng lò hoặc nướng, ăn cả da'), -- Chicken leg, drumstick and thigh, baked or broiled, skin eaten
@@ -625,18 +625,18 @@ FROM (VALUES
     ('24134151', 'Đùi gà (tỏi và má đùi) nướng vỉ có sốt, bỏ da'), -- Chicken leg, drumstick and thigh, grilled with sauce, skin not eaten
     ('24134300', 'Đùi gà (tỏi và má đùi) xào, ăn cả da'), -- Chicken leg, drumstick and thigh, sauteed, skin eaten
     ('24134301', 'Đùi gà (tỏi và má đùi) xào, bỏ da'), -- Chicken leg, drumstick and thigh, sauteed, skin not eaten
-    ('24137300', 'Đùi gà (tỏi và má đùi) chiên tẩm bột, ăn cả da/lớp tẩm bột'), -- Chicken leg, drumstick and thigh, fried, coated, skin / coating eaten
-    ('24137301', 'Đùi gà (tỏi và má đùi) chiên tẩm bột, bỏ da/lớp tẩm bột'), -- Chicken leg, drumstick and thigh, fried, coated, skin / coating not eaten
-    ('24137310', 'Đùi gà (tỏi và má đùi) nướng lò tẩm bột, ăn cả da/lớp tẩm bột'), -- Chicken leg, drumstick and thigh, baked, coated, skin / coating eaten
-    ('24137311', 'Đùi gà (tỏi và má đùi) nướng lò tẩm bột, bỏ da/lớp tẩm bột'), -- Chicken leg, drumstick and thigh, baked, coated, skin / coating not eaten
+    ('24137300', 'Đùi gà (tỏi và má đùi) chiên tẩm bột, ăn cả da / lớp tẩm bột'), -- Chicken leg, drumstick and thigh, fried, coated, skin / coating eaten
+    ('24137301', 'Đùi gà (tỏi và má đùi) chiên tẩm bột, bỏ da / lớp tẩm bột'), -- Chicken leg, drumstick and thigh, fried, coated, skin / coating not eaten
+    ('24137310', 'Đùi gà (tỏi và má đùi) nướng lò tẩm bột, ăn cả da / lớp tẩm bột'), -- Chicken leg, drumstick and thigh, baked, coated, skin / coating eaten
+    ('24137311', 'Đùi gà (tỏi và má đùi) nướng lò tẩm bột, bỏ da / lớp tẩm bột'), -- Chicken leg, drumstick and thigh, baked, coated, skin / coating not eaten
     ('24140210', 'Tỏi gà, không rõ cách chế biến, ăn cả da'), -- Chicken drumstick, NS as to cooking method, skin eaten
     ('24140220', 'Tỏi gà, không rõ cách chế biến, bỏ da'), -- Chicken drumstick, NS as to cooking method, skin not eaten
     ('24142300', 'Tỏi gà nướng lò, nướng hoặc quay, ăn cả da, chế biến từ gà sống'), -- Chicken drumstick, baked, broiled, or roasted, skin eaten, from raw
     ('24142301', 'Tỏi gà nướng lò, nướng hoặc quay, bỏ da, chế biến từ gà sống'), -- Chicken drumstick, baked, broiled, or roasted, skin not eaten, from raw
     ('24142310', 'Tỏi gà nướng lò hoặc nướng, ăn cả da, từ loại nấu sẵn'), -- Chicken drumstick, baked or broiled, skin eaten, from pre-cooked
     ('24142311', 'Tỏi gà nướng lò hoặc nướng, bỏ da, từ loại nấu sẵn'), -- Chicken drumstick, baked or broiled, skin not eaten, from pre-cooked
-    ('24142320', 'Tỏi gà nướng lò hoặc nướng, ăn cả da, từ đồ ăn nhanh/nhà hàng'), -- Chicken drumstick, baked or broiled, skin eaten, from fast food / restaurant
-    ('24142321', 'Tỏi gà nướng lò hoặc nướng, bỏ da, từ đồ ăn nhanh/nhà hàng'), -- Chicken drumstick, baked or broiled, skin not eaten, from fast food / restaurant
+    ('24142320', 'Tỏi gà nướng lò hoặc nướng, ăn cả da, từ đồ ăn nhanh / nhà hàng'), -- Chicken drumstick, baked or broiled, skin eaten, from fast food / restaurant
+    ('24142321', 'Tỏi gà nướng lò hoặc nướng, bỏ da, từ đồ ăn nhanh / nhà hàng'), -- Chicken drumstick, baked or broiled, skin not eaten, from fast food / restaurant
     ('24142400', 'Tỏi gà quay xiên (rotisserie), ăn cả da'), -- Chicken drumstick, rotisserie, skin eaten
     ('24142401', 'Tỏi gà quay xiên (rotisserie), bỏ da'), -- Chicken drumstick, rotisserie, skin not eaten
     ('24142500', 'Tỏi gà nướng vỉ không sốt, ăn cả da'), -- Chicken drumstick, grilled without sauce, skin eaten
@@ -647,23 +647,23 @@ FROM (VALUES
     ('24143220', 'Tỏi gà hầm, bỏ da'), -- Chicken drumstick, stewed, skin not eaten
     ('24144300', 'Tỏi gà xào, ăn cả da'), -- Chicken drumstick, sauteed, skin eaten
     ('24144301', 'Tỏi gà xào, bỏ da'), -- Chicken drumstick, sauteed, skin not eaten
-    ('24147300', 'Tỏi gà chiên tẩm bột, ăn cả da/lớp tẩm bột, chế biến từ gà sống'), -- Chicken drumstick, fried, coated, skin / coating eaten, from raw
-    ('24147301', 'Tỏi gà chiên tẩm bột, bỏ da/lớp tẩm bột, chế biến từ gà sống'), -- Chicken drumstick, fried, coated, skin / coating not eaten, from raw
+    ('24147300', 'Tỏi gà chiên tẩm bột, ăn cả da / lớp tẩm bột, chế biến từ gà sống'), -- Chicken drumstick, fried, coated, skin / coating eaten, from raw
+    ('24147301', 'Tỏi gà chiên tẩm bột, bỏ da / lớp tẩm bột, chế biến từ gà sống'), -- Chicken drumstick, fried, coated, skin / coating not eaten, from raw
     ('24147302', 'Tỏi gà chiên tẩm bột, lột da trước khi chế biến, ăn cả lớp tẩm bột, chế biến từ gà sống'), -- Chicken drumstick, fried, coated, prepared skinless, coating eaten, from raw
-    ('24147310', 'Tỏi gà chiên tẩm bột, ăn cả da/lớp tẩm bột, từ loại nấu sẵn'), -- Chicken drumstick, fried, coated, skin / coating eaten, from pre-cooked
-    ('24147311', 'Tỏi gà chiên tẩm bột, bỏ da/lớp tẩm bột, từ loại nấu sẵn'), -- Chicken drumstick, fried, coated, skin / coating not eaten, from pre-cooked
-    ('24147320', 'Tỏi gà chiên tẩm bột, ăn cả da/lớp tẩm bột, từ đồ ăn nhanh/nhà hàng'), -- Chicken drumstick, fried, coated, skin / coating eaten, from fast food / restaurant
-    ('24147321', 'Tỏi gà chiên tẩm bột, bỏ da/lớp tẩm bột, từ đồ ăn nhanh/nhà hàng'), -- Chicken drumstick, fried, coated, skin / coating not eaten, from fast food / restaurant
-    ('24147400', 'Tỏi gà nướng lò tẩm bột, ăn cả da/lớp tẩm bột'), -- Chicken drumstick, baked, coated, skin / coating eaten
-    ('24147401', 'Tỏi gà nướng lò tẩm bột, bỏ da/lớp tẩm bột'), -- Chicken drumstick, baked, coated, skin / coating not eaten
+    ('24147310', 'Tỏi gà chiên tẩm bột, ăn cả da / lớp tẩm bột, từ loại nấu sẵn'), -- Chicken drumstick, fried, coated, skin / coating eaten, from pre-cooked
+    ('24147311', 'Tỏi gà chiên tẩm bột, bỏ da / lớp tẩm bột, từ loại nấu sẵn'), -- Chicken drumstick, fried, coated, skin / coating not eaten, from pre-cooked
+    ('24147320', 'Tỏi gà chiên tẩm bột, ăn cả da / lớp tẩm bột, từ đồ ăn nhanh / nhà hàng'), -- Chicken drumstick, fried, coated, skin / coating eaten, from fast food / restaurant
+    ('24147321', 'Tỏi gà chiên tẩm bột, bỏ da / lớp tẩm bột, từ đồ ăn nhanh / nhà hàng'), -- Chicken drumstick, fried, coated, skin / coating not eaten, from fast food / restaurant
+    ('24147400', 'Tỏi gà nướng lò tẩm bột, ăn cả da / lớp tẩm bột'), -- Chicken drumstick, baked, coated, skin / coating eaten
+    ('24147401', 'Tỏi gà nướng lò tẩm bột, bỏ da / lớp tẩm bột'), -- Chicken drumstick, baked, coated, skin / coating not eaten
     ('24150210', 'Má đùi gà, không rõ cách chế biến, ăn cả da'), -- Chicken thigh, NS as to cooking method, skin eaten
     ('24150220', 'Má đùi gà, không rõ cách chế biến, bỏ da'), -- Chicken thigh, NS as to cooking method, skin not eaten
     ('24152230', 'Má đùi gà nướng lò, nướng hoặc quay, ăn cả da, chế biến từ gà sống'), -- Chicken thigh, baked, broiled, or roasted, skin eaten, from raw
     ('24152231', 'Má đùi gà nướng lò, nướng hoặc quay, bỏ da, chế biến từ gà sống'), -- Chicken thigh, baked, broiled, or roasted, skin not eaten, from raw
     ('24152240', 'Má đùi gà nướng lò hoặc nướng, ăn cả da, từ loại nấu sẵn'), -- Chicken thigh, baked or broiled, skin eaten, from pre-cooked
     ('24152241', 'Má đùi gà nướng lò hoặc nướng, bỏ da, từ loại nấu sẵn'), -- Chicken thigh, baked or broiled, skin not eaten, from pre-cooked
-    ('24152250', 'Má đùi gà nướng lò hoặc nướng, ăn cả da, từ đồ ăn nhanh/nhà hàng'), -- Chicken thigh, baked or broiled, skin eaten, from fast food / restaurant
-    ('24152251', 'Má đùi gà nướng lò hoặc nướng, bỏ da, từ đồ ăn nhanh/nhà hàng'), -- Chicken thigh, baked or broiled, skin not eaten, from fast food / restaurant
+    ('24152250', 'Má đùi gà nướng lò hoặc nướng, ăn cả da, từ đồ ăn nhanh / nhà hàng'), -- Chicken thigh, baked or broiled, skin eaten, from fast food / restaurant
+    ('24152251', 'Má đùi gà nướng lò hoặc nướng, bỏ da, từ đồ ăn nhanh / nhà hàng'), -- Chicken thigh, baked or broiled, skin not eaten, from fast food / restaurant
     ('24152300', 'Má đùi gà quay xiên (rotisserie), ăn cả da'), -- Chicken thigh, rotisserie, skin eaten
     ('24152301', 'Má đùi gà quay xiên (rotisserie), bỏ da'), -- Chicken thigh, rotisserie, skin not eaten
     ('24153210', 'Má đùi gà hầm, ăn cả da'), -- Chicken thigh, stewed, skin eaten
@@ -674,21 +674,21 @@ FROM (VALUES
     ('24154021', 'Má đùi gà nướng vỉ có sốt, bỏ da'), -- Chicken thigh, grilled with sauce, skin not eaten
     ('24154300', 'Má đùi gà xào, ăn cả da'), -- Chicken thigh, sauteed, skin eaten
     ('24154301', 'Má đùi gà xào, bỏ da'), -- Chicken thigh, sauteed, skin not eaten
-    ('24157300', 'Má đùi gà chiên tẩm bột, ăn cả da/lớp tẩm bột, chế biến từ gà sống'), -- Chicken thigh, fried, coated, skin / coating eaten, from raw
-    ('24157301', 'Má đùi gà chiên tẩm bột, bỏ da/lớp tẩm bột, chế biến từ gà sống'), -- Chicken thigh, fried, coated, skin / coating not eaten, from raw
+    ('24157300', 'Má đùi gà chiên tẩm bột, ăn cả da / lớp tẩm bột, chế biến từ gà sống'), -- Chicken thigh, fried, coated, skin / coating eaten, from raw
+    ('24157301', 'Má đùi gà chiên tẩm bột, bỏ da / lớp tẩm bột, chế biến từ gà sống'), -- Chicken thigh, fried, coated, skin / coating not eaten, from raw
     ('24157302', 'Má đùi gà chiên tẩm bột, lột da trước khi chế biến, ăn cả lớp tẩm bột, chế biến từ gà sống'), -- Chicken thigh, fried, coated, prepared skinless, coating eaten, from raw
-    ('24157310', 'Má đùi gà chiên tẩm bột, ăn cả da/lớp tẩm bột, từ loại nấu sẵn'), -- Chicken thigh, fried, coated, skin / coating eaten, from pre-cooked
-    ('24157311', 'Má đùi gà chiên tẩm bột, bỏ da/lớp tẩm bột, từ loại nấu sẵn'), -- Chicken thigh, fried, coated, skin / coating not eaten, from pre-cooked
-    ('24157320', 'Má đùi gà chiên tẩm bột, ăn cả da/lớp tẩm bột, từ đồ ăn nhanh'), -- Chicken thigh, fried, coated, skin / coating eaten, from fast food
-    ('24157321', 'Má đùi gà chiên tẩm bột, bỏ da/lớp tẩm bột, từ đồ ăn nhanh'), -- Chicken thigh, fried, coated, skin / coating not eaten, from fast food
-    ('24157330', 'Má đùi gà chiên tẩm bột, ăn cả da/lớp tẩm bột, từ nhà hàng'), -- Chicken thigh, fried, coated, skin / coating eaten, from restaurant
-    ('24157331', 'Má đùi gà chiên tẩm bột, bỏ da/lớp tẩm bột, từ nhà hàng'), -- Chicken thigh, fried, coated, skin / coating not eaten, from restaurant
-    ('24157400', 'Má đùi gà nướng lò tẩm bột, ăn cả da/lớp tẩm bột'), -- Chicken thigh, baked, coated, skin / coating eaten
-    ('24157401', 'Má đùi gà nướng lò tẩm bột, bỏ da/lớp tẩm bột'), -- Chicken thigh, baked, coated, skin / coating not eaten
+    ('24157310', 'Má đùi gà chiên tẩm bột, ăn cả da / lớp tẩm bột, từ loại nấu sẵn'), -- Chicken thigh, fried, coated, skin / coating eaten, from pre-cooked
+    ('24157311', 'Má đùi gà chiên tẩm bột, bỏ da / lớp tẩm bột, từ loại nấu sẵn'), -- Chicken thigh, fried, coated, skin / coating not eaten, from pre-cooked
+    ('24157320', 'Má đùi gà chiên tẩm bột, ăn cả da / lớp tẩm bột, từ đồ ăn nhanh'), -- Chicken thigh, fried, coated, skin / coating eaten, from fast food
+    ('24157321', 'Má đùi gà chiên tẩm bột, bỏ da / lớp tẩm bột, từ đồ ăn nhanh'), -- Chicken thigh, fried, coated, skin / coating not eaten, from fast food
+    ('24157330', 'Má đùi gà chiên tẩm bột, ăn cả da / lớp tẩm bột, từ nhà hàng'), -- Chicken thigh, fried, coated, skin / coating eaten, from restaurant
+    ('24157331', 'Má đùi gà chiên tẩm bột, bỏ da / lớp tẩm bột, từ nhà hàng'), -- Chicken thigh, fried, coated, skin / coating not eaten, from restaurant
+    ('24157400', 'Má đùi gà nướng lò tẩm bột, ăn cả da / lớp tẩm bột'), -- Chicken thigh, baked, coated, skin / coating eaten
+    ('24157401', 'Má đùi gà nướng lò tẩm bột, bỏ da / lớp tẩm bột'), -- Chicken thigh, baked, coated, skin / coating not eaten
     ('24160110', 'Cánh gà, không rõ cách chế biến'), -- Chicken wing, NS as to cooking method
     ('24162130', 'Cánh gà nướng lò, nướng hoặc quay, chế biến từ gà sống'), -- Chicken wing, baked, broiled, or roasted, from raw
     ('24162140', 'Cánh gà nướng lò hoặc nướng, từ loại nấu sẵn'), -- Chicken wing, baked or broiled, from pre-cooked
-    ('24162150', 'Cánh gà nướng lò hoặc nướng, từ đồ ăn nhanh/nhà hàng'), -- Chicken wing, baked or broiled, from fast food / restaurant
+    ('24162150', 'Cánh gà nướng lò hoặc nướng, từ đồ ăn nhanh / nhà hàng'), -- Chicken wing, baked or broiled, from fast food / restaurant
     ('24162200', 'Cánh gà quay xiên (rotisserie)'), -- Chicken wing, rotisserie
     ('24163110', 'Cánh gà hầm'), -- Chicken wing, stewed
     ('24164000', 'Cánh gà nướng vỉ không sốt'), -- Chicken wing, grilled without sauce
@@ -699,16 +699,16 @@ FROM (VALUES
     ('24167220', 'Cánh gà chiên tẩm bột, từ đồ ăn nhanh'), -- Chicken wing, fried, coated, from fast food
     ('24167230', 'Cánh gà chiên tẩm bột, từ nhà hàng'), -- Chicken wing, fried, coated, from restaurant
     ('24167300', 'Cánh gà nướng lò tẩm bột'), -- Chicken wing, baked, coated
-    ('24168000', 'Món cánh gà wings với tương ớt, từ đồ ăn nhanh/nhà hàng'), -- Chicken "wings" with hot sauce, from fast food / restaurant
-    ('24168001', 'Món cánh gà wings với sốt hoặc gia vị khác, từ đồ ăn nhanh/nhà hàng'), -- Chicken "wings" with other sauces or seasoning, from fast food / restaurant
-    ('24168002', 'Món cánh gà wings không sốt, từ đồ ăn nhanh/nhà hàng'), -- Chicken "wings", plain, from fast food / restaurant
+    ('24168000', 'Món cánh gà wings với tương ớt, từ đồ ăn nhanh / nhà hàng'), -- Chicken "wings" with hot sauce, from fast food / restaurant
+    ('24168001', 'Món cánh gà wings với sốt hoặc gia vị khác, từ đồ ăn nhanh / nhà hàng'), -- Chicken "wings" with other sauces or seasoning, from fast food / restaurant
+    ('24168002', 'Món cánh gà wings không sốt, từ đồ ăn nhanh / nhà hàng'), -- Chicken "wings", plain, from fast food / restaurant
     ('24168010', 'Món cánh gà wings với tương ớt, từ loại nấu sẵn'), -- Chicken "wings" with hot sauce, from precooked
     ('24168011', 'Món cánh gà wings với sốt hoặc gia vị khác, từ loại nấu sẵn'), -- Chicken "wings" with other sauces or seasoning, from precooked
     ('24168012', 'Món cánh gà wings không sốt, từ loại nấu sẵn'), -- Chicken "wings", plain, from precooked
     ('24168020', 'Món cánh gà wings với tương ớt, từ nguồn khác'), -- Chicken "wings" with hot sauce, from other sources
     ('24168021', 'Món cánh gà wings với sốt hoặc gia vị khác, từ nguồn khác'), -- Chicken "wings" with other sauces or seasoning, from other sources
     ('24168022', 'Món cánh gà wings không sốt, từ nguồn khác'), -- Chicken "wings", plain, from other sources
-    ('24168030', 'Món cánh gà wings rút xương, với tương ớt, từ đồ ăn nhanh/nhà hàng'), -- Chicken "wings", boneless, with hot sauce, from fast food / restaurant
+    ('24168030', 'Món cánh gà wings rút xương, với tương ớt, từ đồ ăn nhanh / nhà hàng'), -- Chicken "wings", boneless, with hot sauce, from fast food / restaurant
     ('24168031', 'Món cánh gà wings rút xương, với tương ớt, từ nguồn khác'), -- Chicken "wings", boneless, with hot sauce, from other sources
     ('24170200', 'Lưng gà'), -- Chicken, back
     ('24180200', 'Cổ hoặc sườn gà'), -- Chicken, neck or ribs
@@ -787,7 +787,7 @@ FROM (VALUES
     ('25112200', 'Pa tê gan'), -- Liver, paste or pate
     ('25120000', 'Tim động vật'), -- Heart
     ('25130000', 'Thận (cật) động vật'), -- Kidney
-    ('25140110', 'Tuyến ức/tụy động vật (sweetbreads)'), -- Sweetbreads
+    ('25140110', 'Tuyến ức / tụy động vật (sweetbreads)'), -- Sweetbreads
     ('25150000', 'Óc động vật'), -- Brains
     ('25160000', 'Lưỡi động vật'), -- Tongue
     ('25160130', 'Lưỡi om nồi kiểu Puerto Rico'), -- Tongue pot roast, Puerto Rican style
@@ -1053,8 +1053,8 @@ FROM (VALUES
     ('27135050', 'Thịt bê sốt rượu Marsala'), -- Veal Marsala
     ('27135110', 'Thịt bê parmigiana (tẩm bột, phủ phô mai)'), -- Veal parmigiana
     ('27135150', 'Thịt bê cordon bleu'), -- Veal cordon bleu
-    ('27136050', 'Thịt nai/hươu sốt nền cà chua'), -- Venison or deer with tomato-based sauce
-    ('27136080', 'Thịt nai/hươu với nước sốt gravy'), -- Venison or deer with gravy
+    ('27136050', 'Thịt nai / hươu sốt nền cà chua'), -- Venison or deer with tomato-based sauce
+    ('27136080', 'Thịt nai / hươu với nước sốt gravy'), -- Venison or deer with gravy
     ('27141000', 'Gà hoặc gà tây cacciatore (hầm kiểu Ý)'), -- Chicken or turkey cacciatore
     ('27141030', 'Sốt mì spaghetti với thịt gia cầm'), -- Spaghetti sauce with poultry
     ('27141035', 'Sốt mì spaghetti với thịt gia cầm và thêm rau'), -- Spaghetti sauce with poultry and added vegetables
@@ -1159,8 +1159,8 @@ FROM (VALUES
     ('27231000', 'Thịt cừu non hoặc cừu già và khoai tây với nước sốt gravy'), -- Lamb or mutton and potatoes with gravy
     ('27232000', 'Thịt cừu non hoặc cừu già và khoai tây sốt nền cà chua'), -- Lamb or mutton and potatoes with tomato-based sauce
     ('27233000', 'Thịt cừu non hoặc cừu già và mì sợi với nước sốt gravy'), -- Lamb or mutton and noodles with gravy
-    ('27235000', 'Thịt xay nướng khối (meatloaf) làm từ thịt nai/hươu'), -- Meat loaf made with venison/deer
-    ('27236000', 'Thịt nai/hươu và mì sợi sốt kem hoặc sốt trắng'), -- Venison or deer and noodles with cream or white sauce
+    ('27235000', 'Thịt xay nướng khối (meatloaf) làm từ thịt nai / hươu'), -- Meat loaf made with venison/deer
+    ('27236000', 'Thịt nai / hươu và mì sợi sốt kem hoặc sốt trắng'), -- Venison or deer and noodles with cream or white sauce
     ('27241000', 'Món hash gà hoặc gà tây'), -- Chicken or turkey hash
     ('27241010', 'Gà hoặc gà tây và khoai tây với nước sốt gravy'), -- Chicken or turkey and potatoes with gravy
     ('27242000', 'Gà hoặc gà tây và mì sợi, không sốt'), -- Chicken or turkey and noodles, no sauce
@@ -1221,135 +1221,135 @@ FROM (VALUES
     ('27260110', 'Món hash thịt, không rõ loại thịt'), -- Hash, NS as to type of meat
     ('27260500', 'Xúc xích Vienna hầm khoai tây, kiểu Puerto Rico'), -- Vienna sausages stewed with potatoes, Puerto Rican style
     ('27261500', 'Thịt bò và thịt lợn xay tẩm gia vị hầm khoai tây, kiểu Mexico'), -- Stewed, seasoned, ground beef and pork with potatoes, Mexican style
-    ('27311110', 'Bò, khoai tây và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), không sốt'), -- Beef, potatoes, and vegetables including carrots, broccoli, and/or dark-green leafy; no sauce
+    ('27311110', 'Bò, khoai tây và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), không sốt'), -- Beef, potatoes, and vegetables including carrots, broccoli, and/or dark-green leafy; no sauce
     ('27311120', 'Bò, khoai tây và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), không sốt'), -- Beef, potatoes, and vegetables, excluding carrots, broccoli, and dark-green leafy; no sauce
-    ('27311210', 'Bò muối (corned beef), khoai tây và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), không sốt'), -- Corned beef, potatoes, and vegetables including carrots, broccoli, and/or dark-green leafy; no sauce
+    ('27311210', 'Bò muối (corned beef), khoai tây và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), không sốt'), -- Corned beef, potatoes, and vegetables including carrots, broccoli, and/or dark-green leafy; no sauce
     ('27311220', 'Bò muối (corned beef), khoai tây và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), không sốt'), -- Corned beef, potatoes, and vegetables excluding carrots, broccoli, and dark-green leafy; no sauce
     ('27311310', 'Món hầm thịt bò, đóng hộp'), -- Stew, beef, canned
     ('27311410', 'Món hầm thịt bò'), -- Stew, beef
     ('27311430', 'Món hầm thịt bò, có mì Ý (pasta)'), -- Stew, beef, with pasta
     ('27311510', 'Bánh shepherd''s pie (thịt băm phủ khoai tây nghiền)'), -- Shepherd's pie
-    ('27311600', 'Bò, khoai tây và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), nước sốt gravy'), -- Beef, potatoes, and vegetables including carrots, broccoli, and/or dark-green leafy; gravy
+    ('27311600', 'Bò, khoai tây và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), nước sốt gravy'), -- Beef, potatoes, and vegetables including carrots, broccoli, and/or dark-green leafy; gravy
     ('27311605', 'Bò, khoai tây và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), nước sốt gravy'), -- Beef, potatoes, and vegetables excluding carrots, broccoli, and dark-green leafy; gravy
-    ('27311610', 'Bò, khoai tây và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), sốt kem, sốt trắng hoặc sốt nấm'), -- Beef, potatoes, and vegetables including carrots, broccoli, and/or dark-green leafy; cream sauce, white sauce, or mushroom sauce
+    ('27311610', 'Bò, khoai tây và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), sốt kem, sốt trắng hoặc sốt nấm'), -- Beef, potatoes, and vegetables including carrots, broccoli, and/or dark-green leafy; cream sauce, white sauce, or mushroom sauce
     ('27311620', 'Bò, khoai tây và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), sốt kem, sốt trắng hoặc sốt nấm'), -- Beef, potatoes, and vegetables excluding carrots, broccoli, and dark-green leafy; cream sauce, white sauce, or mushroom sauce
-    ('27311625', 'Bò, khoai tây và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), sốt nền cà chua'), -- Beef, potatoes, and vegetables including carrots, broccoli, and/or dark-green leafy; tomato-based sauce
+    ('27311625', 'Bò, khoai tây và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), sốt nền cà chua'), -- Beef, potatoes, and vegetables including carrots, broccoli, and/or dark-green leafy; tomato-based sauce
     ('27311630', 'Bò, khoai tây và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), sốt nền cà chua'), -- Beef, potatoes, and vegetables excluding carrots, broccoli, and dark-green leafy; tomato-based sauce
-    ('27311635', 'Bò, khoai tây và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), sốt phô mai'), -- Beef, potatoes, and vegetables including carrots, broccoli, and/or dark-green leafy; cheese sauce
+    ('27311635', 'Bò, khoai tây và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), sốt phô mai'), -- Beef, potatoes, and vegetables including carrots, broccoli, and/or dark-green leafy; cheese sauce
     ('27311640', 'Bò, khoai tây và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), sốt phô mai'), -- Beef, potatoes, and vegetables excluding carrots, broccoli, and dark-green leafy; cheese sauce
-    ('27311645', 'Bò, khoai tây và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), sốt nền nước tương'), -- Beef, potatoes, and vegetables including carrots, broccoli, and/or dark-green leafy; soy-based sauce
+    ('27311645', 'Bò, khoai tây và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), sốt nền nước tương'), -- Beef, potatoes, and vegetables including carrots, broccoli, and/or dark-green leafy; soy-based sauce
     ('27311650', 'Bò, khoai tây và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), sốt nền nước tương'), -- Beef, potatoes, and vegetables excluding carrots, broccoli, and dark-green leafy; soy-based sauce
-    ('27313010', 'Bò, mì sợi và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), không sốt'), -- Beef, noodles, and vegetables including carrots, broccoli, and/or dark-green leafy; no sauce
+    ('27313010', 'Bò, mì sợi và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), không sốt'), -- Beef, noodles, and vegetables including carrots, broccoli, and/or dark-green leafy; no sauce
     ('27313020', 'Bò, mì sợi và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), không sốt'), -- Beef, noodles, and vegetables excluding carrots, broccoli, and dark-green leafy; no sauce
     ('27313110', 'Bò xào chow mein hoặc chop suey, có mì sợi'), -- Beef chow mein or chop suey with noodles
-    ('27313150', 'Bò, mì sợi và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), sốt nền nước tương'), -- Beef, noodles, and vegetables including carrots, broccoli, and/or dark-green leafy; soy-based sauce
+    ('27313150', 'Bò, mì sợi và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), sốt nền nước tương'), -- Beef, noodles, and vegetables including carrots, broccoli, and/or dark-green leafy; soy-based sauce
     ('27313160', 'Bò, mì sợi và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), sốt nền nước tương'), -- Beef, noodles, and vegetables excluding carrots, broccoli, and dark-green leafy; soy-based sauce
-    ('27313210', 'Bò, mì sợi và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), sốt nền cà chua'), -- Beef, noodles, and vegetables including carrots, broccoli, and/or dark-green leafy; tomato-based sauce
+    ('27313210', 'Bò, mì sợi và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), sốt nền cà chua'), -- Beef, noodles, and vegetables including carrots, broccoli, and/or dark-green leafy; tomato-based sauce
     ('27313220', 'Bò, mì sợi và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), sốt nền cà chua'), -- Beef, noodles, and vegetables excluding carrots, broccoli, and dark-green leafy; tomato-based sauce
-    ('27313310', 'Bò, mì sợi và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), sốt nấm'), -- Beef, noodles, and vegetables including carrots, broccoli, and/or dark-green leafy; mushroom sauce
+    ('27313310', 'Bò, mì sợi và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), sốt nấm'), -- Beef, noodles, and vegetables including carrots, broccoli, and/or dark-green leafy; mushroom sauce
     ('27313320', 'Bò, mì sợi và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), sốt nấm'), -- Beef, noodles, and vegetables excluding carrots, broccoli, and dark-green leafy; mushroom sauce
-    ('27313410', 'Bò, mì sợi và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), nước sốt gravy'), -- Beef, noodles, and vegetables including carrots, broccoli, and/or dark-green leafy; gravy
+    ('27313410', 'Bò, mì sợi và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), nước sốt gravy'), -- Beef, noodles, and vegetables including carrots, broccoli, and/or dark-green leafy; gravy
     ('27313420', 'Bò, mì sợi và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), nước sốt gravy'), -- Beef, noodles, and vegetables excluding carrots, broccoli, and dark-green leafy; gravy
-    ('27315010', 'Bò, cơm và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), không sốt'), -- Beef, rice, and vegetables including carrots, broccoli, and/or dark-green leafy; no sauce
+    ('27315010', 'Bò, cơm và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), không sốt'), -- Beef, rice, and vegetables including carrots, broccoli, and/or dark-green leafy; no sauce
     ('27315020', 'Bò, cơm và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), không sốt'), -- Beef, rice, and vegetables excluding carrots, broccoli, and dark-green leafy; no sauce
-    ('27315210', 'Bò, cơm và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), sốt nền cà chua'), -- Beef, rice, and vegetables including carrots, broccoli, and/or dark-green leafy; tomato-based sauce
-    ('27315220', 'Bò, cơm và rau (trừ cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), sốt nền cà chua'), -- Beef, rice, and vegetables excluding carrots, broccoli, and/or dark-green leafy; tomato-based sauce
+    ('27315210', 'Bò, cơm và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), sốt nền cà chua'), -- Beef, rice, and vegetables including carrots, broccoli, and/or dark-green leafy; tomato-based sauce
+    ('27315220', 'Bò, cơm và rau (trừ cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), sốt nền cà chua'), -- Beef, rice, and vegetables excluding carrots, broccoli, and/or dark-green leafy; tomato-based sauce
     ('27315250', 'Cải bắp cuộn nhồi thịt bò và gạo'), -- Stuffed cabbage rolls with beef and rice
     ('27315270', 'Lá nho cuộn nhồi thịt bò và gạo'), -- Stuffed grape leaves with beef and rice
-    ('27315310', 'Bò, cơm và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), sốt nấm'), -- Beef, rice, and vegetables including carrots, broccoli, and/or dark-green leafy; mushroom sauce
+    ('27315310', 'Bò, cơm và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), sốt nấm'), -- Beef, rice, and vegetables including carrots, broccoli, and/or dark-green leafy; mushroom sauce
     ('27315320', 'Bò, cơm và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), sốt nấm'), -- Beef, rice, and vegetables excluding carrots, broccoli, and dark-green leafy; mushroom sauce
-    ('27315330', 'Bò, cơm và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), sốt phô mai'), -- Beef, rice, and vegetables including carrots, broccoli, and/or dark-green leafy; cheese sauce
+    ('27315330', 'Bò, cơm và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), sốt phô mai'), -- Beef, rice, and vegetables including carrots, broccoli, and/or dark-green leafy; cheese sauce
     ('27315340', 'Bò, cơm và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), sốt phô mai'), -- Beef, rice, and vegetables excluding carrots, broccoli, and dark-green leafy; cheese sauce
-    ('27315410', 'Bò, cơm và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), nước sốt gravy'), -- Beef, rice, and vegetables including carrots, broccoli, and/or dark-green leafy; gravy
+    ('27315410', 'Bò, cơm và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), nước sốt gravy'), -- Beef, rice, and vegetables including carrots, broccoli, and/or dark-green leafy; gravy
     ('27315420', 'Bò, cơm và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), nước sốt gravy'), -- Beef, rice, and vegetables excluding carrots, broccoli, and dark-green leafy; gravy
-    ('27315510', 'Bò, cơm và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), sốt nền nước tương'), -- Beef, rice, and vegetables including carrots, broccoli, and/or dark-green leafy; soy-based sauce
+    ('27315510', 'Bò, cơm và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), sốt nền nước tương'), -- Beef, rice, and vegetables including carrots, broccoli, and/or dark-green leafy; soy-based sauce
     ('27315520', 'Bò, cơm và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), sốt nền nước tương'), -- Beef, rice, and vegetables excluding carrots, broccoli, and dark-green leafy; soy-based sauce
     ('27317010', 'Bánh pot pie thịt bò'), -- Pot pie, beef
-    ('27317100', 'Bò, bánh bột (dumpling) và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), nước sốt gravy'), -- Beef, dumplings, and vegetables including carrots, broccoli, and/or dark-green leafy; gravy
+    ('27317100', 'Bò, bánh bột (dumpling) và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), nước sốt gravy'), -- Beef, dumplings, and vegetables including carrots, broccoli, and/or dark-green leafy; gravy
     ('27317110', 'Bò, bánh bột (dumpling) và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), nước sốt gravy'), -- Beef, dumplings, and vegetables excluding carrots, broccoli, and dark-green leafy; gravy
     ('27319010', 'Ớt chuông xanh nhồi, kiểu Puerto Rico'), -- Stuffed green pepper, Puerto Rican style
     ('27320025', 'Giăm bông hoặc thịt lợn, mì sợi và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), không sốt'), -- Ham or pork, noodles and vegetables excluding carrots, broccoli, and dark-green leafy; no sauce
-    ('27320027', 'Giăm bông hoặc thịt lợn, mì sợi và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), không sốt'), -- Ham or pork, noodles, and vegetables including carrots, broccoli, and/or dark-green leafy; no sauce
+    ('27320027', 'Giăm bông hoặc thịt lợn, mì sợi và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), không sốt'), -- Ham or pork, noodles, and vegetables including carrots, broccoli, and/or dark-green leafy; no sauce
     ('27320030', 'Giăm bông hoặc thịt lợn, mì sợi và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), sốt phô mai'), -- Ham or pork, noodles and vegetables excluding carrots, broccoli, and dark-green leafy; cheese sauce
-    ('27320040', 'Thịt lợn, khoai tây và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), không sốt'), -- Pork, potatoes, and vegetables including carrots, broccoli, and/or dark-green leafy; no sauce
-    ('27320070', 'Giăm bông hoặc thịt lợn, mì sợi và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), sốt nền cà chua'), -- Ham or pork, noodles, and vegetables including carrots, broccoli, and/or dark-green leafy; tomato-based sauce
+    ('27320040', 'Thịt lợn, khoai tây và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), không sốt'), -- Pork, potatoes, and vegetables including carrots, broccoli, and/or dark-green leafy; no sauce
+    ('27320070', 'Giăm bông hoặc thịt lợn, mì sợi và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), sốt nền cà chua'), -- Ham or pork, noodles, and vegetables including carrots, broccoli, and/or dark-green leafy; tomato-based sauce
     ('27320080', 'Xúc xích, mì sợi và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), sốt nền cà chua'), -- Sausage, noodles, and vegetables excluding carrots, broccoli, and dark-green leafy; tomato-based sauce
-    ('27320090', 'Xúc xích, mì sợi và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), sốt nền cà chua'), -- Sausage, noodles, and vegetables including carrots, broccoli, and/or dark-green leafy; tomato-based sauce
-    ('27320100', 'Thịt lợn, khoai tây và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), sốt nền cà chua'), -- Pork, potatoes, and vegetables including carrots, broccoli, and/or dark-green leafy; tomato-based sauce
+    ('27320090', 'Xúc xích, mì sợi và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), sốt nền cà chua'), -- Sausage, noodles, and vegetables including carrots, broccoli, and/or dark-green leafy; tomato-based sauce
+    ('27320100', 'Thịt lợn, khoai tây và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), sốt nền cà chua'), -- Pork, potatoes, and vegetables including carrots, broccoli, and/or dark-green leafy; tomato-based sauce
     ('27320110', 'Thịt lợn, khoai tây và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), sốt nền cà chua'), -- Pork, potatoes, and vegetables excluding carrots, broccoli, and dark-green leafy; tomato-based sauce
-    ('27320120', 'Xúc xích, khoai tây và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), nước sốt gravy'), -- Sausage, potatoes, and vegetables including carrots, broccoli, and/or dark-green leafy; gravy
+    ('27320120', 'Xúc xích, khoai tây và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), nước sốt gravy'), -- Sausage, potatoes, and vegetables including carrots, broccoli, and/or dark-green leafy; gravy
     ('27320130', 'Xúc xích, khoai tây và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), nước sốt gravy'), -- Sausage, potatoes, and vegetables excluding carrots, broccoli, and dark-green leafy; gravy
-    ('27320140', 'Thịt lợn, khoai tây và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), nước sốt gravy'), -- Pork, potatoes, and vegetables including carrots, broccoli, and/or dark-green leafy; gravy
+    ('27320140', 'Thịt lợn, khoai tây và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), nước sốt gravy'), -- Pork, potatoes, and vegetables including carrots, broccoli, and/or dark-green leafy; gravy
     ('27320150', 'Thịt lợn, khoai tây và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), nước sốt gravy'), -- Pork, potatoes, and vegetables excluding carrots, broccoli, and dark-green leafy; gravy
     ('27320210', 'Thịt lợn, khoai tây và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), không sốt'), -- Pork, potatoes, and vegetables excluding carrots, broccoli, and dark-green leafy; no sauce
     ('27320310', 'Thịt lợn xào chow mein hoặc chop suey, có mì sợi'), -- Pork chow mein or chop suey with noodles
-    ('27320320', 'Thịt lợn, cơm và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), sốt nền nước tương'), -- Pork, rice, and vegetables including carrots, broccoli, and/or dark-green leafy; soy-based sauce
+    ('27320320', 'Thịt lợn, cơm và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), sốt nền nước tương'), -- Pork, rice, and vegetables including carrots, broccoli, and/or dark-green leafy; soy-based sauce
     ('27320330', 'Thịt lợn, cơm và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), sốt nền nước tương'), -- Pork, rice, and vegetables excluding carrots, broccoli, and dark-green leafy; soy-based sauce
-    ('27320340', 'Thịt lợn, cơm và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), sốt nền cà chua'), -- Pork, rice, and vegetables including carrots, broccoli, and/or dark-green leafy; tomato-based sauce
+    ('27320340', 'Thịt lợn, cơm và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), sốt nền cà chua'), -- Pork, rice, and vegetables including carrots, broccoli, and/or dark-green leafy; tomato-based sauce
     ('27320350', 'Thịt lợn, cơm và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), sốt nền cà chua'), -- Pork, rice, and vegetables excluding carrots, broccoli, and dark-green leafy; tomato-based sauce
     ('27320410', 'Giăm bông, khoai tây và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), không sốt'), -- Ham, potatoes, and vegetables excluding carrots, broccoli, and dark-green leafy; no sauce
-    ('27320450', 'Giăm bông, khoai tây và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), không sốt'), -- Ham, potatoes, and vegetables including carrots, broccoli, and/or dark-green leafy; no sauce
+    ('27320450', 'Giăm bông, khoai tây và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), không sốt'), -- Ham, potatoes, and vegetables including carrots, broccoli, and/or dark-green leafy; no sauce
     ('27320500', 'Thịt lợn xào chua ngọt với cơm'), -- Sweet and sour pork with rice
     ('27330050', 'Thịt cừu non hoặc cừu già, cơm và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), nước sốt gravy'), -- Lamb or mutton, rice, and vegetables excluding carrots, broccoli, and dark-green leafy; gravy
-    ('27330060', 'Thịt cừu non hoặc cừu già, cơm và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), sốt nền cà chua'), -- Lamb or mutton, rice, and vegetables including carrots, broccoli, and/or dark-green leafy; tomato-based sauce
-    ('27330080', 'Thịt cừu non hoặc cừu già, cơm và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), nước sốt gravy'), -- Lamb or mutton, rice, and vegetables  including carrots, broccoli, and/or dark-green leafy; gravy
+    ('27330060', 'Thịt cừu non hoặc cừu già, cơm và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), sốt nền cà chua'), -- Lamb or mutton, rice, and vegetables including carrots, broccoli, and/or dark-green leafy; tomato-based sauce
+    ('27330080', 'Thịt cừu non hoặc cừu già, cơm và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), nước sốt gravy'), -- Lamb or mutton, rice, and vegetables  including carrots, broccoli, and/or dark-green leafy; gravy
     ('27330170', 'Lá nho cuộn nhồi thịt cừu và gạo'), -- Stuffed grape leaves with lamb and rice
     ('27330210', 'Món hầm thịt cừu'), -- Stew, lamb
     ('27335500', 'Thịt thỏ hầm, kiểu Puerto Rico'), -- Stewed rabbit, Puerto Rican style,
-    ('27336200', 'Thịt nai/hươu, khoai tây và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), nước sốt gravy'), -- Venison or deer, potatoes, and vegetables including carrots, broccoli, and/or dark-green leafy; gravy
-    ('27336250', 'Thịt nai/hươu, khoai tây và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), nước sốt gravy'), -- Venison or deer, potatoes, and vegetables excluding carrots, broccoli, and dark-green leafy; gravy
-    ('27336300', 'Thịt nai/hươu, mì sợi và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), sốt nền cà chua'), -- Venison or deer, noodles, and vegetables including carrots, broccoli, and/or dark-green leafy; tomato-based sauce
-    ('27336310', 'Thịt nai/hươu, mì sợi và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), sốt nền cà chua'), -- Venison or deer, noodles, and vegetables excluding carrots, broccoli, and dark-green leafy; tomato-based sauce
+    ('27336200', 'Thịt nai / hươu, khoai tây và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), nước sốt gravy'), -- Venison or deer, potatoes, and vegetables including carrots, broccoli, and/or dark-green leafy; gravy
+    ('27336250', 'Thịt nai / hươu, khoai tây và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), nước sốt gravy'), -- Venison or deer, potatoes, and vegetables excluding carrots, broccoli, and dark-green leafy; gravy
+    ('27336300', 'Thịt nai / hươu, mì sợi và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), sốt nền cà chua'), -- Venison or deer, noodles, and vegetables including carrots, broccoli, and/or dark-green leafy; tomato-based sauce
+    ('27336310', 'Thịt nai / hươu, mì sợi và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), sốt nền cà chua'), -- Venison or deer, noodles, and vegetables excluding carrots, broccoli, and dark-green leafy; tomato-based sauce
     ('27341000', 'Gà hoặc gà tây, khoai tây, ngô và phô mai, với nước sốt gravy'), -- Chicken or turkey, potatoes, corn, and cheese, with gravy
-    ('27341010', 'Gà hoặc gà tây, khoai tây và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), không sốt'), -- Chicken or turkey, potatoes, and vegetables including carrots, broccoli, and/or dark-green leafy; no sauce
+    ('27341010', 'Gà hoặc gà tây, khoai tây và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), không sốt'), -- Chicken or turkey, potatoes, and vegetables including carrots, broccoli, and/or dark-green leafy; no sauce
     ('27341020', 'Gà hoặc gà tây, khoai tây và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), không sốt'), -- Chicken or turkey, potatoes, and vegetables excluding carrots, broccoli, and dark-green leafy; no sauce
-    ('27341025', 'Gà hoặc gà tây, khoai tây và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), nước sốt gravy'), -- Chicken or turkey, potatoes, and vegetables including carrots, broccoli, and/or dark-green leafy; gravy
+    ('27341025', 'Gà hoặc gà tây, khoai tây và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), nước sốt gravy'), -- Chicken or turkey, potatoes, and vegetables including carrots, broccoli, and/or dark-green leafy; gravy
     ('27341030', 'Gà hoặc gà tây, khoai tây và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), nước sốt gravy'), -- Chicken or turkey, potatoes, and vegetables excluding carrots, broccoli, and dark-green leafy; gravy
-    ('27341035', 'Gà hoặc gà tây, khoai tây và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), sốt kem, sốt trắng hoặc sốt nấm'), -- Chicken or turkey, potatoes, and vegetables including carrots, broccoli, and/or dark-green leafy; cream sauce, white sauce, or mushroom sauce
+    ('27341035', 'Gà hoặc gà tây, khoai tây và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), sốt kem, sốt trắng hoặc sốt nấm'), -- Chicken or turkey, potatoes, and vegetables including carrots, broccoli, and/or dark-green leafy; cream sauce, white sauce, or mushroom sauce
     ('27341040', 'Gà hoặc gà tây, khoai tây và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), sốt kem, sốt trắng hoặc sốt nấm'), -- Chicken or turkey, potatoes, and vegetables excluding carrots, broccoli, and dark-green leafy; cream sauce, white sauce, or mushroom sauce
-    ('27341045', 'Gà hoặc gà tây, khoai tây và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), sốt phô mai'), -- Chicken or turkey, potatoes, and vegetables including carrots, broccoli, and/or dark-green leafy; cheese sauce
+    ('27341045', 'Gà hoặc gà tây, khoai tây và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), sốt phô mai'), -- Chicken or turkey, potatoes, and vegetables including carrots, broccoli, and/or dark-green leafy; cheese sauce
     ('27341050', 'Gà hoặc gà tây, khoai tây và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), sốt phô mai'), -- Chicken or turkey, potatoes, and vegetables excluding carrots, broccoli, and dark-green leafy; cheese sauce
-    ('27341055', 'Gà hoặc gà tây, khoai tây và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), sốt nền cà chua'), -- Chicken or turkey, potatoes, and vegetables including carrots, broccoli, and/or dark-green leafy; tomato-based sauce
+    ('27341055', 'Gà hoặc gà tây, khoai tây và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), sốt nền cà chua'), -- Chicken or turkey, potatoes, and vegetables including carrots, broccoli, and/or dark-green leafy; tomato-based sauce
     ('27341060', 'Gà hoặc gà tây, khoai tây và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), sốt nền cà chua'), -- Chicken or turkey, potatoes, and vegetables excluding carrots, broccoli, and dark-green leafy; tomato-based sauce
     ('27341330', 'Món hầm gà, có mì Ý (pasta)'), -- Stew, chicken, with pasta
     ('27341520', 'Món hầm gà'), -- Stew, chicken
-    ('27343010', 'Gà hoặc gà tây, mì sợi và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), không sốt'), -- Chicken or turkey, noodles, and vegetables including carrots, broccoli, and/or dark-green leafy; no sauce
+    ('27343010', 'Gà hoặc gà tây, mì sợi và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), không sốt'), -- Chicken or turkey, noodles, and vegetables including carrots, broccoli, and/or dark-green leafy; no sauce
     ('27343020', 'Gà hoặc gà tây, mì sợi và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), không sốt'), -- Chicken or turkey, noodles, and vegetables excluding carrots, broccoli, and dark-green leafy; no sauce
-    ('27343410', 'Gà hoặc gà tây, mì sợi và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), nước sốt gravy'), -- Chicken or turkey, noodles, and vegetables including carrots, broccoli, and/or dark-green leafy; gravy
+    ('27343410', 'Gà hoặc gà tây, mì sợi và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), nước sốt gravy'), -- Chicken or turkey, noodles, and vegetables including carrots, broccoli, and/or dark-green leafy; gravy
     ('27343420', 'Gà hoặc gà tây, mì sợi và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), nước sốt gravy'), -- Chicken or turkey, noodles, and vegetables excluding carrots, broccoli, and dark-green leafy; gravy
-    ('27343470', 'Gà hoặc gà tây, mì sợi và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), sốt kem, sốt trắng hoặc sốt nấm'), -- Chicken or turkey, noodles, and vegetables including carrots, broccoli, and/or dark-green leafy; cream sauce, white sauce, or mushroom sauce
-    ('27343480', 'Gà hoặc gà tây, mì sợi và rau (trừ cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), sốt kem, sốt trắng hoặc sốt nấm'), -- Chicken or turkey, noodles, and vegetables excluding carrots, broccoli, and/or dark-green leafy; cream sauce, white sauce, or mushroom sauce
-    ('27343510', 'Gà hoặc gà tây, mì sợi và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), sốt nền cà chua'), -- Chicken or turkey, noodles, and vegetables including carrots, broccoli, and/or dark-green leafy; tomato-based sauce
+    ('27343470', 'Gà hoặc gà tây, mì sợi và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), sốt kem, sốt trắng hoặc sốt nấm'), -- Chicken or turkey, noodles, and vegetables including carrots, broccoli, and/or dark-green leafy; cream sauce, white sauce, or mushroom sauce
+    ('27343480', 'Gà hoặc gà tây, mì sợi và rau (trừ cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), sốt kem, sốt trắng hoặc sốt nấm'), -- Chicken or turkey, noodles, and vegetables excluding carrots, broccoli, and/or dark-green leafy; cream sauce, white sauce, or mushroom sauce
+    ('27343510', 'Gà hoặc gà tây, mì sợi và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), sốt nền cà chua'), -- Chicken or turkey, noodles, and vegetables including carrots, broccoli, and/or dark-green leafy; tomato-based sauce
     ('27343520', 'Gà hoặc gà tây, mì sợi và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), sốt nền cà chua'), -- Chicken or turkey, noodles, and vegetables excluding carrots, broccoli, and dark-green leafy; tomato-based sauce
     ('27343910', 'Gà hoặc gà tây xào chow mein hoặc chop suey, có mì sợi'), -- Chicken or turkey chow mein or chop suey with noodles
-    ('27343950', 'Gà hoặc gà tây, mì sợi và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), sốt phô mai'), -- Chicken or turkey, noodles, and vegetables including carrots, broccoli, and/or dark-green leafy; cheese sauce
+    ('27343950', 'Gà hoặc gà tây, mì sợi và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), sốt phô mai'), -- Chicken or turkey, noodles, and vegetables including carrots, broccoli, and/or dark-green leafy; cheese sauce
     ('27343960', 'Gà hoặc gà tây, mì sợi và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), sốt phô mai'), -- Chicken or turkey, noodles, and vegetables excluding carrots, broccoli, and dark-green leafy; cheese sauce
-    ('27345010', 'Gà hoặc gà tây, cơm và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), không sốt'), -- Chicken or turkey, rice, and vegetables including carrots, broccoli, and/or dark-green leafy; no sauce
+    ('27345010', 'Gà hoặc gà tây, cơm và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), không sốt'), -- Chicken or turkey, rice, and vegetables including carrots, broccoli, and/or dark-green leafy; no sauce
     ('27345020', 'Gà hoặc gà tây, cơm và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), không sốt'), -- Chicken or turkey, rice, and vegetables excluding carrots, broccoli, and dark-green leafy; no sauce
-    ('27345210', 'Gà hoặc gà tây, cơm và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), nước sốt gravy'), -- Chicken or turkey, rice, and vegetables including carrots, broccoli, and/or dark-green leafy; gravy
+    ('27345210', 'Gà hoặc gà tây, cơm và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), nước sốt gravy'), -- Chicken or turkey, rice, and vegetables including carrots, broccoli, and/or dark-green leafy; gravy
     ('27345220', 'Gà hoặc gà tây, cơm và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), nước sốt gravy'), -- Chicken or turkey, rice, and vegetables excluding carrots, broccoli, and dark-green leafy; gravy
     ('27345230', 'Gà hoặc gà tây, cơm, ngô và phô mai, với nước sốt gravy'), -- Chicken or turkey, rice, corn, and cheese, with gravy
-    ('27345310', 'Gà hoặc gà tây, cơm và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), sốt nền nước tương'), -- Chicken or turkey, rice, and vegetables including carrots, broccoli, and/or dark-green leafy; soy-based sauce
+    ('27345310', 'Gà hoặc gà tây, cơm và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), sốt nền nước tương'), -- Chicken or turkey, rice, and vegetables including carrots, broccoli, and/or dark-green leafy; soy-based sauce
     ('27345320', 'Gà hoặc gà tây, cơm và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), sốt nền nước tương'), -- Chicken or turkey, rice, and vegetables excluding carrots, broccoli, and dark-green leafy; soy-based sauce
-    ('27345410', 'Gà hoặc gà tây, cơm và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), sốt kem, sốt trắng hoặc sốt nấm'), -- Chicken or turkey, rice, and vegetables including carrots, broccoli, and/or dark-green leafy; cream sauce, white sauce, or mushroom sauce
+    ('27345410', 'Gà hoặc gà tây, cơm và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), sốt kem, sốt trắng hoặc sốt nấm'), -- Chicken or turkey, rice, and vegetables including carrots, broccoli, and/or dark-green leafy; cream sauce, white sauce, or mushroom sauce
     ('27345420', 'Gà hoặc gà tây, cơm và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), sốt kem, sốt trắng hoặc sốt nấm'), -- Chicken or turkey, rice, and vegetables excluding carrots, broccoli, and dark-green leafy; cream sauce, white sauce, or mushroom sauce
-    ('27345440', 'Gà hoặc gà tây, cơm và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), sốt phô mai'), -- Chicken or turkey, rice, and vegetables including carrots, broccoli, and/or dark-green leafy; cheese sauce
+    ('27345440', 'Gà hoặc gà tây, cơm và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), sốt phô mai'), -- Chicken or turkey, rice, and vegetables including carrots, broccoli, and/or dark-green leafy; cheese sauce
     ('27345450', 'Gà hoặc gà tây, cơm và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), sốt phô mai'), -- Chicken or turkey, rice, and vegetables excluding carrots, broccoli, and dark-green leafy; cheese sauce
-    ('27345510', 'Gà hoặc gà tây, cơm và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), sốt nền cà chua'), -- Chicken or turkey, rice, and vegetables including carrots, broccoli, and/or dark-green leafy; tomato-based sauce
+    ('27345510', 'Gà hoặc gà tây, cơm và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), sốt nền cà chua'), -- Chicken or turkey, rice, and vegetables including carrots, broccoli, and/or dark-green leafy; tomato-based sauce
     ('27345520', 'Gà hoặc gà tây, cơm và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), sốt nền cà chua'), -- Chicken or turkey, rice, and vegetables excluding carrots, broccoli, and dark-green leafy; tomato-based sauce
     ('27347100', 'Bánh pot pie gà'), -- Pot pie, chicken
-    ('27347200', 'Gà hoặc gà tây, nhân nhồi (stuffing) và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), không sốt'), -- Chicken or turkey, stuffing, and vegetables including carrots, broccoli, and/or dark-green leafy; no sauce
+    ('27347200', 'Gà hoặc gà tây, nhân nhồi (stuffing) và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), không sốt'), -- Chicken or turkey, stuffing, and vegetables including carrots, broccoli, and/or dark-green leafy; no sauce
     ('27347210', 'Gà hoặc gà tây, nhân nhồi (stuffing) và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), không sốt'), -- Chicken or turkey,stuffing, and vegetables excluding carrots, broccoli, and dark green leafy; no sauce
-    ('27347220', 'Gà hoặc gà tây, nhân nhồi (stuffing) và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), nước sốt gravy'), -- Chicken or turkey, stuffing, and vegetables including carrots, broccoli, and/or dark-green leafy; gravy
+    ('27347220', 'Gà hoặc gà tây, nhân nhồi (stuffing) và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), nước sốt gravy'), -- Chicken or turkey, stuffing, and vegetables including carrots, broccoli, and/or dark-green leafy; gravy
     ('27347230', 'Gà hoặc gà tây, nhân nhồi (stuffing) và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), nước sốt gravy'), -- Chicken or turkey, stuffing, and vegetables excluding carrots, broccoli, and dark-green leafy; gravy
-    ('27347240', 'Gà hoặc gà tây, bánh bột (dumpling) và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), nước sốt gravy'), -- Chicken or turkey, dumplings, and vegetables including carrots, broccoli, and/or dark green leafy; gravy
+    ('27347240', 'Gà hoặc gà tây, bánh bột (dumpling) và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), nước sốt gravy'), -- Chicken or turkey, dumplings, and vegetables including carrots, broccoli, and/or dark green leafy; gravy
     ('27347250', 'Gà hoặc gà tây, bánh bột (dumpling) và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), nước sốt gravy'), -- Chicken or turkey, dumplings, and vegetables excluding carrots, broccoli, and dark green leafy; gravy
     ('27348100', 'Gà hầm fricassee, kiểu Puerto Rico'), -- Chicken fricassee, Puerto Rican style
     ('27350020', 'Cơm paella hải sản'), -- Paella with seafood
     ('27350050', 'Tôm xào chow mein hoặc chop suey, có mì sợi'), -- Shrimp chow mein or chop suey with noodles
     ('27350060', 'Tôm sốt creole, có cơm'), -- Shrimp creole, with rice
     ('27350080', 'Món đút lò (casserole) cá ngừ, mì sợi và rau, sốt kem hoặc sốt trắng'), -- Tuna noodle casserole with vegetables, cream or white sauce
-    ('27350090', 'Cá, mì sợi và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), sốt phô mai'), -- Fish, noodles, and vegetables including carrots, broccoli, and/or dark green leafy; cheese sauce
+    ('27350090', 'Cá, mì sợi và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), sốt phô mai'), -- Fish, noodles, and vegetables including carrots, broccoli, and/or dark green leafy; cheese sauce
     ('27350100', 'Cá, mì sợi và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), sốt phô mai'), -- Fish, noodles, and vegetables excluding carrots, broccoli, and dark-green leafy; cheese sauce
     ('27350110', 'Súp bouillabaisse (súp hải sản kiểu Pháp)'), -- Soup, bouillabaisse
     ('27350410', 'Món đút lò (casserole) cá ngừ, mì sợi và rau, sốt nấm'), -- Tuna noodle casserole with vegetables and mushroom sauce
@@ -1362,18 +1362,18 @@ FROM (VALUES
     ('27362000', 'Dạ dày bò (tripe) hầm với khoai tây, kiểu Puerto Rico'), -- Stewed tripe, with potatoes, Puerto Rican style
     ('27363000', 'Súp gumbo với cơm'), -- Gumbo with rice
     ('27363100', 'Món jambalaya có thịt và cơm'), -- Jambalaya with meat and rice
-    ('27410210', 'Bò và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), không khoai tây, không sốt'), -- Beef and vegetables including carrots, broccoli, and/or dark-green leafy; no potatoes, no sauce
+    ('27410210', 'Bò và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), không khoai tây, không sốt'), -- Beef and vegetables including carrots, broccoli, and/or dark-green leafy; no potatoes, no sauce
     ('27410220', 'Bò và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), không khoai tây, không sốt'), -- Beef and vegetables excluding carrots, broccoli, and dark-green leafy; no potatoes, no sauce
     ('27410250', 'Bò xiên nướng (shish kabob) với rau, trừ khoai tây'), -- Beef shish kabob with vegetables, excluding potatoes
-    ('27411100', 'Bò với rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), không khoai tây, sốt nền cà chua'), -- Beef with vegetables including carrots, broccoli, and/or dark-green leafy; no potatoes, tomato-based sauce
+    ('27411100', 'Bò với rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), không khoai tây, sốt nền cà chua'), -- Beef with vegetables including carrots, broccoli, and/or dark-green leafy; no potatoes, tomato-based sauce
     ('27411120', 'Bít tết kiểu Thụy Sĩ (Swiss steak)'), -- Swiss steak
     ('27411150', 'Bò cuộn nhồi rau hoặc thịt trộn, sốt nền cà chua'), -- Beef rolls, stuffed with vegetables or meat mixture, tomato-based sauce
     ('27411200', 'Bò với rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), không khoai tây, sốt nền cà chua'), -- Beef with vegetables excluding carrots, broccoli, and dark-green leafy; no potatoes, tomato-based sauce
-    ('27414100', 'Bò với rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), không khoai tây, sốt nấm'), -- Beef with vegetables including carrots, broccoli, and/or dark-green leafy; no potatoes, mushroom sauce
+    ('27414100', 'Bò với rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), không khoai tây, sốt nấm'), -- Beef with vegetables including carrots, broccoli, and/or dark-green leafy; no potatoes, mushroom sauce
     ('27414200', 'Bò với rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), không khoai tây, sốt nấm'), -- Beef with vegetables excluding carrots, broccoli, and dark-green leafy; no potatoes, mushroom sauce
-    ('27415100', 'Bò và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), không khoai tây, sốt nền nước tương'), -- Beef and vegetables including carrots, broccoli, and/or dark-green leafy; no potatoes, soy-based sauce
+    ('27415100', 'Bò và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), không khoai tây, sốt nền nước tương'), -- Beef and vegetables including carrots, broccoli, and/or dark-green leafy; no potatoes, soy-based sauce
     ('27415110', 'Bò xào súp lơ xanh'), -- Beef and broccoli
-    ('27415120', 'Bò, đậu phụ và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), không khoai tây, sốt nền nước tương'), -- Beef, tofu, and vegetables including carrots, broccoli, and/or dark-green leafy; no potatoes, soy-based sauce
+    ('27415120', 'Bò, đậu phụ và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), không khoai tây, sốt nền nước tương'), -- Beef, tofu, and vegetables including carrots, broccoli, and/or dark-green leafy; no potatoes, soy-based sauce
     ('27415130', 'Bò kiểu Tứ Xuyên (Szechuan)'), -- Szechuan beef
     ('27415140', 'Bò kiểu Hồ Nam (Hunan)'), -- Hunan beef
     ('27415150', 'Bò xào chow mein hoặc chop suey, không có mì sợi'), -- Beef chow mein or chop suey, no noodles
@@ -1386,47 +1386,47 @@ FROM (VALUES
     ('27416250', 'Salad thịt bò'), -- Beef salad
     ('27416300', 'Nhân bánh taco bò: thịt bò, phô mai, cà chua, sốt taco'), -- Beef taco filling: beef, cheese, tomato, taco sauce
     ('27416400', 'Bò xào rau với nước tương'), -- Stir fried beef and vegetables in soy sauce
-    ('27416450', 'Bò và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), không khoai tây, nước sốt gravy'), -- Beef and vegetables including carrots, broccoli, and/or dark-green leafy; no potatoes, gravy
+    ('27416450', 'Bò và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), không khoai tây, nước sốt gravy'), -- Beef and vegetables including carrots, broccoli, and/or dark-green leafy; no potatoes, gravy
     ('27416500', 'Bò và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), không khoai tây, nước sốt gravy'), -- Beef and vegetables excluding carrots, broccoli, and dark-green leafy; no potatoes, gravy
     ('27418410', 'Bít tết bò với hành tây, kiểu Puerto Rico'), -- Beef steak with onions, Puerto Rican style
     ('27420010', 'Cải bắp nấu khoanh giò lợn (ham hock)'), -- Cabbage with ham hocks
     ('27420020', 'Salad giăm bông hoặc thịt lợn'), -- Ham or pork salad
     ('27420040', 'Xúc xích frankfurter hoặc hot dog với dưa cải bắp muối chua (sauerkraut)'), -- Frankfurters or hot dogs and sauerkraut
-    ('27420060', 'Thịt lợn và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), không khoai tây, không sốt'), -- Pork and vegetables including carrots, broccoli, and/or dark-green leafy; no potatoes, no sauce
+    ('27420060', 'Thịt lợn và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), không khoai tây, không sốt'), -- Pork and vegetables including carrots, broccoli, and/or dark-green leafy; no potatoes, no sauce
     ('27420080', 'Rau lá xanh nấu giăm bông hoặc thịt lợn'), -- Greens with ham or pork
-    ('27420100', 'Thịt lợn, đậu phụ và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), không khoai tây, sốt nền nước tương'), -- Pork, tofu, and vegetables including carrots, broccoli, and/or dark-green leafy; no potatoes, soy-base sauce
+    ('27420100', 'Thịt lợn, đậu phụ và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), không khoai tây, sốt nền nước tương'), -- Pork, tofu, and vegetables including carrots, broccoli, and/or dark-green leafy; no potatoes, soy-base sauce
     ('27420110', 'Thịt lợn và rau, kiểu Hawaii'), -- Pork and vegetables, Hawaiian style
     ('27420120', 'Thịt lợn và cải xoong sốt nền nước tương'), -- Pork and watercress with soy-based sauce
     ('27420150', 'Thịt lợn xào Cung Bảo (Kung Pao)'), -- Kung Pao pork
     ('27420160', 'Thịt lợn Moo Shu (mộc tu), không kèm bánh tráng mỏng kiểu Trung Quốc'), -- Moo Shu pork, without Chinese pancake
     ('27420170', 'Thịt lợn và hành tây sốt nền nước tương'), -- Pork and onions with soy-based sauce
     ('27420200', 'Món hash thịt lợn'), -- Pork hash
-    ('27420250', 'Giăm bông và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), không khoai tây, không sốt'), -- Ham and vegetables including carrots broccoli, and/or dark- green leafy; no potatoes, no sauce
+    ('27420250', 'Giăm bông và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), không khoai tây, không sốt'), -- Ham and vegetables including carrots broccoli, and/or dark- green leafy; no potatoes, no sauce
     ('27420270', 'Giăm bông và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), không khoai tây, không sốt'), -- Ham and vegetables excluding carrots, broccoli, and dark-green leafy; no potatoes, no sauce
     ('27420350', 'Thịt lợn và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), không khoai tây, không sốt'), -- Pork and vegetables excluding carrots, broccoli, and dark-green leafy; no potatoes, no sauce
     ('27420370', 'Thịt lợn, đậu phụ và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), không khoai tây, sốt nền nước tương'), -- Pork, tofu, and vegetables, excluding carrots, broccoli, and dark-green leafy; no potatoes, soy-based sauce
     ('27420390', 'Thịt lợn xào chow mein hoặc chop suey, không có mì sợi'), -- Pork chow mein or chop suey, no noodles
-    ('27420400', 'Thịt lợn và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), không khoai tây, sốt nền cà chua'), -- Pork and vegetables including carrots, broccoli, and/or dark-green leafy; no potatoes, tomato-based sauce
+    ('27420400', 'Thịt lợn và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), không khoai tây, sốt nền cà chua'), -- Pork and vegetables including carrots, broccoli, and/or dark-green leafy; no potatoes, tomato-based sauce
     ('27420410', 'Thịt lợn và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), không khoai tây, sốt nền cà chua'), -- Pork and vegetables excluding  carrots, broccoli, and dark-green leafy; no potatoes, tomato-based sauce
-    ('27420450', 'Xúc xích và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), không khoai tây, sốt nền cà chua'), -- Sausage and vegetables including  carrots, broccoli, and/or dark-green leafy; no potatoes, tomato-based sauce
+    ('27420450', 'Xúc xích và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), không khoai tây, sốt nền cà chua'), -- Sausage and vegetables including  carrots, broccoli, and/or dark-green leafy; no potatoes, tomato-based sauce
     ('27420460', 'Xúc xích và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), không khoai tây, sốt nền cà chua'), -- Sausage and vegetables, excluding carrots, broccoli, and dark-green leafy; no potatoes, tomato-based sauce
     ('27420470', 'Xúc xích và ớt chuông, không sốt'), -- Sausage and peppers, no sauce
-    ('27420500', 'Thịt lợn và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), không khoai tây, sốt nền nước tương'), -- Pork and vegetables including carrots, broccoli, and/or dark-green leafy; no potatoes, soy-based sauce
+    ('27420500', 'Thịt lợn và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), không khoai tây, sốt nền nước tương'), -- Pork and vegetables including carrots, broccoli, and/or dark-green leafy; no potatoes, soy-based sauce
     ('27420510', 'Thịt lợn và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), không khoai tây, sốt nền nước tương'), -- Pork and vegetables excluding carrots, broccoli, and dark- green leafy; no potatoes, soy-based sauce
     ('27420520', 'Thịt lợn xiên nướng (shish kabob) với rau, trừ khoai tây'), -- Pork shish kabob with vegetables, excluding potatoes
     ('27430610', 'Thịt cừu xiên nướng (shish kabob) với rau, trừ khoai tây'), -- Lamb shish kabob with vegetables, excluding potatoes
-    ('27440110', 'Gà hoặc gà tây và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), không khoai tây, không sốt'), -- Chicken or turkey and vegetables including carrots, broccoli, and/or dark-green leafy; no potatoes, no sauce
+    ('27440110', 'Gà hoặc gà tây và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), không khoai tây, không sốt'), -- Chicken or turkey and vegetables including carrots, broccoli, and/or dark-green leafy; no potatoes, no sauce
     ('27440120', 'Gà hoặc gà tây và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), không khoai tây, không sốt'), -- Chicken or turkey and vegetables excluding carrots, broccoli, and dark-green leafy; no potatoes, no sauce
     ('27440130', 'Gà hoặc gà tây xiên nướng (shish kabob) với rau, trừ khoai tây'), -- Chicken or turkey shish kabob with vegetables, excluding potatoes
     ('27441120', 'Gà hoặc gà tây sốt creole, không có cơm'), -- Chicken or turkey creole, without rice
-    ('27442110', 'Gà hoặc gà tây và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), không khoai tây, nước sốt gravy'), -- Chicken or turkey and vegetables including carrots, broccoli, and/or dark-green leafy; no potatoes, gravy
+    ('27442110', 'Gà hoặc gà tây và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), không khoai tây, nước sốt gravy'), -- Chicken or turkey and vegetables including carrots, broccoli, and/or dark-green leafy; no potatoes, gravy
     ('27442120', 'Gà hoặc gà tây và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), không khoai tây, nước sốt gravy'), -- Chicken or turkey and vegetables excluding carrots, broccoli, and dark-green leafy; no potatoes, gravy
-    ('27443110', 'Gà hoặc gà tây à la king với rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), không khoai tây, sốt kem, sốt trắng hoặc sốt nền súp'), -- Chicken or turkey a la king with vegetables including carrots, broccoli, and/or dark-green leafy; no potatoes, cream, white, or soup-based sauce
+    ('27443110', 'Gà hoặc gà tây à la king với rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), không khoai tây, sốt kem, sốt trắng hoặc sốt nền súp'), -- Chicken or turkey a la king with vegetables including carrots, broccoli, and/or dark-green leafy; no potatoes, cream, white, or soup-based sauce
     ('27443120', 'Gà hoặc gà tây à la king với rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), không khoai tây, sốt kem, sốt trắng hoặc sốt nền súp'), -- Chicken or turkey a la king with vegetables excluding carrorts, broccoli, and dark-green leafy; no potatoes, cream, white, or soup-based sauce
     ('27443150', 'Gà hoặc gà tây divan (đút lò với súp lơ xanh)'), -- Chicken or turkey divan
-    ('27445110', 'Gà hoặc gà tây và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), không khoai tây, sốt nền nước tương'), -- Chicken or turkey and vegetables including carrots, broccoli, and/or dark-green leafy; no potatoes, soy-based sauce
+    ('27445110', 'Gà hoặc gà tây và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), không khoai tây, sốt nền nước tương'), -- Chicken or turkey and vegetables including carrots, broccoli, and/or dark-green leafy; no potatoes, soy-based sauce
     ('27445120', 'Gà hoặc gà tây và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), không khoai tây, sốt nền nước tương'), -- Chicken or turkey and vegetables excluding carrots, broccoli, and dark-green leafy; no potatoes, soy-based sauce
-    ('27445125', 'Gà hoặc gà tây và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), không khoai tây, sốt nền cà chua'), -- Chicken or turkey and vegetables including carrots, broccoli, and/or dark-green leafy; no potatoes, tomato-based sauce
+    ('27445125', 'Gà hoặc gà tây và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), không khoai tây, sốt nền cà chua'), -- Chicken or turkey and vegetables including carrots, broccoli, and/or dark-green leafy; no potatoes, tomato-based sauce
     ('27445130', 'Gà hoặc gà tây và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), không khoai tây, sốt nền cà chua'), -- Chicken or turkey and vegetables excluding carrots, broccoli, and dark-green leafy; no potatoes, tomato-based sauce
     ('27445150', 'Gà Tả Tông Đường (General Tso)'), -- General Tso chicken
     ('27445180', 'Gà xào nấm Moo Goo Gai Pan'), -- Moo Goo Gai Pan
@@ -1434,7 +1434,7 @@ FROM (VALUES
     ('27445250', 'Gà hạnh nhân'), -- Almond chicken
     ('27446100', 'Gà hoặc gà tây xào chow mein hoặc chop suey, không có mì sợi'), -- Chicken or turkey chow mein or chop suey, no noodles
     ('27446200', 'Salad gà hoặc gà tây, làm với sốt mayonnaise'), -- Chicken or turkey salad, made with mayonnaise
-    ('27446205', 'Salad gà hoặc gà tây với hạt và/hoặc hoa quả'), -- Chicken or turkey salad with nuts and/or fruits
+    ('27446205', 'Salad gà hoặc gà tây với hạt và / hoặc hoa quả'), -- Chicken or turkey salad with nuts and/or fruits
     ('27446220', 'Salad gà hoặc gà tây với trứng'), -- Chicken or turkey salad with egg
     ('27446225', 'Salad gà hoặc gà tây, làm với sốt mayonnaise loại nhẹ'), -- Chicken or turkey salad, made with light mayonnaise
     ('27446230', 'Salad gà hoặc gà tây, làm với sốt trộn salad kiểu mayonnaise'), -- Chicken or turkey salad, made with mayonnaise-type salad dressing
@@ -1444,17 +1444,17 @@ FROM (VALUES
     ('27446250', 'Salad gà hoặc gà tây, làm với sốt trộn kiểu Ý'), -- Chicken or turkey salad, made with Italian dressing
     ('27446255', 'Salad gà hoặc gà tây, làm với sốt trộn kiểu Ý loại nhẹ'), -- Chicken or turkey salad, made with light Italian dressing
     ('27446260', 'Salad gà hoặc gà tây, làm với bất kỳ loại sốt trộn không béo nào'), -- Chicken or turkey salad, made with any type of fat free dressing
-    ('27446300', 'Salad rau tươi với gà hoặc gà tây, gồm gà và/hoặc gà tây, cà chua và/hoặc cà rốt, rau khác, không sốt trộn'), -- Chicken or turkey garden salad, chicken and/or turkey, tomato and/or carrots, other vegetables, no dressing
-    ('27446310', 'Salad rau tươi với gà hoặc gà tây, gồm gà và/hoặc gà tây, rau khác trừ cà chua và cà rốt, không sốt trộn'), -- Chicken or turkey garden salad, chicken and/or turkey, other vegetables excluding tomato and carrots, no dressing
-    ('27446315', 'Salad rau tươi với gà hoặc gà tây, thịt xông khói và phô mai, gồm gà và/hoặc gà tây, thịt xông khói, phô mai, xà lách và/hoặc rau lá, cà chua và/hoặc cà rốt, rau khác, không sốt trộn'), -- Chicken or turkey garden salad with bacon and cheese, chicken and/or turkey, bacon, cheese, lettuce and/or greens, tomato and/or carrots, other vegetables, no dressing
-    ('27446320', 'Salad rau tươi với gà hoặc gà tây tẩm bột chiên xù, thịt xông khói và phô mai, gồm gà và/hoặc gà tây, thịt xông khói, phô mai, xà lách và/hoặc rau lá, cà chua và/hoặc cà rốt, rau khác, không sốt trộn'), -- Chicken or turkey, breaded, fried, garden salad with bacon and cheese, chicken and/or turkey, bacon, cheese, lettuce and/or greens, tomato and/or carrots, other vegetables, no dressing
-    ('27446330', 'Salad rau tươi với gà hoặc gà tây và phô mai, gồm gà và/hoặc gà tây, phô mai, xà lách và/hoặc rau lá, cà chua và/hoặc cà rốt, rau khác, không sốt trộn'), -- Chicken or turkey garden salad with cheese, chicken and/or turkey, cheese, lettuce and/or greens, tomato and/or carrots, other vegetables, no dressing
-    ('27446332', 'Salad rau tươi với gà hoặc gà tây tẩm bột chiên xù và phô mai, gồm gà và/hoặc gà tây, phô mai, xà lách và/hoặc rau lá, cà chua và/hoặc cà rốt, rau khác, không sốt trộn'), -- Chicken or turkey, breaded, fried, garden salad with cheese, chicken and/or turkey, cheese, lettuce and/or greens, tomato and/or carrots, other vegetables, no dressing
-    ('27446350', 'Salad rau tươi kiểu châu Á với gà hoặc gà tây, gồm gà và/hoặc gà tây, xà lách, hoa quả, hạt, không sốt trộn'), -- Asian chicken or turkey garden salad, chicken and/or turkey, lettuce, fruit, nuts, no dressing
-    ('27446355', 'Salad rau tươi kiểu châu Á với gà hoặc gà tây và mì giòn, gồm gà và/hoặc gà tây, xà lách, hoa quả, hạt, mì giòn, không sốt trộn'), -- Asian chicken or turkey garden salad with crispy noodles, chicken and/or turkey, lettuce, fruit, nuts, crispy noodles, no dressing
-    ('27446360', 'Salad Caesar với gà hoặc gà tây, gồm gà và/hoặc gà tây, xà lách, cà chua, phô mai, không sốt trộn'), -- Chicken or turkey caesar garden salad, chicken and/or turkey, lettuce, tomato, cheese, no dressing
-    ('27446362', 'Salad Caesar với gà hoặc gà tây tẩm bột chiên xù, gồm gà và/hoặc gà tây, xà lách, cà chua, phô mai, không sốt trộn'), -- Chicken or turkey, breaded, fried, caesar garden salad, chicken and/or turkey, lettuce, tomatoes, cheese, no dressing
-    ('27446400', 'Gà hoặc gà tây và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), không khoai tây, sốt phô mai'), -- Chicken or turkey and vegetables including carrots, broccoli, and/or dark-green leafy; no potatoes, cheese sauce
+    ('27446300', 'Salad rau tươi với gà hoặc gà tây, gồm gà và / hoặc gà tây, cà chua và / hoặc cà rốt, rau khác, không sốt trộn'), -- Chicken or turkey garden salad, chicken and/or turkey, tomato and/or carrots, other vegetables, no dressing
+    ('27446310', 'Salad rau tươi với gà hoặc gà tây, gồm gà và / hoặc gà tây, rau khác trừ cà chua và cà rốt, không sốt trộn'), -- Chicken or turkey garden salad, chicken and/or turkey, other vegetables excluding tomato and carrots, no dressing
+    ('27446315', 'Salad rau tươi với gà hoặc gà tây, thịt xông khói và phô mai, gồm gà và / hoặc gà tây, thịt xông khói, phô mai, xà lách và / hoặc rau lá, cà chua và / hoặc cà rốt, rau khác, không sốt trộn'), -- Chicken or turkey garden salad with bacon and cheese, chicken and/or turkey, bacon, cheese, lettuce and/or greens, tomato and/or carrots, other vegetables, no dressing
+    ('27446320', 'Salad rau tươi với gà hoặc gà tây tẩm bột chiên xù, thịt xông khói và phô mai, gồm gà và / hoặc gà tây, thịt xông khói, phô mai, xà lách và / hoặc rau lá, cà chua và / hoặc cà rốt, rau khác, không sốt trộn'), -- Chicken or turkey, breaded, fried, garden salad with bacon and cheese, chicken and/or turkey, bacon, cheese, lettuce and/or greens, tomato and/or carrots, other vegetables, no dressing
+    ('27446330', 'Salad rau tươi với gà hoặc gà tây và phô mai, gồm gà và / hoặc gà tây, phô mai, xà lách và / hoặc rau lá, cà chua và / hoặc cà rốt, rau khác, không sốt trộn'), -- Chicken or turkey garden salad with cheese, chicken and/or turkey, cheese, lettuce and/or greens, tomato and/or carrots, other vegetables, no dressing
+    ('27446332', 'Salad rau tươi với gà hoặc gà tây tẩm bột chiên xù và phô mai, gồm gà và / hoặc gà tây, phô mai, xà lách và / hoặc rau lá, cà chua và / hoặc cà rốt, rau khác, không sốt trộn'), -- Chicken or turkey, breaded, fried, garden salad with cheese, chicken and/or turkey, cheese, lettuce and/or greens, tomato and/or carrots, other vegetables, no dressing
+    ('27446350', 'Salad rau tươi kiểu châu Á với gà hoặc gà tây, gồm gà và / hoặc gà tây, xà lách, hoa quả, hạt, không sốt trộn'), -- Asian chicken or turkey garden salad, chicken and/or turkey, lettuce, fruit, nuts, no dressing
+    ('27446355', 'Salad rau tươi kiểu châu Á với gà hoặc gà tây và mì giòn, gồm gà và / hoặc gà tây, xà lách, hoa quả, hạt, mì giòn, không sốt trộn'), -- Asian chicken or turkey garden salad with crispy noodles, chicken and/or turkey, lettuce, fruit, nuts, crispy noodles, no dressing
+    ('27446360', 'Salad Caesar với gà hoặc gà tây, gồm gà và / hoặc gà tây, xà lách, cà chua, phô mai, không sốt trộn'), -- Chicken or turkey caesar garden salad, chicken and/or turkey, lettuce, tomato, cheese, no dressing
+    ('27446362', 'Salad Caesar với gà hoặc gà tây tẩm bột chiên xù, gồm gà và / hoặc gà tây, xà lách, cà chua, phô mai, không sốt trộn'), -- Chicken or turkey, breaded, fried, caesar garden salad, chicken and/or turkey, lettuce, tomatoes, cheese, no dressing
+    ('27446400', 'Gà hoặc gà tây và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), không khoai tây, sốt phô mai'), -- Chicken or turkey and vegetables including carrots, broccoli, and/or dark-green leafy; no potatoes, cheese sauce
     ('27446410', 'Gà hoặc gà tây và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), không khoai tây, sốt phô mai'), -- Chicken or turkey and vegetables excluding carrots, broccoli, and dark-green leafy; no potatoes, cheese sauce
     ('27448020', 'Gà hoặc gà tây hầm fricassee, có sốt, không khoai tây (khoai tây tính riêng), kiểu Puerto Rico'), -- Chicken or turkey fricassee, with sauce, no potatoes, potatoes reported separately, Puerto Rican style
     ('27448030', 'Gà hoặc gà tây hầm fricassee, không sốt, không khoai tây, kiểu Puerto Rico'), -- Chicken or turkey fricassee, no sauce, no potatoes, Puerto Rican style
@@ -1475,31 +1475,31 @@ FROM (VALUES
     ('27450080', 'Salad hải sản'), -- Seafood salad
     ('27450090', 'Salad cá ngừ với phô mai'), -- Tuna salad with cheese
     ('27450100', 'Salad cá ngừ với trứng'), -- Tuna salad with egg
-    ('27450110', 'Salad rau tươi với tôm, gồm tôm, xà lách, trứng, cà chua và/hoặc cà rốt, rau khác, không sốt trộn'), -- Shrimp garden salad, shrimp, lettuce, eggs, tomato and/or carrots, other vegetables, no dressing
+    ('27450110', 'Salad rau tươi với tôm, gồm tôm, xà lách, trứng, cà chua và / hoặc cà rốt, rau khác, không sốt trộn'), -- Shrimp garden salad, shrimp, lettuce, eggs, tomato and/or carrots, other vegetables, no dressing
     ('27450120', 'Salad rau tươi với tôm, gồm tôm, xà lách, trứng, rau trừ cà chua và cà rốt, không sốt trộn'), -- Shrimp garden salad, shrimp, lettuce, eggs, vegetables excluding tomato and carrots, no dressing
     ('27450130', 'Salad cua làm từ thanh cua (cua giả)'), -- Crab salad made with imitation crab
     ('27450150', 'Cá, đậu phụ và rau chiên tempura'), -- Fish, tofu, and vegetables, tempura
     ('27450180', 'Salad rau tươi với hải sản, gồm hải sản, xà lách, rau trừ cà chua và cà rốt, không sốt trộn'), -- Seafood garden salad with seafood, lettuce, vegetables excluding tomato and carrots, no dressing
-    ('27450190', 'Salad rau tươi với hải sản, gồm hải sản, xà lách, cà chua và/hoặc cà rốt, rau khác, không sốt trộn'), -- Seafood garden salad with seafood, lettuce, tomato and/or carrots, other vegetables, no dressing
+    ('27450190', 'Salad rau tươi với hải sản, gồm hải sản, xà lách, cà chua và / hoặc cà rốt, rau khác, không sốt trộn'), -- Seafood garden salad with seafood, lettuce, tomato and/or carrots, other vegetables, no dressing
     ('27450200', 'Salad rau tươi với hải sản, gồm hải sản, xà lách, trứng, rau trừ cà chua và cà rốt, không sốt trộn'), -- Seafood garden salad with seafood, lettuce, eggs, vegetables excluding tomato and carrots, no dressing
-    ('27450210', 'Salad rau tươi với hải sản, gồm hải sản, xà lách, trứng, cà chua và/hoặc cà rốt, rau khác, không sốt trộn'), -- Seafood garden salad with seafood, lettuce, eggs, tomato and/or carrots, other vegetables, no dressing
+    ('27450210', 'Salad rau tươi với hải sản, gồm hải sản, xà lách, trứng, cà chua và / hoặc cà rốt, rau khác, không sốt trộn'), -- Seafood garden salad with seafood, lettuce, eggs, tomato and/or carrots, other vegetables, no dressing
     ('27450250', 'Hàu Rockefeller (nướng phủ rau và bơ)'), -- Oysters Rockefeller
     ('27450310', 'Cá hồi lomi (món Hawaii)'), -- Lomi salmon
-    ('27450400', 'Tôm và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), không khoai tây, không sốt'), -- Shrimp and vegetables including carrots, broccoli, and/or dark-green leafy; no potatoes, no sauce
+    ('27450400', 'Tôm và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), không khoai tây, không sốt'), -- Shrimp and vegetables including carrots, broccoli, and/or dark-green leafy; no potatoes, no sauce
     ('27450405', 'Tôm và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), không khoai tây, không sốt'), -- Shrimp and vegetables excluding carrots, broccoli, and dark-green leafy; no potatoes, no sauce
-    ('27450410', 'Tôm và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), không khoai tây, sốt nền nước tương'), -- Shrimp and vegetables including carrots, broccoli, and/or dark-green leafy; no potatoes, soy-based sauce
+    ('27450410', 'Tôm và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), không khoai tây, sốt nền nước tương'), -- Shrimp and vegetables including carrots, broccoli, and/or dark-green leafy; no potatoes, soy-based sauce
     ('27450420', 'Tôm và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), không khoai tây, sốt nền nước tương'), -- Shrimp and vegetables excluding carrots, broccoli, and dark-green leafy; no potatoes, soy-based sauce
     ('27450430', 'Tôm xiên nướng (shish kabob) với rau, trừ khoai tây'), -- Shrimp shish kabob with vegetables, excluding potatoes
     ('27450450', 'Tôm sốt creole, không có cơm'), -- Shrimp creole, no rice
     ('27450470', 'Tôm xào Cung Bảo (Kung Pao)'), -- Kung Pao shrimp
     ('27450510', 'Món đút lò (casserole) cá ngừ và rau, sốt nấm, không có mì sợi'), -- Tuna casserole with vegetables and mushroom sauce, no noodles
-    ('27450600', 'Hải sản có vỏ hỗn hợp và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), không khoai tây, sốt nền nước tương'), -- Shellfish mixture and vegetables including carrots, broccoli, and/or dark-green leafy; no potatoes, soy-based sauce
+    ('27450600', 'Hải sản có vỏ hỗn hợp và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), không khoai tây, sốt nền nước tương'), -- Shellfish mixture and vegetables including carrots, broccoli, and/or dark-green leafy; no potatoes, soy-based sauce
     ('27450610', 'Hải sản có vỏ hỗn hợp và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), không khoai tây, sốt nền nước tương'), -- Shellfish mixture and vegetables excluding carrots, broccoli, and dark-green leafy; no potatoes, soy-based sauce
-    ('27450650', 'Hải sản có vỏ hỗn hợp và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), không khoai tây, sốt nấm'), -- Shellfish mixture and vegetables including carrots, broccoli, and/or dark-green leafy; no potatoes, mushroom sauce
+    ('27450650', 'Hải sản có vỏ hỗn hợp và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), không khoai tây, sốt nấm'), -- Shellfish mixture and vegetables including carrots, broccoli, and/or dark-green leafy; no potatoes, mushroom sauce
     ('27450660', 'Hải sản có vỏ hỗn hợp và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), không khoai tây, sốt nấm'), -- Shellfish mixture and vegetables excluding carrots, broccoli, and dark-green leafy; no potatoes, mushroom sauce
-    ('27450700', 'Cá và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), không khoai tây, sốt nền cà chua'), -- Fish and vegetables including carrots, broccoli, and/or dark-green leafy; no potatoes, tomato-based sauce
+    ('27450700', 'Cá và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), không khoai tây, sốt nền cà chua'), -- Fish and vegetables including carrots, broccoli, and/or dark-green leafy; no potatoes, tomato-based sauce
     ('27450710', 'Cá và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), không khoai tây, sốt nền cà chua'), -- Fish and vegetables excluding carrots, broccoli, and dark- green leafy; no potatoes, tomato-based sauce
-    ('27450740', 'Cá và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), không khoai tây, sốt nền nước tương'), -- Fish and vegetables including carrots, broccoli, and/or dark-green leafy; no potatoes, soy-based sauce
+    ('27450740', 'Cá và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), không khoai tây, sốt nền nước tương'), -- Fish and vegetables including carrots, broccoli, and/or dark-green leafy; no potatoes, soy-based sauce
     ('27450750', 'Cá và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), không khoai tây, sốt nền nước tương'), -- Fish and vegetables excluding  carrots, broccoli, and dark-green leafy; no potatoes, soy-based sauce
     ('27450760', 'Cá xiên nướng (shish kabob) với rau, trừ khoai tây'), -- Fish shish kabob with vegetables, excluding potatoes
     ('27451010', 'Cá chiên có sốt, kiểu Puerto Rico'), -- Fried fish with sauce, Puerto Rican style
@@ -1797,7 +1797,7 @@ FROM (VALUES
     ('31105060', 'Trứng nguyên quả chiên với mỡ động vật hoặc mỡ chảy từ thịt'), -- Egg, whole, fried with animal fat or meat drippings
     ('31105080', 'Trứng nguyên quả chiên với dầu xịt chống dính'), -- Egg, whole, fried with cooking spray
     ('31105085', 'Trứng nguyên quả chiên, không rõ loại chất béo'), -- Egg, whole, fried, NS as to fat type
-    ('31105090', 'Trứng nguyên quả chiên, đồ ăn nhanh/nhà hàng'), -- Egg, whole, fried, from fast food / restaurant
+    ('31105090', 'Trứng nguyên quả chiên, đồ ăn nhanh / nhà hàng'), -- Egg, whole, fried, from fast food / restaurant
     ('31106000', 'Trứng nguyên quả nướng lò, không rõ có thêm chất béo'), -- Egg, whole, baked, NS as to fat
     ('31106010', 'Trứng nguyên quả nướng lò, không thêm chất béo'), -- Egg, whole, baked, no added fat
     ('31106020', 'Trứng nguyên quả nướng lò, có thêm chất béo'), -- Egg, whole, baked, fat added
@@ -1840,7 +1840,7 @@ FROM (VALUES
     ('32130060', 'Trứng tráng (omelet) hoặc trứng bác, nấu với dầu xịt chống dính'), -- Egg omelet or scrambled egg, made with cooking spray
     ('32130065', 'Trứng tráng (omelet) hoặc trứng bác, không rõ loại chất béo'), -- Egg omelet or scrambled egg, NS as to fat type
     ('32130070', 'Trứng tráng (omelet) hoặc trứng bác, không thêm chất béo'), -- Egg omelet or scrambled egg, no added fat
-    ('32130080', 'Trứng tráng (omelet) hoặc trứng bác, đồ ăn nhanh/nhà hàng'), -- Egg omelet or scrambled egg, from fast food / restaurant
+    ('32130080', 'Trứng tráng (omelet) hoặc trứng bác, đồ ăn nhanh / nhà hàng'), -- Egg omelet or scrambled egg, from fast food / restaurant
     ('32130100', 'Trứng tráng (omelet) hoặc trứng bác, có phô mai, nấu với bơ thực vật'), -- Egg omelet or scrambled egg, with cheese, made with margarine
     ('32130110', 'Trứng tráng (omelet) hoặc trứng bác, có phô mai, nấu với dầu'), -- Egg omelet or scrambled egg, with cheese, made with oil
     ('32130120', 'Trứng tráng (omelet) hoặc trứng bác, có phô mai, nấu với bơ'), -- Egg omelet or scrambled egg, with cheese, made with butter
@@ -1872,9 +1872,9 @@ FROM (VALUES
     ('32130460', 'Trứng tráng (omelet) hoặc trứng bác, có cà chua và rau xanh đậm, có thêm chất béo'), -- Egg omelet or scrambled egg, with tomatoes and dark-green vegetables, fat added
     ('32130470', 'Trứng tráng (omelet) hoặc trứng bác, có cà chua và rau xanh đậm, không thêm chất béo'), -- Egg omelet or scrambled egg, with tomatoes and dark-green vegetables, no fat added
     ('32130480', 'Trứng tráng (omelet) hoặc trứng bác, có cà chua và rau xanh đậm, không rõ có thêm chất béo'), -- Egg omelet or scrambled egg, with tomatoes and dark-green vegetables, NS as to fat
-    ('32130490', 'Trứng tráng (omelet) hoặc trứng bác, có rau khác (trừ rau xanh đậm và/hoặc cà chua), có thêm chất béo'), -- Egg omelet or scrambled egg, with vegetables other than dark green and/or tomatoes, fat added
-    ('32130500', 'Trứng tráng (omelet) hoặc trứng bác, có rau khác (trừ rau xanh đậm và/hoặc cà chua), không thêm chất béo'), -- Egg omelet or scrambled egg, with vegetables other than dark green and/or tomatoes, no added fat
-    ('32130510', 'Trứng tráng (omelet) hoặc trứng bác, có rau khác (trừ rau xanh đậm và/hoặc cà chua), không rõ có thêm chất béo'), -- Egg omelet or scrambled egg, with vegetables other than dark green and/or tomatoes, NS as to fat
+    ('32130490', 'Trứng tráng (omelet) hoặc trứng bác, có rau khác (trừ rau xanh đậm và / hoặc cà chua), có thêm chất béo'), -- Egg omelet or scrambled egg, with vegetables other than dark green and/or tomatoes, fat added
+    ('32130500', 'Trứng tráng (omelet) hoặc trứng bác, có rau khác (trừ rau xanh đậm và / hoặc cà chua), không thêm chất béo'), -- Egg omelet or scrambled egg, with vegetables other than dark green and/or tomatoes, no added fat
+    ('32130510', 'Trứng tráng (omelet) hoặc trứng bác, có rau khác (trừ rau xanh đậm và / hoặc cà chua), không rõ có thêm chất béo'), -- Egg omelet or scrambled egg, with vegetables other than dark green and/or tomatoes, NS as to fat
     ('32130600', 'Trứng tráng (omelet) hoặc trứng bác, có phô mai và cà chua, có thêm chất béo'), -- Egg omelet or scrambled egg, with cheese and tomatoes, fat added
     ('32130610', 'Trứng tráng (omelet) hoặc trứng bác, có phô mai và cà chua, không thêm chất béo'), -- Egg omelet or scrambled egg, with cheese and tomatoes, no added fat
     ('32130620', 'Trứng tráng (omelet) hoặc trứng bác, có phô mai và cà chua, không rõ có thêm chất béo'), -- Egg omelet or scrambled egg, with cheese and tomatoes, NS as to fat
@@ -1884,9 +1884,9 @@ FROM (VALUES
     ('32130660', 'Trứng tráng (omelet) hoặc trứng bác, có phô mai, cà chua và rau xanh đậm, có thêm chất béo'), -- Egg omelet or scrambled egg, with cheese, tomatoes, and dark-green vegetables, fat added
     ('32130670', 'Trứng tráng (omelet) hoặc trứng bác, có phô mai, cà chua và rau xanh đậm, không thêm chất béo'), -- Egg omelet or scrambled egg, with cheese, tomatoes, and dark-green vegetables, no added fat
     ('32130680', 'Trứng tráng (omelet) hoặc trứng bác, có phô mai, cà chua và rau xanh đậm, không rõ có thêm chất béo'), -- Egg omelet or scrambled egg, with cheese, tomatoes, and dark-green vegetables, NS as to fat
-    ('32130690', 'Trứng tráng (omelet) hoặc trứng bác, có phô mai và rau khác (trừ rau xanh đậm và/hoặc cà chua), có thêm chất béo'), -- Egg omelet or scrambled egg, with cheese and vegetables other than dark green and/or tomatoes, fat added
-    ('32130700', 'Trứng tráng (omelet) hoặc trứng bác, có phô mai và rau khác (trừ rau xanh đậm và/hoặc cà chua), không thêm chất béo'), -- Egg omelet or scrambled egg, with cheese and vegetables other than dark green and/or tomatoes, no added fat
-    ('32130710', 'Trứng tráng (omelet) hoặc trứng bác, có phô mai và rau khác (trừ rau xanh đậm và/hoặc cà chua), không rõ có thêm chất béo'), -- Egg omelet or scrambled egg, with cheese and vegetables other than dark green and/or tomatoes, NS as to fat
+    ('32130690', 'Trứng tráng (omelet) hoặc trứng bác, có phô mai và rau khác (trừ rau xanh đậm và / hoặc cà chua), có thêm chất béo'), -- Egg omelet or scrambled egg, with cheese and vegetables other than dark green and/or tomatoes, fat added
+    ('32130700', 'Trứng tráng (omelet) hoặc trứng bác, có phô mai và rau khác (trừ rau xanh đậm và / hoặc cà chua), không thêm chất béo'), -- Egg omelet or scrambled egg, with cheese and vegetables other than dark green and/or tomatoes, no added fat
+    ('32130710', 'Trứng tráng (omelet) hoặc trứng bác, có phô mai và rau khác (trừ rau xanh đậm và / hoặc cà chua), không rõ có thêm chất béo'), -- Egg omelet or scrambled egg, with cheese and vegetables other than dark green and/or tomatoes, NS as to fat
     ('32130800', 'Trứng tráng (omelet) hoặc trứng bác, có thịt và cà chua, có thêm chất béo'), -- Egg omelet or scrambled egg, with meat and tomatoes, fat added
     ('32130810', 'Trứng tráng (omelet) hoặc trứng bác, có thịt và cà chua, không thêm chất béo'), -- Egg omelet or scrambled egg, with meat and tomatoes, no added fat
     ('32130820', 'Trứng tráng (omelet) hoặc trứng bác, có thịt và cà chua, không rõ có thêm chất béo'), -- Egg omelet or scrambled egg, with meat and tomatoes, NS as to fat
@@ -1896,9 +1896,9 @@ FROM (VALUES
     ('32130860', 'Trứng tráng (omelet) hoặc trứng bác, có thịt, cà chua và rau xanh đậm, có thêm chất béo'), -- Egg omelet or scrambled egg, with meat, tomatoes, and dark-green vegetables, fat added
     ('32130870', 'Trứng tráng (omelet) hoặc trứng bác, có thịt, cà chua và rau xanh đậm, không thêm chất béo'), -- Egg omelet or scrambled egg, with meat, tomatoes, and dark-green vegetables, no added fat
     ('32130880', 'Trứng tráng (omelet) hoặc trứng bác, có thịt, cà chua và rau xanh đậm, không rõ có thêm chất béo'), -- Egg omelet or scrambled egg, with meat, tomatoes, and dark-green vegetables, NS as to fat
-    ('32130890', 'Trứng tráng (omelet) hoặc trứng bác, có thịt và rau khác (trừ rau xanh đậm và/hoặc cà chua), có thêm chất béo'), -- Egg omelet or scrambled egg, with meat and vegetables other than dark-green and/or tomatoes, fat added
-    ('32130900', 'Trứng tráng (omelet) hoặc trứng bác, có thịt và rau khác (trừ rau xanh đậm và/hoặc cà chua), không thêm chất béo'), -- Egg omelet or scrambled egg, with meat and vegetables other than dark-green and/or tomatoes, no added fat
-    ('32130910', 'Trứng tráng (omelet) hoặc trứng bác, có thịt và rau khác (trừ rau xanh đậm và/hoặc cà chua), không rõ có thêm chất béo'), -- Egg omelet or scrambled egg, with meat and vegetables other than dark-green and/or tomatoes, NS as to fat
+    ('32130890', 'Trứng tráng (omelet) hoặc trứng bác, có thịt và rau khác (trừ rau xanh đậm và / hoặc cà chua), có thêm chất béo'), -- Egg omelet or scrambled egg, with meat and vegetables other than dark-green and/or tomatoes, fat added
+    ('32130900', 'Trứng tráng (omelet) hoặc trứng bác, có thịt và rau khác (trừ rau xanh đậm và / hoặc cà chua), không thêm chất béo'), -- Egg omelet or scrambled egg, with meat and vegetables other than dark-green and/or tomatoes, no added fat
+    ('32130910', 'Trứng tráng (omelet) hoặc trứng bác, có thịt và rau khác (trừ rau xanh đậm và / hoặc cà chua), không rõ có thêm chất béo'), -- Egg omelet or scrambled egg, with meat and vegetables other than dark-green and/or tomatoes, NS as to fat
     ('32131000', 'Trứng tráng (omelet) hoặc trứng bác, có phô mai, thịt và cà chua, có thêm chất béo'), -- Egg omelet or scrambled egg, with cheese, meat, and tomatoes, fat added
     ('32131010', 'Trứng tráng (omelet) hoặc trứng bác, có phô mai, thịt và cà chua, không thêm chất béo'), -- Egg omelet or scrambled egg, with cheese, meat, and tomatoes, no added fat
     ('32131020', 'Trứng tráng (omelet) hoặc trứng bác, có phô mai, thịt và cà chua, không rõ có thêm chất béo'), -- Egg omelet or scrambled egg, with cheese, meat, and tomatoes, NS as to fat
@@ -1908,12 +1908,12 @@ FROM (VALUES
     ('32131060', 'Trứng tráng (omelet) hoặc trứng bác, có phô mai, thịt, cà chua và rau xanh đậm, có thêm chất béo'), -- Egg omelet or scrambled egg, with cheese, meat, tomatoes, and dark-green vegetables, fat added
     ('32131070', 'Trứng tráng (omelet) hoặc trứng bác, có phô mai, thịt, cà chua và rau xanh đậm, không thêm chất béo'), -- Egg omelet or scrambled egg, with cheese, meat, tomatoes, and dark-green vegetables, no added fat
     ('32131080', 'Trứng tráng (omelet) hoặc trứng bác, có phô mai, thịt, cà chua và rau xanh đậm, không rõ có thêm chất béo'), -- Egg omelet or scrambled egg, with cheese, meat, tomatoes, and dark-green vegetables, NS as to fat
-    ('32131090', 'Trứng tráng (omelet) hoặc trứng bác, có phô mai, thịt và rau khác (trừ rau xanh đậm và/hoặc cà chua), có thêm chất béo'), -- Egg omelet or scrambled egg, with cheese, meat, and vegetables other than dark-green and/or tomatoes, fat added
-    ('32131100', 'Trứng tráng (omelet) hoặc trứng bác, có phô mai, thịt và rau khác (trừ rau xanh đậm và/hoặc cà chua), không thêm chất béo'), -- Egg omelet or scrambled egg, with cheese, meat, and vegetables other than dark-green and/or tomatoes, no added fat
-    ('32131110', 'Trứng tráng (omelet) hoặc trứng bác, có phô mai, thịt và rau khác (trừ rau xanh đậm và/hoặc cà chua), không rõ có thêm chất béo'), -- Egg omelet or scrambled egg, with cheese, meat, and vegetables other than dark-green and/or tomatoes, NS as to fat
-    ('32131200', 'Trứng tráng (omelet) hoặc trứng bác, có khoai tây và/hoặc hành tây, có thêm chất béo'), -- Egg omelet or scrambled egg, with potatoes and/or onions, fat added
-    ('32131210', 'Trứng tráng (omelet) hoặc trứng bác, có khoai tây và/hoặc hành tây, không thêm chất béo'), -- Egg omelet or scrambled egg, with potatoes and/or onions, no added fat
-    ('32131220', 'Trứng tráng (omelet) hoặc trứng bác, có khoai tây và/hoặc hành tây, không rõ có thêm chất béo'), -- Egg omelet or scrambled egg, with potatoes and/or onions, NS as to fat
+    ('32131090', 'Trứng tráng (omelet) hoặc trứng bác, có phô mai, thịt và rau khác (trừ rau xanh đậm và / hoặc cà chua), có thêm chất béo'), -- Egg omelet or scrambled egg, with cheese, meat, and vegetables other than dark-green and/or tomatoes, fat added
+    ('32131100', 'Trứng tráng (omelet) hoặc trứng bác, có phô mai, thịt và rau khác (trừ rau xanh đậm và / hoặc cà chua), không thêm chất béo'), -- Egg omelet or scrambled egg, with cheese, meat, and vegetables other than dark-green and/or tomatoes, no added fat
+    ('32131110', 'Trứng tráng (omelet) hoặc trứng bác, có phô mai, thịt và rau khác (trừ rau xanh đậm và / hoặc cà chua), không rõ có thêm chất béo'), -- Egg omelet or scrambled egg, with cheese, meat, and vegetables other than dark-green and/or tomatoes, NS as to fat
+    ('32131200', 'Trứng tráng (omelet) hoặc trứng bác, có khoai tây và / hoặc hành tây, có thêm chất béo'), -- Egg omelet or scrambled egg, with potatoes and/or onions, fat added
+    ('32131210', 'Trứng tráng (omelet) hoặc trứng bác, có khoai tây và / hoặc hành tây, không thêm chất béo'), -- Egg omelet or scrambled egg, with potatoes and/or onions, no added fat
+    ('32131220', 'Trứng tráng (omelet) hoặc trứng bác, có khoai tây và / hoặc hành tây, không rõ có thêm chất béo'), -- Egg omelet or scrambled egg, with potatoes and/or onions, NS as to fat
     ('32203010', 'Bánh mì kẹp salad trứng, bánh mì trắng'), -- Egg salad sandwich on white
     ('32203020', 'Bánh mì kẹp salad trứng, bánh mì lúa mì'), -- Egg salad sandwich on wheat
     ('32300100', 'Súp trứng đánh tan (egg drop)'), -- Soup, egg drop
@@ -1986,7 +1986,7 @@ FROM (VALUES
     ('41101020', 'Đậu, từ loại khô, không rõ loại, không thêm chất béo'), -- Beans, from dried, NS as to type, no added fat
     ('41101060', 'Đậu, từ đồ hộp, không rõ loại, có thêm chất béo'), -- Beans, from canned, NS as to type, fat added
     ('41101070', 'Đậu, từ đồ hộp, không rõ loại, không thêm chất béo'), -- Beans, from canned, NS as to type, no added fat
-    ('41101080', 'Đậu, đồ ăn nhanh/nhà hàng, không rõ loại'), -- Beans, from fast food / restaurant, NS as to type
+    ('41101080', 'Đậu, đồ ăn nhanh / nhà hàng, không rõ loại'), -- Beans, from fast food / restaurant, NS as to type
     ('41101090', 'Đậu trắng, loại chung'), -- White beans, NFS
     ('41101110', 'Đậu trắng, từ loại khô, có thêm chất béo'), -- White beans, from dried, fat added
     ('41101120', 'Đậu trắng, từ loại khô, không thêm chất béo'), -- White beans, from dried, no added fat
@@ -1999,7 +1999,7 @@ FROM (VALUES
     ('41102040', 'Đậu đen, từ đồ hộp, có thêm chất béo'), -- Black beans, from canned, fat added
     ('41102080', 'Đậu đen, từ đồ hộp, không thêm chất béo'), -- Black beans, from canned, no added fat
     ('41102110', 'Đậu đen, từ đồ hộp, giảm muối'), -- Black beans, from canned, reduced sodium
-    ('41102150', 'Đậu đen, đồ ăn nhanh/nhà hàng'), -- Black beans, from fast food / restaurant
+    ('41102150', 'Đậu đen, đồ ăn nhanh / nhà hàng'), -- Black beans, from fast food / restaurant
     ('41102170', 'Đậu đen nấu thịt'), -- Black beans with meat
     ('41102210', 'Đậu tằm, nấu chín'), -- Fava beans, cooked
     ('41102990', 'Đậu lima, loại chung'), -- Lima beans, NFS
@@ -2011,7 +2011,7 @@ FROM (VALUES
     ('41104040', 'Đậu pinto, từ đồ hộp, có thêm chất béo'), -- Pinto beans, from canned, fat added
     ('41104080', 'Đậu pinto, từ đồ hộp, không thêm chất béo'), -- Pinto beans, from canned, no added fat
     ('41104110', 'Đậu pinto, từ đồ hộp, giảm muối'), -- Pinto beans, from canned, reduced sodium
-    ('41104200', 'Đậu pinto, đồ ăn nhanh/nhà hàng'), -- Pinto beans, from fast food / restaurant
+    ('41104200', 'Đậu pinto, đồ ăn nhanh / nhà hàng'), -- Pinto beans, from fast food / restaurant
     ('41104250', 'Đậu pinto nấu thịt'), -- Pinto beans with meat
     ('41105990', 'Đậu tây đỏ, loại chung'), -- Kidney beans, NFS
     ('41106010', 'Đậu tây đỏ, từ loại khô, có thêm chất béo'), -- Kidney beans, from dried, fat added
@@ -2024,19 +2024,19 @@ WHERE f.source = 'USDA_FNDDS' AND f.source_food_code = t.source_food_code;
 UPDATE nutrition_foods f SET name_vi = t.name_vi, updated_at = CURRENT_TIMESTAMP, updated_by = 'migration:usda-name-vi-v25'
 FROM (VALUES
     ('41106110', 'Đậu tây đỏ, từ đồ hộp, giảm muối'), -- Kidney beans, from canned, reduced sodium
-    ('41106150', 'Đậu tây đỏ, đồ ăn nhanh/nhà hàng'), -- Kidney beans, from fast food / restaurant
+    ('41106150', 'Đậu tây đỏ, đồ ăn nhanh / nhà hàng'), -- Kidney beans, from fast food / restaurant
     ('41106170', 'Đậu tây đỏ nấu thịt'), -- Kidney beans with meat
     ('41106510', 'Đậu Peru, từ loại khô'), -- Peruvian beans, from dried
     ('41107010', 'Đậu tương, nấu chín'), -- Soybeans, cooked
     ('41108010', 'Đậu xanh, nấu chín'), -- Mung beans, cooked
     ('41201010', 'Đậu nướng lò (baked beans)'), -- Baked beans
     ('41201020', 'Đậu nướng lò (baked beans), chay'), -- Baked beans, vegetarian
-    ('41201050', 'Đậu nướng lò (baked beans), đồ ăn nhanh/nhà hàng'), -- Baked beans from fast food / restaurant
+    ('41201050', 'Đậu nướng lò (baked beans), đồ ăn nhanh / nhà hàng'), -- Baked beans from fast food / restaurant
     ('41202505', 'Đậu và cà chua, không thêm chất béo'), -- Beans and tomatoes, no added fat
     ('41202510', 'Đậu và cà chua, có thêm chất béo'), -- Beans and tomatoes, fat added
     ('41203030', 'Salad đậu đen'), -- Black bean salad
     ('41205010', 'Đậu nghiền chiên lại (refried beans)'), -- Refried beans
-    ('41205017', 'Đậu nghiền chiên lại (refried beans), đồ ăn nhanh/nhà hàng'), -- Refried beans, from fast food / restaurant
+    ('41205017', 'Đậu nghiền chiên lại (refried beans), đồ ăn nhanh / nhà hàng'), -- Refried beans, from fast food / restaurant
     ('41205030', 'Đậu nghiền chiên lại (refried beans) có thịt'), -- Refried beans with meat
     ('41205040', 'Đậu nghiền chiên lại (refried beans), từ đồ hộp, giảm muối'), -- Refried beans, from canned, reduced sodium
     ('41205050', 'Sốt chấm đậu, làm từ đậu nghiền chiên lại'), -- Bean dip, made with refried beans
@@ -2115,7 +2115,7 @@ FROM (VALUES
     ('41811890', 'Miếng chả (patty) burger chay, không bánh'), -- Veggie burger patty, no bun
     ('41811950', 'Bít tết kiểu Thụy Sĩ chay, với nước sốt gravy'), -- Swiss steak, with gravy, meatless
     ('41812400', 'Bánh pie nhân mặn (pot pie), không thịt'), -- Pot pie, no meat
-    ('41812500', 'Đậu phụ và rau (gồm cà rốt, súp lơ xanh và/hoặc rau lá xanh đậm), không khoai tây, sốt nền nước tương'), -- Tofu and vegetables including carrots, broccoli, and/or dark-green leafy; no potatoes, with soy-based sauce
+    ('41812500', 'Đậu phụ và rau (gồm cà rốt, súp lơ xanh và / hoặc rau lá xanh đậm), không khoai tây, sốt nền nước tương'), -- Tofu and vegetables including carrots, broccoli, and/or dark-green leafy; no potatoes, with soy-based sauce
     ('41812510', 'Đậu phụ và rau (trừ cà rốt, súp lơ xanh và rau lá xanh đậm), không khoai tây, sốt nền nước tương'), -- Tofu and vegetables excluding carrots, broccoli, and dark-green leafy; no potatoes, with soy-based sauce
     ('41812600', 'Phi lê chay'), -- Vegetarian, fillet
     ('41812800', 'Món hầm chay'), -- Vegetarian stew
@@ -2266,18 +2266,18 @@ FROM (VALUES
     ('51119010', 'Bánh mì trứng Challah'), -- Bread, egg, Challah
     ('51119040', 'Bánh mì trứng Challah, nướng giòn'), -- Bread, egg, Challah, toasted
     ('51121015', 'Bánh mì bơ tỏi, loại chung'), -- Garlic bread, NFS
-    ('51121025', 'Bánh mì bơ tỏi, đồ ăn nhanh/nhà hàng'), -- Garlic bread, from fast food / restaurant
+    ('51121025', 'Bánh mì bơ tỏi, đồ ăn nhanh / nhà hàng'), -- Garlic bread, from fast food / restaurant
     ('51121035', 'Bánh mì bơ tỏi, từ loại đông lạnh'), -- Garlic bread, from frozen
-    ('51121045', 'Bánh mì bơ tỏi phủ phô mai parmesan, đồ ăn nhanh/nhà hàng'), -- Garlic bread, with parmesan cheese, from fast food / restaurant
+    ('51121045', 'Bánh mì bơ tỏi phủ phô mai parmesan, đồ ăn nhanh / nhà hàng'), -- Garlic bread, with parmesan cheese, from fast food / restaurant
     ('51121055', 'Bánh mì bơ tỏi phủ phô mai parmesan, từ loại đông lạnh'), -- Garlic bread, with parmesan cheese, from frozen
-    ('51121065', 'Bánh mì bơ tỏi phủ phô mai tan chảy, đồ ăn nhanh/nhà hàng'), -- Garlic bread, with melted cheese, from fast food / restaurant
+    ('51121065', 'Bánh mì bơ tỏi phủ phô mai tan chảy, đồ ăn nhanh / nhà hàng'), -- Garlic bread, with melted cheese, from fast food / restaurant
     ('51121075', 'Bánh mì bơ tỏi phủ phô mai tan chảy, từ loại đông lạnh'), -- Garlic bread, with melted cheese, from frozen
     ('51121110', 'Bánh mì hành tây'), -- Bread, onion
     ('51121120', 'Bánh mì hành tây, nướng giòn'), -- Bread, onion, toasted
-    ('51122000', 'Bánh mì giảm calo và/hoặc giàu chất xơ, trắng hoặc loại chung'), -- Bread, reduced calorie and/or high fiber, white or NFS
-    ('51122010', 'Bánh mì giảm calo và/hoặc giàu chất xơ, trắng hoặc loại chung, nướng giòn'), -- Bread, reduced calorie and/or high fiber, white or NFS, toasted
-    ('51122100', 'Bánh mì giảm calo và/hoặc giàu chất xơ, trắng hoặc loại chung, có trái cây và/hoặc hạt'), -- Bread, reduced calorie and/or high fiber, white or NFS, with fruit and/or nuts
-    ('51122110', 'Bánh mì giảm calo và/hoặc giàu chất xơ, trắng hoặc loại chung, có trái cây và/hoặc hạt, nướng giòn'), -- Bread, reduced calorie and/or high fiber, white or NFS, with fruit and/or nuts, toasted
+    ('51122000', 'Bánh mì giảm calo và / hoặc giàu chất xơ, trắng hoặc loại chung'), -- Bread, reduced calorie and/or high fiber, white or NFS
+    ('51122010', 'Bánh mì giảm calo và / hoặc giàu chất xơ, trắng hoặc loại chung, nướng giòn'), -- Bread, reduced calorie and/or high fiber, white or NFS, toasted
+    ('51122100', 'Bánh mì giảm calo và / hoặc giàu chất xơ, trắng hoặc loại chung, có trái cây và / hoặc hạt'), -- Bread, reduced calorie and/or high fiber, white or NFS, with fruit and/or nuts
+    ('51122110', 'Bánh mì giảm calo và / hoặc giàu chất xơ, trắng hoặc loại chung, có trái cây và / hoặc hạt, nướng giòn'), -- Bread, reduced calorie and/or high fiber, white or NFS, with fruit and/or nuts, toasted
     ('51122300', 'Bánh mì trắng, công thức đặc biệt, bổ sung chất xơ'), -- Bread, white, special formula, added fiber
     ('51122310', 'Bánh mì trắng, công thức đặc biệt, bổ sung chất xơ, nướng giòn'), -- Bread, white, special formula, added fiber, toasted
     ('51123020', 'Bánh mì giàu protein, nướng giòn'), -- Bread, high protein, toasted
@@ -2332,9 +2332,9 @@ FROM (VALUES
     ('51184000', 'Bánh mì que giòn, loại chung'), -- Breadsticks, hard, NFS
     ('51184100', 'Bánh mì que giòn, giảm muối'), -- Breadsticks, hard, reduced sodium
     ('51184200', 'Bánh mì que mềm, loại chung'), -- Breadsticks, soft, NFS
-    ('51184210', 'Bánh mì que mềm, đồ ăn nhanh/nhà hàng'), -- Breadsticks, soft, fast food / restaurant
+    ('51184210', 'Bánh mì que mềm, đồ ăn nhanh / nhà hàng'), -- Breadsticks, soft, fast food / restaurant
     ('51184220', 'Bánh mì que mềm, đông lạnh'), -- Breadsticks, soft, frozen
-    ('51184230', 'Bánh mì que mềm, phủ phô mai parmesan, đồ ăn nhanh/nhà hàng'), -- Breadsticks, soft, with parmesan cheese, fast food / restaurant
+    ('51184230', 'Bánh mì que mềm, phủ phô mai parmesan, đồ ăn nhanh / nhà hàng'), -- Breadsticks, soft, with parmesan cheese, fast food / restaurant
     ('51184260', 'Bánh mì que mềm, nhồi hoặc phủ phô mai tan chảy'), -- Breadsticks, soft, stuffed or topped with melted cheese
     ('51185000', 'Bánh mì nướng giòn cắt hạt lựu (crouton)'), -- Croutons
     ('51186010', 'Bánh muffin kiểu Anh'), -- Muffin, English
@@ -2365,8 +2365,8 @@ FROM (VALUES
     ('51301050', 'Bánh mì lúa mì hoặc lúa mì xay vỡ, tự làm tại nhà hoặc mua ở tiệm bánh, nướng giòn'), -- Bread, wheat or cracked wheat, made from home recipe or purchased at bakery, toasted
     ('51301120', 'Bánh mì lúa mì hoặc lúa mì xay vỡ, có nho khô'), -- Bread, wheat or cracked wheat, with raisins
     ('51301130', 'Bánh mì lúa mì hoặc lúa mì xay vỡ, có nho khô, nướng giòn'), -- Bread, wheat or cracked wheat, with raisins, toasted
-    ('51301510', 'Bánh mì lúa mì hoặc lúa mì xay vỡ, giảm calo và/hoặc giàu chất xơ'), -- Bread, wheat or cracked wheat, reduced calorie and/or high fiber
-    ('51301520', 'Bánh mì lúa mì hoặc lúa mì xay vỡ, giảm calo và/hoặc giàu chất xơ, nướng giòn'), -- Bread, wheat or cracked wheat, reduced calorie and/or high fiber, toasted
+    ('51301510', 'Bánh mì lúa mì hoặc lúa mì xay vỡ, giảm calo và / hoặc giàu chất xơ'), -- Bread, wheat or cracked wheat, reduced calorie and/or high fiber
+    ('51301520', 'Bánh mì lúa mì hoặc lúa mì xay vỡ, giảm calo và / hoặc giàu chất xơ, nướng giòn'), -- Bread, wheat or cracked wheat, reduced calorie and/or high fiber, toasted
     ('51301540', 'Bánh mì Pháp hoặc Vienna, lúa mì nguyên cám'), -- Bread, French or Vienna, whole wheat
     ('51301550', 'Bánh mì Pháp hoặc Vienna, lúa mì nguyên cám, nướng giòn'), -- Bread, French or Vienna, whole wheat, toasted
     ('51301600', 'Bánh mì pita lúa mì nguyên cám'), -- Bread, pita, whole wheat
@@ -2419,8 +2419,8 @@ FROM (VALUES
     ('51601020', 'Bánh mì đa ngũ cốc'), -- Bread, multigrain
     ('51601210', 'Bánh mì đa ngũ cốc, có nho khô'), -- Bread, multigrain, with raisins
     ('51601220', 'Bánh mì đa ngũ cốc, có nho khô, nướng giòn'), -- Bread, multigrain, with raisins, toasted
-    ('51602010', 'Bánh mì đa ngũ cốc, giảm calo và/hoặc giàu chất xơ'), -- Bread, multigrain, reduced calorie and/or high fiber
-    ('51602020', 'Bánh mì đa ngũ cốc, giảm calo và/hoặc giàu chất xơ, nướng giòn'), -- Bread, multigrain, reduced calorie and/or high fiber, toasted
+    ('51602010', 'Bánh mì đa ngũ cốc, giảm calo và / hoặc giàu chất xơ'), -- Bread, multigrain, reduced calorie and/or high fiber
+    ('51602020', 'Bánh mì đa ngũ cốc, giảm calo và / hoặc giàu chất xơ, nướng giòn'), -- Bread, multigrain, reduced calorie and/or high fiber, toasted
     ('51620000', 'Bánh mì cuộn nhỏ đa ngũ cốc'), -- Roll, multigrain
     ('51620020', 'Bánh mì cuộn nhỏ đa ngũ cốc, bánh bun hot dog'), -- Roll, multigrain, hot dog bun
     ('51620030', 'Bánh mì bun hamburger, đa ngũ cốc'), -- Roll, multigrain, hamburger bun
@@ -2442,7 +2442,7 @@ FROM (VALUES
     ('51808100', 'Bánh mì cuộn nhỏ không gluten'), -- Roll, gluten free
     ('52101000', 'Bánh biscuit, loại chung'), -- Biscuit, NFS
     ('52102040', 'Bánh biscuit, từ bột nhào làm sẵn bảo quản lạnh'), -- Biscuit, from refrigerated dough
-    ('52103000', 'Bánh biscuit, đồ ăn nhanh/nhà hàng'), -- Biscuit, from fast food / restaurant
+    ('52103000', 'Bánh biscuit, đồ ăn nhanh / nhà hàng'), -- Biscuit, from fast food / restaurant
     ('52104010', 'Bánh biscuit, tự làm tại nhà'), -- Biscuit, home recipe
     ('52104040', 'Bánh biscuit lúa mì'), -- Biscuit, wheat
     ('52104100', 'Bánh biscuit phô mai'), -- Biscuit, cheese
@@ -2457,7 +2457,7 @@ FROM (VALUES
     ('52207010', 'Bánh bột ngô dạng miếng hoặc tart, chiên'), -- Corn flour patty or tart, fried
     ('52208010', 'Bánh bột ngô corn pone, nướng lò'), -- Corn pone, baked
     ('52208020', 'Bánh bột ngô corn pone, chiên'), -- Corn pone, fried
-    ('52208760', 'Vỏ bánh gordita/sope, không hương vị, không nhân'), -- Gordita/sope shell, plain, no filling
+    ('52208760', 'Vỏ bánh gordita / sope, không hương vị, không nhân'), -- Gordita/sope shell, plain, no filling
     ('52209010', 'Bánh hush puppy (viên bột ngô chiên)'), -- Hush puppy
     ('52211010', 'Bánh johnnycake (bánh bột ngô áp chảo)'), -- Johnnycake
     ('52213010', 'Bánh spoonbread (bánh bột ngô mềm)'), -- Spoonbread
@@ -2611,7 +2611,7 @@ FROM (VALUES
     ('53240010', 'Bánh quy hình thú, có phủ kem hoặc phủ đường'), -- Cookie, animal, with frosting or icing
     ('53241500', 'Bánh quy bơ hoặc bánh quy đường'), -- Cookie, butter or sugar
     ('53241510', 'Bánh quy Marie'), -- Marie biscuit
-    ('53241600', 'Bánh quy bơ hoặc bánh quy đường, có trái cây và/hoặc các loại hạt'), -- Cookie, butter or sugar, with fruit and/or nuts
+    ('53241600', 'Bánh quy bơ hoặc bánh quy đường, có trái cây và / hoặc các loại hạt'), -- Cookie, butter or sugar, with fruit and/or nuts
     ('53242000', 'Bánh quy xốp kẹp kem'), -- Cookie, sugar wafer
     ('53242500', 'Bánh quy thanh kẹo bơ cứng (toffee)'), -- Cookie, toffee bar
     ('53243000', 'Bánh quy kẹp vani'), -- Cookie, vanilla sandwich
@@ -2938,10 +2938,10 @@ FROM (VALUES
     ('55100020', 'Bánh kếp (pancake) trái cây, đông lạnh'), -- Pancakes, fruit, frozen
     ('55100025', 'Bánh kếp (pancake) sô-cô-la, đông lạnh'), -- Pancakes, chocolate, frozen
     ('55100030', 'Bánh kếp (pancake) ngũ cốc nguyên hạt, đông lạnh'), -- Pancakes, whole grain, frozen
-    ('55100050', 'Bánh kếp (pancake), không hương vị, đồ ăn nhanh/nhà hàng'), -- Pancakes, plain, fast food / restaurant
-    ('55100055', 'Bánh kếp (pancake) trái cây, đồ ăn nhanh/nhà hàng'), -- Pancakes, fruit, fast food / restaurant
-    ('55100060', 'Bánh kếp (pancake) sô-cô-la, đồ ăn nhanh/nhà hàng'), -- Pancakes, chocolate, fast food / restaurant
-    ('55100065', 'Bánh kếp (pancake) ngũ cốc nguyên hạt, đồ ăn nhanh/nhà hàng'), -- Pancakes, whole grain, fast food / restaurant
+    ('55100050', 'Bánh kếp (pancake), không hương vị, đồ ăn nhanh / nhà hàng'), -- Pancakes, plain, fast food / restaurant
+    ('55100055', 'Bánh kếp (pancake) trái cây, đồ ăn nhanh / nhà hàng'), -- Pancakes, fruit, fast food / restaurant
+    ('55100060', 'Bánh kếp (pancake) sô-cô-la, đồ ăn nhanh / nhà hàng'), -- Pancakes, chocolate, fast food / restaurant
+    ('55100065', 'Bánh kếp (pancake) ngũ cốc nguyên hạt, đồ ăn nhanh / nhà hàng'), -- Pancakes, whole grain, fast food / restaurant
     ('55100080', 'Bánh kếp (pancake), trường học'), -- Pancakes, school
     ('55101000', 'Bánh kếp (pancake), không hương vị'), -- Pancakes, plain
     ('55101015', 'Bánh kếp (pancake), không hương vị, giảm béo'), -- Pancakes, plain, reduced fat
@@ -2959,10 +2959,10 @@ FROM (VALUES
     ('55200060', 'Bánh waffle ngũ cốc nguyên hạt, đông lạnh'), -- Waffle, whole grain, frozen
     ('55200070', 'Bánh waffle ngũ cốc nguyên hạt, giảm béo'), -- Waffle, whole grain, reduced fat
     ('55200080', 'Bánh waffle ngũ cốc nguyên hạt, trái cây, đông lạnh'), -- Waffle, whole grain, fruit, frozen
-    ('55200100', 'Bánh waffle, không hương vị, đồ ăn nhanh/nhà hàng'), -- Waffle, plain, fast food / restaurant
-    ('55200110', 'Bánh waffle sô-cô-la, đồ ăn nhanh/nhà hàng'), -- Waffle, chocolate, fast food / restaurant
-    ('55200120', 'Bánh waffle trái cây, đồ ăn nhanh/nhà hàng'), -- Waffle, fruit, fast food / restaurant
-    ('55200130', 'Bánh waffle ngũ cốc nguyên hạt, đồ ăn nhanh/nhà hàng'), -- Waffle, whole grain, fast food / restaurant
+    ('55200100', 'Bánh waffle, không hương vị, đồ ăn nhanh / nhà hàng'), -- Waffle, plain, fast food / restaurant
+    ('55200110', 'Bánh waffle sô-cô-la, đồ ăn nhanh / nhà hàng'), -- Waffle, chocolate, fast food / restaurant
+    ('55200120', 'Bánh waffle trái cây, đồ ăn nhanh / nhà hàng'), -- Waffle, fruit, fast food / restaurant
+    ('55200130', 'Bánh waffle ngũ cốc nguyên hạt, đồ ăn nhanh / nhà hàng'), -- Waffle, whole grain, fast food / restaurant
     ('55200200', 'Bánh waffle, trường học'), -- Waffle, school
     ('55201000', 'Bánh waffle, không hương vị'), -- Waffle, plain
     ('55203000', 'Bánh waffle trái cây'), -- Waffle, fruit
@@ -2972,18 +2972,18 @@ FROM (VALUES
     ('55208000', 'Bánh waffle không gluten'), -- Waffle, gluten free
     ('55300010', 'Bánh mì nướng trứng (French toast), loại chung'), -- French toast, NFS
     ('55300020', 'Bánh mì nướng trứng (French toast), đông lạnh'), -- French toast, frozen
-    ('55300050', 'Bánh mì nướng trứng (French toast), đồ ăn nhanh/nhà hàng'), -- French toast, fast food / restaurant
+    ('55300050', 'Bánh mì nướng trứng (French toast), đồ ăn nhanh / nhà hàng'), -- French toast, fast food / restaurant
     ('55300060', 'Bánh mì nướng trứng (French toast), trường học'), -- French toast, school
     ('55301000', 'Bánh mì nướng trứng (French toast), không hương vị'), -- French toast, plain
     ('55301015', 'Bánh mì nướng trứng (French toast), ngũ cốc nguyên hạt'), -- French toast, whole grain
     ('55301025', 'Bánh mì nướng trứng (French toast), không gluten'), -- French toast, gluten free
     ('55301031', 'Bánh mì nướng trứng (French toast) dạng que'), -- French toast sticks
-    ('55301040', 'Bánh mì nướng trứng (French toast) dạng que, đồ ăn nhanh/nhà hàng'), -- French toast sticks, fast food / restaurant
+    ('55301040', 'Bánh mì nướng trứng (French toast) dạng que, đồ ăn nhanh / nhà hàng'), -- French toast sticks, fast food / restaurant
     ('55301048', 'Bánh mì nướng trứng (French toast) dạng que, trường học'), -- French toast sticks, school
     ('55400010', 'Bánh crepe, loại chung'), -- Crepe, NFS
     ('55401000', 'Bánh crepe, không hương vị'), -- Crepe, plain
     ('55501000', 'Bánh kếp kiểu Trung Quốc'), -- Chinese pancake
-    ('55610300', 'Bánh bao/há cảo không thịt (dumpling)'), -- Dumpling, no meat
+    ('55610300', 'Bánh bao / há cảo không thịt (dumpling)'), -- Dumpling, no meat
     ('55701000', 'Bánh làm từ gạo nếp'), -- Cake made with glutinous rice
     ('55702000', 'Bánh idli (Ấn Độ)'), -- Idli
     ('55702100', 'Bánh dosa (Ấn Độ), không nhân'), -- Dosa, plain
@@ -2995,7 +2995,7 @@ FROM (VALUES
     ('56113000', 'Mì sợi ngũ cốc nguyên hạt, nấu chín'), -- Noodles, whole grain, cooked
     ('56116000', 'Mì sợi chow mein (chiên giòn)'), -- Noodles, chow mein
     ('56116990', 'Miến đậu xanh, nấu chín'), -- Long rice noodles, made from mung beans, cooked
-    ('56117090', 'Sợi mì gạo (bún/phở), nấu chín'), -- Rice noodles, cooked
+    ('56117090', 'Sợi mì gạo (bún / phở), nấu chín'), -- Rice noodles, cooked
     ('56130000', 'Mì Ý (pasta), nấu chín'), -- Pasta, cooked
     ('56132990', 'Mì Ý (pasta) ngũ cốc nguyên hạt, nấu chín'), -- Pasta, whole grain, cooked
     ('56140100', 'Mì Ý (pasta) không gluten'), -- Pasta, gluten free
@@ -3346,9 +3346,9 @@ FROM (VALUES
     ('58109210', 'Pizza bữa sáng có trứng'), -- Breakfast pizza with egg
     ('58110110', 'Cuốn chiên egg roll, không thịt'), -- Egg roll, meatless
     ('58110120', 'Cuốn chiên egg roll, nhân tôm'), -- Egg roll, with shrimp
-    ('58110130', 'Cuốn chiên egg roll, nhân thịt bò và/hoặc thịt lợn'), -- Egg roll, with beef and/or pork
+    ('58110130', 'Cuốn chiên egg roll, nhân thịt bò và / hoặc thịt lợn'), -- Egg roll, with beef and/or pork
     ('58110170', 'Cuốn chiên egg roll, nhân gà hoặc gà tây'), -- Egg roll, with chicken or turkey
-    ('58110200', 'Gỏi cuốn bánh tráng nhân thịt và/hoặc tôm, rau, không chiên'), -- Roll with meat and/or shrimp, vegetables and rice paper, not fried
+    ('58110200', 'Gỏi cuốn bánh tráng nhân thịt và / hoặc tôm, rau, không chiên'), -- Roll with meat and/or shrimp, vegetables and rice paper, not fried
     ('58111110', 'Hoành thánh, há cảo hoặc bánh xếp (pot sticker), chiên'), -- Wonton, dumpling or pot sticker, fried
     ('58111120', 'Hoành thánh, há cảo hoặc bánh xếp (pot sticker), chiên, không thịt'), -- Wonton, dumpling or pot sticker, fried, no meat
     ('58111200', 'Bánh xốp chiên nhân thịt cua và phô mai kem'), -- Puffs, fried, crab meat and cream cheese filled
@@ -3372,7 +3372,7 @@ FROM (VALUES
     ('58123120', 'Bánh bao (bao bun), không thịt'), -- Bao bun, no meat
     ('58124210', 'Bánh ngọt nướng nhân phô mai'), -- Pastry, cheese-filled
     ('58124220', 'Bánh ngọt nướng nhân trứng và phô mai'), -- Pastry, egg and cheese filled
-    ('58124230', 'Bánh ngọt nướng nhân thịt/gia cầm'), -- Pastry, meat / poultry-filled
+    ('58124230', 'Bánh ngọt nướng nhân thịt / gia cầm'), -- Pastry, meat / poultry-filled
     ('58124250', 'Bánh spanakopita (Hy Lạp)'), -- Spanakopita
     ('58124500', 'Bánh samosa (Ấn Độ)'), -- Samosa
     ('58125110', 'Bánh quiche nhân thịt, gia cầm hoặc cá'), -- Quiche with meat, poultry or fish
@@ -3428,7 +3428,7 @@ FROM (VALUES
     ('58134130', 'Mì vỏ sò nhồi phô mai, sốt thịt'), -- Stuffed shells, cheese-filled, with meat sauce
     ('58134160', 'Mì vỏ sò nhồi phô mai và rau chân vịt, không sốt'), -- Stuffed shells, cheese- and spinach- filled, no sauce
     ('58134210', 'Mì vỏ sò nhồi gà, sốt cà chua'), -- Stuffed shells, with chicken, with tomato sauce
-    ('58134310', 'Mì vỏ sò nhồi cá và/hoặc hải sản có vỏ, sốt cà chua'), -- Stuffed shells, with fish and/or shellfish, with tomato sauce
+    ('58134310', 'Mì vỏ sò nhồi cá và / hoặc hải sản có vỏ, sốt cà chua'), -- Stuffed shells, with fish and/or shellfish, with tomato sauce
     ('58134610', 'Mì tortellini nhân thịt, sốt cà chua'), -- Tortellini, meat-filled, with tomato sauce
     ('58134613', 'Mì tortellini nhân thịt, sốt cà chua, đóng hộp'), -- Tortellini, meat-filled, with tomato sauce, canned
     ('58134620', 'Mì tortellini nhân phô mai, không thịt, sốt cà chua'), -- Tortellini, cheese-filled, meatless, with tomato sauce
@@ -3625,15 +3625,15 @@ FROM (VALUES
     ('58156210', 'Cơm với xúc xích Vienna kiểu Puerto Rico'), -- Rice with vienna sausage, Puerto Rican style
     ('58156310', 'Cơm với xúc xích Tây Ban Nha kiểu Puerto Rico'), -- Rice with Spanish sausage, Puerto Rican style
     ('58156710', 'Cơm với đậu hầm kiểu Puerto Rico'), -- Rice with stewed beans, Puerto Rican style
-    ('58157300', 'Cháo với thịt, gia cầm và/hoặc hải sản'), -- Congee, with meat, poultry, and/or seafood
-    ('58157310', 'Cháo với thịt, gia cầm và/hoặc hải sản, có rau'), -- Congee, with meat, poultry, and/or seafood, and vegetables
+    ('58157300', 'Cháo với thịt, gia cầm và / hoặc hải sản'), -- Congee, with meat, poultry, and/or seafood
+    ('58157310', 'Cháo với thịt, gia cầm và / hoặc hải sản, có rau'), -- Congee, with meat, poultry, and/or seafood, and vegetables
     ('58157320', 'Cháo với rau'), -- Congee, with vegetables
     ('58157330', 'Cháo với trứng'), -- Congee, with egg
     ('58160000', 'Cơm biryani với rau'), -- Biryani with vegetables
-    ('58160100', 'Đậu và cơm, đồ ăn nhanh/nhà hàng'), -- Beans and rice, from fast food / restaurant
-    ('58160102', 'Đậu tây đỏ và cơm, đồ ăn nhanh/nhà hàng'), -- Kidney beans and rice, from fast food / restaurant
-    ('58160104', 'Đậu đen và cơm, đồ ăn nhanh/nhà hàng'), -- Black beans and rice, from fast food / restaurant
-    ('58160106', 'Đậu pinto và cơm, đồ ăn nhanh/nhà hàng'), -- Pinto beans and rice, from fast food / restaurant
+    ('58160100', 'Đậu và cơm, đồ ăn nhanh / nhà hàng'), -- Beans and rice, from fast food / restaurant
+    ('58160102', 'Đậu tây đỏ và cơm, đồ ăn nhanh / nhà hàng'), -- Kidney beans and rice, from fast food / restaurant
+    ('58160104', 'Đậu đen và cơm, đồ ăn nhanh / nhà hàng'), -- Black beans and rice, from fast food / restaurant
+    ('58160106', 'Đậu pinto và cơm, đồ ăn nhanh / nhà hàng'), -- Pinto beans and rice, from fast food / restaurant
     ('58160110', 'Đậu và cơm trắng'), -- Beans and white rice
     ('58160120', 'Đậu và cơm, có cà chua'), -- Beans and rice, with tomatoes
     ('58160132', 'Đậu và cơm, có thịt'), -- Beans and rice, with meat
@@ -3652,24 +3652,24 @@ FROM (VALUES
     ('58160490', 'Cơm trắng với đậu Hà Lan và cà rốt, không rõ có thêm chất béo'), -- Rice, white, with peas and carrots, NS as to fat
     ('58160500', 'Cơm trắng với đậu Hà Lan và cà rốt, không thêm chất béo'), -- Rice, white, with peas and carrots, no added fat
     ('58160510', 'Cơm trắng với đậu Hà Lan và cà rốt, có thêm chất béo'), -- Rice, white, with peas and carrots, fat added
-    ('58160520', 'Cơm trắng với cà chua và/hoặc sốt nền cà chua, không rõ có thêm chất béo'), -- Rice, white, with tomatoes and/or tomato-based sauce, NS as to fat
-    ('58160530', 'Cơm trắng với cà chua và/hoặc sốt nền cà chua, không thêm chất béo'), -- Rice, white, with tomatoes and/or tomato-based sauce, no added fat
-    ('58160540', 'Cơm trắng với cà chua và/hoặc sốt nền cà chua, có thêm chất béo'), -- Rice, white, with tomatoes and/or tomato-based sauce, fat added
+    ('58160520', 'Cơm trắng với cà chua và / hoặc sốt nền cà chua, không rõ có thêm chất béo'), -- Rice, white, with tomatoes and/or tomato-based sauce, NS as to fat
+    ('58160530', 'Cơm trắng với cà chua và / hoặc sốt nền cà chua, không thêm chất béo'), -- Rice, white, with tomatoes and/or tomato-based sauce, no added fat
+    ('58160540', 'Cơm trắng với cà chua và / hoặc sốt nền cà chua, có thêm chất béo'), -- Rice, white, with tomatoes and/or tomato-based sauce, fat added
     ('58160550', 'Cơm trắng với rau xanh đậm, không rõ có thêm chất béo'), -- Rice, white, with dark green vegetables, NS as to fat
     ('58160560', 'Cơm trắng với rau xanh đậm, không thêm chất béo'), -- Rice, white, with dark green vegetables, no added fat
     ('58160570', 'Cơm trắng với rau xanh đậm, có thêm chất béo'), -- Rice, white, with dark green vegetables, fat added
-    ('58160580', 'Cơm trắng với cà rốt và cà chua và/hoặc sốt nền cà chua, không rõ có thêm chất béo'), -- Rice, white, with carrots and tomatoes and/or tomato-based sauce, NS as to fat
-    ('58160590', 'Cơm trắng với cà rốt và cà chua và/hoặc sốt nền cà chua, không thêm chất béo'), -- Rice, white, with carrots and tomatoes and/or tomato-based sauce, no added fat
-    ('58160600', 'Cơm trắng với cà rốt và cà chua và/hoặc sốt nền cà chua, có thêm chất béo'), -- Rice, white, with carrots and tomatoes and/or tomato-based sauce, fat added
-    ('58160610', 'Cơm trắng với rau xanh đậm và cà chua và/hoặc sốt nền cà chua, không rõ có thêm chất béo'), -- Rice, white, with dark green vegetables and tomatoes and/or tomato-based sauce, NS as to fat
-    ('58160620', 'Cơm trắng với rau xanh đậm và cà chua và/hoặc sốt nền cà chua, không thêm chất béo'), -- Rice, white, with dark green vegetables and tomatoes and/or tomato-based sauce, no added fat
-    ('58160630', 'Cơm trắng với rau xanh đậm và cà chua và/hoặc sốt nền cà chua, có thêm chất béo'), -- Rice, white, with dark green vegetables and tomatoes and/or tomato-based sauce, fat added
+    ('58160580', 'Cơm trắng với cà rốt và cà chua và / hoặc sốt nền cà chua, không rõ có thêm chất béo'), -- Rice, white, with carrots and tomatoes and/or tomato-based sauce, NS as to fat
+    ('58160590', 'Cơm trắng với cà rốt và cà chua và / hoặc sốt nền cà chua, không thêm chất béo'), -- Rice, white, with carrots and tomatoes and/or tomato-based sauce, no added fat
+    ('58160600', 'Cơm trắng với cà rốt và cà chua và / hoặc sốt nền cà chua, có thêm chất béo'), -- Rice, white, with carrots and tomatoes and/or tomato-based sauce, fat added
+    ('58160610', 'Cơm trắng với rau xanh đậm và cà chua và / hoặc sốt nền cà chua, không rõ có thêm chất béo'), -- Rice, white, with dark green vegetables and tomatoes and/or tomato-based sauce, NS as to fat
+    ('58160620', 'Cơm trắng với rau xanh đậm và cà chua và / hoặc sốt nền cà chua, không thêm chất béo'), -- Rice, white, with dark green vegetables and tomatoes and/or tomato-based sauce, no added fat
+    ('58160630', 'Cơm trắng với rau xanh đậm và cà chua và / hoặc sốt nền cà chua, có thêm chất béo'), -- Rice, white, with dark green vegetables and tomatoes and/or tomato-based sauce, fat added
     ('58160640', 'Cơm trắng với cà rốt và rau xanh đậm, không rõ có thêm chất béo'), -- Rice, white, with carrots and dark green vegetables, NS as to fat
     ('58160650', 'Cơm trắng với cà rốt và rau xanh đậm, không thêm chất béo'), -- Rice, white, with carrots and dark green vegetables, no added fat
     ('58160660', 'Cơm trắng với cà rốt và rau xanh đậm, có thêm chất béo'), -- Rice, white, with carrots and dark green vegetables, fat added
-    ('58160670', 'Cơm trắng với cà rốt, rau xanh đậm và cà chua và/hoặc sốt nền cà chua, không rõ có thêm chất béo'), -- Rice, white, with carrots, dark green vegetables, and tomatoes and/or tomato-based sauce, NS as to fat
-    ('58160680', 'Cơm trắng với cà rốt, rau xanh đậm và cà chua và/hoặc sốt nền cà chua, không thêm chất béo'), -- Rice, white, with carrots, dark green vegetables, and tomatoes and/or tomato-based sauce, no added fat
-    ('58160690', 'Cơm trắng với cà rốt, rau xanh đậm và cà chua và/hoặc sốt nền cà chua, có thêm chất béo'), -- Rice, white, with carrots, dark green vegetables, and tomatoes and/or tomato-based sauce, fat added
+    ('58160670', 'Cơm trắng với cà rốt, rau xanh đậm và cà chua và / hoặc sốt nền cà chua, không rõ có thêm chất béo'), -- Rice, white, with carrots, dark green vegetables, and tomatoes and/or tomato-based sauce, NS as to fat
+    ('58160680', 'Cơm trắng với cà rốt, rau xanh đậm và cà chua và / hoặc sốt nền cà chua, không thêm chất béo'), -- Rice, white, with carrots, dark green vegetables, and tomatoes and/or tomato-based sauce, no added fat
+    ('58160690', 'Cơm trắng với cà rốt, rau xanh đậm và cà chua và / hoặc sốt nền cà chua, có thêm chất béo'), -- Rice, white, with carrots, dark green vegetables, and tomatoes and/or tomato-based sauce, fat added
     ('58160700', 'Cơm trắng với rau khác, không rõ có thêm chất béo'), -- Rice, white, with other vegetables, NS as to fat
     ('58160710', 'Cơm trắng với rau khác, không thêm chất béo'), -- Rice, white, with other vegetables, no added fat
     ('58160720', 'Cơm trắng với rau khác, có thêm chất béo'), -- Rice, white, with other vegetables, fat added
@@ -3693,25 +3693,25 @@ FROM (VALUES
     ('58161440', 'Cơm gạo lứt với đậu Hà Lan và cà rốt, không rõ có thêm chất béo'), -- Rice, brown, with peas and carrots, NS as to fat
     ('58161442', 'Cơm gạo lứt với đậu Hà Lan và cà rốt, không thêm chất béo'), -- Rice, brown, with peas and carrots, no added fat
     ('58161444', 'Cơm gạo lứt với đậu Hà Lan và cà rốt, có thêm chất béo'), -- Rice, brown, with peas and carrots, fat added
-    ('58161460', 'Cơm gạo lứt với cà chua và/hoặc sốt nền cà chua, không rõ có thêm chất béo'), -- Rice, brown, with tomatoes and/or tomato based sauce, NS as to fat
-    ('58161462', 'Cơm gạo lứt với cà chua và/hoặc sốt nền cà chua, không thêm chất béo'), -- Rice, brown, with tomatoes and/or tomato based sauce, no added fat
-    ('58161464', 'Cơm gạo lứt với cà chua và/hoặc sốt nền cà chua, có thêm chất béo'), -- Rice, brown, with tomatoes and/or tomato based sauce, fat added
+    ('58161460', 'Cơm gạo lứt với cà chua và / hoặc sốt nền cà chua, không rõ có thêm chất béo'), -- Rice, brown, with tomatoes and/or tomato based sauce, NS as to fat
+    ('58161462', 'Cơm gạo lứt với cà chua và / hoặc sốt nền cà chua, không thêm chất béo'), -- Rice, brown, with tomatoes and/or tomato based sauce, no added fat
+    ('58161464', 'Cơm gạo lứt với cà chua và / hoặc sốt nền cà chua, có thêm chất béo'), -- Rice, brown, with tomatoes and/or tomato based sauce, fat added
     ('58161470', 'Cơm gạo lứt với rau xanh đậm, không rõ có thêm chất béo'), -- Rice, brown, with dark green vegetables, NS as to fat
     ('58161472', 'Cơm gạo lứt với rau xanh đậm, không thêm chất béo'), -- Rice, brown, with dark green vegetables, no added fat
     ('58161474', 'Cơm gạo lứt với rau xanh đậm, có thêm chất béo'), -- Rice, brown, with dark green vegetables, fat added
-    ('58161480', 'Cơm gạo lứt với cà rốt và cà chua và/hoặc sốt nền cà chua, không rõ có thêm chất béo'), -- Rice, brown, with carrots and tomatoes and/or tomato-based sauce, NS as to fat
-    ('58161482', 'Cơm gạo lứt với cà rốt và cà chua và/hoặc sốt nền cà chua, không thêm chất béo'), -- Rice, brown, with carrots and tomatoes and/or tomato-based sauce, no added fat
-    ('58161484', 'Cơm gạo lứt với cà rốt và cà chua và/hoặc sốt nền cà chua, có thêm chất béo'), -- Rice, brown, with carrots and tomatoes and/or tomato-based sauce, fat added
-    ('58161490', 'Cơm gạo lứt với rau xanh đậm và cà chua và/hoặc sốt nền cà chua, không rõ có thêm chất béo'), -- Rice, brown, with dark green vegetables and tomatoes and/or tomato-based sauce, NS as to fat
-    ('58161492', 'Cơm gạo lứt với rau xanh đậm và cà chua và/hoặc sốt nền cà chua, không thêm chất béo'), -- Rice, brown, with dark green vegetables and tomatoes and/or tomato-based sauce, no added fat
-    ('58161494', 'Cơm gạo lứt với rau xanh đậm và cà chua và/hoặc sốt nền cà chua, có thêm chất béo'), -- Rice, brown, with dark green vegetables and tomatoes and/or tomato-based sauce, fat added
+    ('58161480', 'Cơm gạo lứt với cà rốt và cà chua và / hoặc sốt nền cà chua, không rõ có thêm chất béo'), -- Rice, brown, with carrots and tomatoes and/or tomato-based sauce, NS as to fat
+    ('58161482', 'Cơm gạo lứt với cà rốt và cà chua và / hoặc sốt nền cà chua, không thêm chất béo'), -- Rice, brown, with carrots and tomatoes and/or tomato-based sauce, no added fat
+    ('58161484', 'Cơm gạo lứt với cà rốt và cà chua và / hoặc sốt nền cà chua, có thêm chất béo'), -- Rice, brown, with carrots and tomatoes and/or tomato-based sauce, fat added
+    ('58161490', 'Cơm gạo lứt với rau xanh đậm và cà chua và / hoặc sốt nền cà chua, không rõ có thêm chất béo'), -- Rice, brown, with dark green vegetables and tomatoes and/or tomato-based sauce, NS as to fat
+    ('58161492', 'Cơm gạo lứt với rau xanh đậm và cà chua và / hoặc sốt nền cà chua, không thêm chất béo'), -- Rice, brown, with dark green vegetables and tomatoes and/or tomato-based sauce, no added fat
+    ('58161494', 'Cơm gạo lứt với rau xanh đậm và cà chua và / hoặc sốt nền cà chua, có thêm chất béo'), -- Rice, brown, with dark green vegetables and tomatoes and/or tomato-based sauce, fat added
     ('58161500', 'Cơm gạo lứt với cà rốt và rau xanh đậm, không rõ có thêm chất béo'), -- Rice, brown, with carrots and dark green vegetables, NS as to fat
     ('58161502', 'Cơm gạo lứt với cà rốt và rau xanh đậm, không thêm chất béo'), -- Rice, brown, with carrots and dark green vegetables, no added fat
     ('58161504', 'Cơm gạo lứt với cà rốt và rau xanh đậm, có thêm chất béo'), -- Rice, brown, with carrots and dark green vegetables, fat added
     ('58161510', 'Lá nho cuộn cơm'), -- Grape leaves stuffed with rice
-    ('58161520', 'Cơm gạo lứt với cà rốt, rau xanh đậm và cà chua và/hoặc sốt nền cà chua, không rõ có thêm chất béo'), -- Rice, brown, with carrots, dark green vegetables, and tomatoes and/or tomato-based sauce, NS as to fat
-    ('58161522', 'Cơm gạo lứt với cà rốt, rau xanh đậm và cà chua và/hoặc sốt nền cà chua, không thêm chất béo'), -- Rice, brown, with carrots, dark green vegetables, and tomatoes and/or tomato-based sauce, no added fat
-    ('58161524', 'Cơm gạo lứt với cà rốt, rau xanh đậm và cà chua và/hoặc sốt nền cà chua, có thêm chất béo'), -- Rice, brown, with carrots, dark green vegetables, and tomatoes and/or tomato-based sauce, fat added
+    ('58161520', 'Cơm gạo lứt với cà rốt, rau xanh đậm và cà chua và / hoặc sốt nền cà chua, không rõ có thêm chất béo'), -- Rice, brown, with carrots, dark green vegetables, and tomatoes and/or tomato-based sauce, NS as to fat
+    ('58161522', 'Cơm gạo lứt với cà rốt, rau xanh đậm và cà chua và / hoặc sốt nền cà chua, không thêm chất béo'), -- Rice, brown, with carrots, dark green vegetables, and tomatoes and/or tomato-based sauce, no added fat
+    ('58161524', 'Cơm gạo lứt với cà rốt, rau xanh đậm và cà chua và / hoặc sốt nền cà chua, có thêm chất béo'), -- Rice, brown, with carrots, dark green vegetables, and tomatoes and/or tomato-based sauce, fat added
     ('58161530', 'Cơm gạo lứt với rau khác, không rõ có thêm chất béo'), -- Rice, brown, with other vegetables, NS as to fat
     ('58161532', 'Cơm gạo lứt với rau khác, không thêm chất béo'), -- Rice, brown, with other vegetables, no added fat
     ('58161534', 'Cơm gạo lứt với rau khác, có thêm chất béo'), -- Rice, brown, with other vegetables, fat added
@@ -3736,36 +3736,36 @@ FROM (VALUES
     ('58163510', 'Nhân nhồi (dressing) làm từ cơm'), -- Rice dressing
     ('58164110', 'Cơm với nho khô'), -- Rice with raisins
     ('58164210', 'Món tráng miệng hoặc salad cơm với hoa quả'), -- Rice dessert or salad with fruit
-    ('58164500', 'Cơm trắng với sốt nền phô mai và/hoặc kem, không rõ có thêm chất béo'), -- Rice, white, with cheese and/or cream based sauce, NS as to fat
-    ('58164510', 'Cơm trắng với sốt nền phô mai và/hoặc kem, không thêm chất béo'), -- Rice, white, with cheese and/or cream based sauce, no added fat
-    ('58164520', 'Cơm trắng với sốt nền phô mai và/hoặc kem, có thêm chất béo'), -- Rice, white, with cheese and/or cream based sauce, fat added
+    ('58164500', 'Cơm trắng với sốt nền phô mai và / hoặc kem, không rõ có thêm chất béo'), -- Rice, white, with cheese and/or cream based sauce, NS as to fat
+    ('58164510', 'Cơm trắng với sốt nền phô mai và / hoặc kem, không thêm chất béo'), -- Rice, white, with cheese and/or cream based sauce, no added fat
+    ('58164520', 'Cơm trắng với sốt nền phô mai và / hoặc kem, có thêm chất béo'), -- Rice, white, with cheese and/or cream based sauce, fat added
     ('58164530', 'Cơm trắng với nước sốt gravy, không rõ có thêm chất béo'), -- Rice, white, with gravy, NS as to fat
     ('58164540', 'Cơm trắng với nước sốt gravy, không thêm chất béo'), -- Rice, white, with gravy, no added fat
     ('58164550', 'Cơm trắng với nước sốt gravy, có thêm chất béo'), -- Rice, white, with gravy, fat added
     ('58164560', 'Cơm trắng với sốt nền nước tương, không rõ có thêm chất béo'), -- Rice, white, with soy-based sauce, NS as to fat
     ('58164570', 'Cơm trắng với sốt nền nước tương, không thêm chất béo'), -- Rice, white, with soy-based sauce, no added fat
     ('58164580', 'Cơm trắng với sốt nền nước tương, có thêm chất béo'), -- Rice, white, with soy-based sauce, fat added
-    ('58164800', 'Cơm gạo lứt với sốt nền phô mai và/hoặc kem, không rõ có thêm chất béo'), -- Rice, brown, with cheese and/or cream based sauce, NS as to fat
-    ('58164810', 'Cơm gạo lứt với sốt nền phô mai và/hoặc kem, không thêm chất béo'), -- Rice, brown, with cheese and/or cream based sauce, no added fat
-    ('58164820', 'Cơm gạo lứt với sốt nền phô mai và/hoặc kem, có thêm chất béo'), -- Rice, brown, with cheese and/or cream based sauce, fat added
+    ('58164800', 'Cơm gạo lứt với sốt nền phô mai và / hoặc kem, không rõ có thêm chất béo'), -- Rice, brown, with cheese and/or cream based sauce, NS as to fat
+    ('58164810', 'Cơm gạo lứt với sốt nền phô mai và / hoặc kem, không thêm chất béo'), -- Rice, brown, with cheese and/or cream based sauce, no added fat
+    ('58164820', 'Cơm gạo lứt với sốt nền phô mai và / hoặc kem, có thêm chất béo'), -- Rice, brown, with cheese and/or cream based sauce, fat added
     ('58164830', 'Cơm gạo lứt với nước sốt gravy, không rõ có thêm chất béo'), -- Rice, brown, with gravy, NS as to fat
     ('58164840', 'Cơm gạo lứt với nước sốt gravy, không thêm chất béo'), -- Rice, brown, with gravy, no added fat
     ('58164850', 'Cơm gạo lứt với nước sốt gravy, có thêm chất béo'), -- Rice, brown, with gravy, fat added
     ('58164860', 'Cơm gạo lứt với sốt nền nước tương, không rõ có thêm chất béo'), -- Rice, brown, with soy-based sauce, NS as to fat
     ('58164870', 'Cơm gạo lứt với sốt nền nước tương, không thêm chất béo'), -- Rice, brown, with soy-based sauce, no added fat
     ('58164880', 'Cơm gạo lứt với sốt nền nước tương, có thêm chất béo'), -- Rice, brown, with soy-based sauce, fat added
-    ('58165000', 'Cơm trắng với rau, sốt nền phô mai và/hoặc kem, không rõ có thêm chất béo'), -- Rice, white, with vegetables, cheese and/or cream based sauce, NS as to fat
-    ('58165010', 'Cơm trắng với rau, sốt nền phô mai và/hoặc kem, không thêm chất béo'), -- Rice, white, with vegetables, cheese and/or cream based sauce, no added fat
-    ('58165020', 'Cơm trắng với rau, sốt nền phô mai và/hoặc kem, có thêm chất béo'), -- Rice, white, with vegetables, cheese and/or cream based sauce, fat added
+    ('58165000', 'Cơm trắng với rau, sốt nền phô mai và / hoặc kem, không rõ có thêm chất béo'), -- Rice, white, with vegetables, cheese and/or cream based sauce, NS as to fat
+    ('58165010', 'Cơm trắng với rau, sốt nền phô mai và / hoặc kem, không thêm chất béo'), -- Rice, white, with vegetables, cheese and/or cream based sauce, no added fat
+    ('58165020', 'Cơm trắng với rau, sốt nền phô mai và / hoặc kem, có thêm chất béo'), -- Rice, white, with vegetables, cheese and/or cream based sauce, fat added
     ('58165030', 'Cơm trắng với rau và nước sốt gravy, không rõ có thêm chất béo'), -- Rice, white, with vegetables and gravy, NS as to fat
     ('58165040', 'Cơm trắng với rau và nước sốt gravy, không thêm chất béo'), -- Rice, white, with vegetables and gravy, no added fat
     ('58165050', 'Cơm trắng với rau và nước sốt gravy, có thêm chất béo'), -- Rice, white, with vegetables and gravy, fat added
     ('58165060', 'Cơm trắng với rau, sốt nền nước tương, không rõ có thêm chất béo'), -- Rice, white, with vegetables, soy-based sauce, NS as to fat
     ('58165070', 'Cơm trắng với rau, sốt nền nước tương, không thêm chất béo'), -- Rice, white, with vegetables, soy-based sauce, no added fat
     ('58165080', 'Cơm trắng với rau, sốt nền nước tương, có thêm chất béo'), -- Rice, white, with vegetables, soy-based sauce, fat added
-    ('58165400', 'Cơm gạo lứt với rau, sốt nền phô mai và/hoặc kem, không rõ có thêm chất béo'), -- Rice, brown, with vegetables, cheese and/or cream based sauce, NS as to fat
-    ('58165410', 'Cơm gạo lứt với rau, sốt nền phô mai và/hoặc kem, không thêm chất béo'), -- Rice, brown, with vegetables, cheese and/or cream based sauce, no added fat
-    ('58165420', 'Cơm gạo lứt với rau, sốt nền phô mai và/hoặc kem, có thêm chất béo'), -- Rice, brown, with vegetables, cheese and/or cream based sauce, fat added
+    ('58165400', 'Cơm gạo lứt với rau, sốt nền phô mai và / hoặc kem, không rõ có thêm chất béo'), -- Rice, brown, with vegetables, cheese and/or cream based sauce, NS as to fat
+    ('58165410', 'Cơm gạo lứt với rau, sốt nền phô mai và / hoặc kem, không thêm chất béo'), -- Rice, brown, with vegetables, cheese and/or cream based sauce, no added fat
+    ('58165420', 'Cơm gạo lứt với rau, sốt nền phô mai và / hoặc kem, có thêm chất béo'), -- Rice, brown, with vegetables, cheese and/or cream based sauce, fat added
     ('58165430', 'Cơm gạo lứt với rau và nước sốt gravy, không rõ có thêm chất béo'), -- Rice, brown, with vegetables and gravy, NS as to fat
     ('58165440', 'Cơm gạo lứt với rau và nước sốt gravy, không thêm chất béo'), -- Rice, brown, with vegetables and gravy, no added fat
     ('58165450', 'Cơm gạo lứt với rau và nước sốt gravy, có thêm chất béo'), -- Rice, brown, with vegetables and gravy, fat added
@@ -4114,15 +4114,15 @@ FROM (VALUES
     ('71401031', 'Khoai tây chiên, nhà hàng'), -- Potato, french fries, restaurant
     ('71401032', 'Khoai tây chiên, từ loại đông lạnh, chiên dầu'), -- Potato, french fries, from frozen, fried
     ('71401033', 'Khoai tây chiên, trường học'), -- Potato, french fries, school
-    ('71401039', 'Khoai tây chiên phủ phô mai, đồ ăn nhanh/nhà hàng'), -- Potato, french fries, with cheese, fast food / restaurant
+    ('71401039', 'Khoai tây chiên phủ phô mai, đồ ăn nhanh / nhà hàng'), -- Potato, french fries, with cheese, fast food / restaurant
     ('71401041', 'Khoai tây chiên phủ phô mai, trường học'), -- Potato, french fries, with cheese, school
-    ('71401045', 'Khoai tây chiên phủ món chili, đồ ăn nhanh/nhà hàng'), -- Potato, french fries, with chili, fast food / restaurant
-    ('71401050', 'Khoai tây chiên phủ món chili và phô mai, đồ ăn nhanh/nhà hàng'), -- Potato, french fries, with chili and cheese, fast food / restaurant
+    ('71401045', 'Khoai tây chiên phủ món chili, đồ ăn nhanh / nhà hàng'), -- Potato, french fries, with chili, fast food / restaurant
+    ('71401050', 'Khoai tây chiên phủ món chili và phô mai, đồ ăn nhanh / nhà hàng'), -- Potato, french fries, with chili and cheese, fast food / restaurant
     ('71402500', 'Khoai tây chiên phủ phô mai'), -- Potato, french fries, with cheese
     ('71402510', 'Khoai tây chiên phủ món chili và phô mai'), -- Potato, french fries, with chili and cheese
     ('71402520', 'Khoai tây chiên phủ món chili'), -- Potato, french fries, with chili
     ('71403020', 'Khoai tây áp chảo (home fries), loại chung'), -- Potato, home fries, NFS
-    ('71403030', 'Khoai tây áp chảo (home fries), nhà hàng/đồ ăn nhanh'), -- Potato, home fries, from restaurant / fast food
+    ('71403030', 'Khoai tây áp chảo (home fries), nhà hàng / đồ ăn nhanh'), -- Potato, home fries, from restaurant / fast food
     ('71403040', 'Khoai tây áp chảo (home fries), từ loại tươi'), -- Potato, home fries, from fresh
     ('71403050', 'Khoai tây áp chảo (home fries), chỉ cần hâm nóng'), -- Potato, home fries, ready-to-heat
     ('71403500', 'Khoai tây áp chảo (home fries), có rau củ'), -- Potato, home fries, with vegetables
@@ -4161,7 +4161,7 @@ FROM (VALUES
     ('71501075', 'Khoai tây nghiền, chỉ cần hâm nóng, có nước sốt gravy'), -- Potato, mashed, ready-to-heat, with gravy
     ('71503010', 'Miếng chả khoai tây (patty)'), -- Potato patty
     ('71505000', 'Khoai tây viên chiên (tots), loại chung'), -- Potato tots, NFS
-    ('71505010', 'Khoai tây viên chiên (tots), đồ ăn nhanh/nhà hàng'), -- Potato tots, fast food / restaurant
+    ('71505010', 'Khoai tây viên chiên (tots), đồ ăn nhanh / nhà hàng'), -- Potato tots, fast food / restaurant
     ('71505020', 'Khoai tây viên chiên (tots), trường học'), -- Potato tots, school
     ('71505030', 'Khoai tây viên chiên (tots), từ loại tươi, chiên dầu hoặc nướng lò'), -- Potato tots, from fresh, fried or baked
     ('71505040', 'Khoai tây viên chiên (tots), đông lạnh, nướng lò'), -- Potato tots, frozen, baked
@@ -4362,10 +4362,10 @@ FROM (VALUES
     ('73410210', 'Khoai lang chiên lát (snack)'), -- Sweet potato chips
     ('73410320', 'Khoai lang chiên, đông lạnh'), -- Sweet potato fries, frozen
     ('73410340', 'Khoai lang chiên, từ loại tươi'), -- Sweet potato fries, from fresh
-    ('73410400', 'Khoai lang chiên, đồ ăn nhanh/nhà hàng'), -- Sweet potato fries, fast food / restaurant
+    ('73410400', 'Khoai lang chiên, đồ ăn nhanh / nhà hàng'), -- Sweet potato fries, fast food / restaurant
     ('73410500', 'Khoai lang chiên, trường học'), -- Sweet potato fries, school
     ('73420020', 'Khoai lang viên chiên (tots)'), -- Sweet potato tots
-    ('73420100', 'Khoai lang viên chiên (tots), đồ ăn nhanh/nhà hàng'), -- Sweet potato tots, fast food / restaurant
+    ('73420100', 'Khoai lang viên chiên (tots), đồ ăn nhanh / nhà hàng'), -- Sweet potato tots, fast food / restaurant
     ('73420200', 'Khoai lang viên chiên (tots), trường học'), -- Sweet potato tots, school
     ('73502000', 'Súp bí đỏ'), -- Soup, pumpkin
     ('74101000', 'Cà chua, sống'), -- Tomatoes, raw
@@ -4409,7 +4409,7 @@ FROM (VALUES
     ('74601000', 'Súp cà chua'), -- Soup, tomato
     ('74601010', 'Súp kem cà chua'), -- Soup, cream of tomato
     ('74602010', 'Súp cà chua, đóng hộp'), -- Soup, tomato, canned
-    ('74602200', 'Súp cà chua, đóng hộp/hộp giấy, giảm muối'), -- Soup, tomato, canned / carton, reduced sodium
+    ('74602200', 'Súp cà chua, đóng hộp / hộp giấy, giảm muối'), -- Soup, tomato, canned / carton, reduced sodium
     ('74701000', 'Bánh mì kẹp cà chua, bánh mì trắng'), -- Tomato sandwich on white
     ('74701010', 'Bánh mì kẹp cà chua, bánh mì lúa mì'), -- Tomato sandwich on wheat
     ('75100250', 'Rau củ sống, loại chung'), -- Raw vegetable, NFS
@@ -4463,7 +4463,7 @@ FROM (VALUES
     ('75132100', 'Nước ép cần tây'), -- Celery juice
     ('75140500', 'Salad súp lơ xanh với súp lơ trắng, phô mai, thịt xông khói vụn và sốt trộn'), -- Broccoli salad with cauliflower, cheese, bacon bits, and dressing
     ('75140510', 'Salad súp lơ xanh bào sợi (broccoli slaw)'), -- Broccoli slaw salad
-    ('75140990', 'Salad cải bắp (coleslaw), đồ ăn nhanh/nhà hàng'), -- Coleslaw, fast food / restaurant
+    ('75140990', 'Salad cải bắp (coleslaw), đồ ăn nhanh / nhà hàng'), -- Coleslaw, fast food / restaurant
     ('75141000', 'Salad cải bắp (coleslaw)'), -- Coleslaw
     ('75141040', 'Salad cải bắp, loại chung'), -- Cabbage salad, NFS
     ('75141100', 'Salad cải bắp (coleslaw), có hoa quả'), -- Coleslaw, with fruit
@@ -4471,14 +4471,14 @@ FROM (VALUES
     ('75142500', 'Salad dưa chuột, làm với sốt trộn kem chua'), -- Cucumber salad, made with sour cream dressing
     ('75142550', 'Salad dưa chuột, làm với sốt trộn kiểu Ý'), -- Cucumber salad, made with Italian dressing
     ('75142600', 'Salad dưa chuột, làm từ dưa chuột và giấm'), -- Cucumber salad made with cucumber and vinegar
-    ('75143000', 'Salad xà lách với rau củ các loại gồm cà chua và/hoặc cà rốt, không sốt trộn'), -- Lettuce, salad with assorted vegetables including tomatoes and/or carrots, no dressing
+    ('75143000', 'Salad xà lách với rau củ các loại gồm cà chua và / hoặc cà rốt, không sốt trộn'), -- Lettuce, salad with assorted vegetables including tomatoes and/or carrots, no dressing
     ('75143050', 'Salad xà lách với rau củ các loại trừ cà chua và cà rốt, không sốt trộn'), -- Lettuce, salad with assorted vegetables excluding tomatoes and carrots, no dressing
-    ('75143100', 'Salad xà lách với quả bơ, cà chua và/hoặc cà rốt, có hoặc không có rau khác, không sốt trộn'), -- Lettuce, salad with avocado, tomato, and/or carrots, with or without other vegetables, no dressing
-    ('75143200', 'Salad xà lách với phô mai, cà chua và/hoặc cà rốt, có hoặc không có rau khác, không sốt trộn'), -- Lettuce, salad with cheese, tomato and/or carrots, with or without other vegetables, no dressing
-    ('75143300', 'Salad xà lách với trứng, cà chua và/hoặc cà rốt, có hoặc không có rau khác, không sốt trộn'), -- Lettuce, salad with egg, tomato, and/or carrots, with or without other vegetables, no dressing
-    ('75143350', 'Salad xà lách với trứng, phô mai, cà chua và/hoặc cà rốt, có hoặc không có rau khác, không sốt trộn'), -- Lettuce, salad with egg, cheese, tomato, and/or carrots, with or without other vegetables, no dressing
+    ('75143100', 'Salad xà lách với quả bơ, cà chua và / hoặc cà rốt, có hoặc không có rau khác, không sốt trộn'), -- Lettuce, salad with avocado, tomato, and/or carrots, with or without other vegetables, no dressing
+    ('75143200', 'Salad xà lách với phô mai, cà chua và / hoặc cà rốt, có hoặc không có rau khác, không sốt trộn'), -- Lettuce, salad with cheese, tomato and/or carrots, with or without other vegetables, no dressing
+    ('75143300', 'Salad xà lách với trứng, cà chua và / hoặc cà rốt, có hoặc không có rau khác, không sốt trộn'), -- Lettuce, salad with egg, tomato, and/or carrots, with or without other vegetables, no dressing
+    ('75143350', 'Salad xà lách với trứng, phô mai, cà chua và / hoặc cà rốt, có hoặc không có rau khác, không sốt trộn'), -- Lettuce, salad with egg, cheese, tomato, and/or carrots, with or without other vegetables, no dressing
     ('75144100', 'Xà lách trụng héo, với sốt trộn thịt xông khói'), -- Lettuce, wilted, with bacon dressing
-    ('75145000', 'Salad bảy lớp, salad xà lách gồm hành tây, cần tây, ớt chuông xanh, đậu Hà Lan, sốt mayonnaise, phô mai, trứng và/hoặc thịt xông khói'), -- Seven-layer salad, lettuce salad made with a combination of onion, celery, green pepper, peas, mayonnaise, cheese, eggs, and/or bacon
+    ('75145000', 'Salad bảy lớp, salad xà lách gồm hành tây, cần tây, ớt chuông xanh, đậu Hà Lan, sốt mayonnaise, phô mai, trứng và / hoặc thịt xông khói'), -- Seven-layer salad, lettuce salad made with a combination of onion, celery, green pepper, peas, mayonnaise, cheese, eggs, and/or bacon
     ('75146000', 'Salad Hy Lạp, không sốt trộn'), -- Greek Salad, no dressing
     ('75147000', 'Salad rau chân vịt, không sốt trộn'), -- Spinach salad, no dressing
     ('75148010', 'Salad Cobb, không sốt trộn'), -- Cobb salad, no dressing
@@ -4658,7 +4658,7 @@ FROM (VALUES
     ('75236500', 'Chiết xuất nấm men dạng phết'), -- Yeast extract spread
     ('75301110', 'Đậu lima và ngô, nấu chín, không thêm chất béo'), -- Lima beans and corn, cooked, no added fat
     ('75301120', 'Đậu lima và ngô, nấu chín, có thêm chất béo'), -- Lima beans and corn, cooked, fat added
-    ('75302080', 'Salad đậu que vàng và/hoặc đậu cô ve'), -- Bean salad, yellow and/or green string beans
+    ('75302080', 'Salad đậu que vàng và / hoặc đậu cô ve'), -- Bean salad, yellow and/or green string beans
     ('75306998', 'Ớt chuông và hành tây, nấu chín, không thêm chất béo'), -- Peppers and onions, cooked, no added fat
     ('75307000', 'Ớt chuông và hành tây, nấu chín, có thêm chất béo'), -- Peppers and onions, cooked, fat added
     ('75310990', 'Rau củ trộn cổ điển, nấu chín, nhà hàng'), -- Classic mixed vegetables, cooked, from restaurant
@@ -4802,7 +4802,7 @@ FROM (VALUES
     ('78101120', 'Sinh tố trái cây và rau củ, đóng chai'), -- Fruit and vegetable smoothie, bottled
     ('78101125', 'Sinh tố trái cây và rau củ, không có sữa'), -- Fruit and vegetable smoothie, no dairy
     ('78101130', 'Sinh tố rau củ'), -- Vegetable smoothie
-    ('81100000', 'Chất béo phết bánh (bơ/bơ thực vật), loại chung'), -- Table fat, NFS
+    ('81100000', 'Chất béo phết bánh (bơ / bơ thực vật), loại chung'), -- Table fat, NFS
     ('81100500', 'Bơ, loại chung'), -- Butter, NFS
     ('81101000', 'Bơ, dạng thỏi'), -- Butter, stick
     ('81101010', 'Bơ, dạng hộp'), -- Butter, tub
@@ -4948,7 +4948,7 @@ FROM (VALUES
     ('91361010', 'Sốt chua ngọt'), -- Sweet and sour sauce
     ('91361040', 'Sốt tráng miệng'), -- Dessert sauce
     ('91361050', 'Sốt mận chua ngọt (duck sauce)'), -- Duck sauce
-    ('91400000', 'Mứt hoặc mứt đông (jam/jelly), loại chung'), -- Jam or jelly, NFS
+    ('91400000', 'Mứt hoặc mứt đông (jam / jelly), loại chung'), -- Jam or jelly, NFS
     ('91401000', 'Mứt đông (jelly)'), -- Jelly
     ('91402000', 'Mứt (jam)'), -- Jam
     ('91403000', 'Mứt trái cây nghiền (fruit butter)'), -- Fruit butter
@@ -5132,8 +5132,8 @@ FROM (VALUES
     ('92162000', 'Cà phê cappuccino, đã khử caffeine'), -- Coffee, Cappuccino, decaffeinated
     ('92162001', 'Cà phê cappuccino, đã khử caffeine, không béo'), -- Coffee, Cappuccino, decaffeinated, nonfat
     ('92162002', 'Cà phê cappuccino, đã khử caffeine, dùng sữa thực vật'), -- Coffee, Cappuccino, decaffeinated, with non-dairy milk
-    ('92171000', 'Cà phê đóng chai/lon'), -- Coffee, bottled/canned
-    ('92171010', 'Cà phê đóng chai/lon, loại nhẹ'), -- Coffee, bottled/canned, light
+    ('92171000', 'Cà phê đóng chai / lon'), -- Coffee, bottled/canned
+    ('92171010', 'Cà phê đóng chai / lon, loại nhẹ'), -- Coffee, bottled/canned, light
     ('92191100', 'Cà phê hòa tan, chưa pha'), -- Coffee, instant, not reconstituted
     ('92191200', 'Cà phê hòa tan, đã khử caffeine, chưa pha'), -- Coffee, instant, decaffeinated, not reconstituted
     ('92191400', 'Cà phê hòa tan, có sẵn đường, chưa pha'), -- Coffee, instant, pre-sweetened with sugar, not reconstituted

@@ -16,7 +16,12 @@ public interface NutritionFoodRepository extends JpaRepository<NutritionFood, Lo
      */
     String VI_UPPER = "ÀÁẢÃẠĂẰẮẲẴẶÂẦẤẨẪẬÈÉẺẼẸÊỀẾỂỄỆÌÍỈĨỊÒÓỎÕỌÔỒỐỔỖỘƠỜỚỞỠỢÙÚỦŨỤƯỪỨỬỮỰỲÝỶỸỴĐ";
     String VI_LOWER = "àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ";
-    String NAME_VI_LOWERCASE = "lower(translate(coalesce(f.name_vi, ''), '" + VI_UPPER + "', '" + VI_LOWER + "'))";
+    /** Ký tự của một từ; mọi ký tự khác (dấu câu, khoảng trắng) là chỗ ngắt từ. */
+    String WORD_CHARS = "a-z0-9" + VI_LOWER;
+    /** Tên viết thường, giữ dấu, các từ cách nhau một dấu cách và có dấu cách ở hai đầu: " sợi mì gạo bún phở ". */
+    String NAME_VI_WORDS = "(' ' || regexp_replace(lower(translate(coalesce(f.name_vi, ''), '" + VI_UPPER + "', '"
+            + VI_LOWER + "')), '[^" + WORD_CHARS + "]+', ' ', 'g') || ' ')";
+    String NAME_WORDS = "(' ' || regexp_replace(lower(f.name), '[^" + WORD_CHARS + "]+', ' ', 'g') || ' ')";
 
     String SEARCH_FILTER = """
             where (cast(:groupId as text) is null or f.group_id = cast(:groupId as text))
@@ -28,14 +33,14 @@ public interface NutritionFoodRepository extends JpaRepository<NutritionFood, Lo
     /**
      * Tìm đồng thời theo tên gốc (full-text 'english', index của V21) và tên tiếng Việt đã bỏ dấu
      * (full-text 'simple' trên cột search_vi, index của V23). Biểu thức phải giữ đúng như index để dùng được.
-     * Vì so khớp bỏ dấu ("pho" khớp cả "phở" lẫn "phô mai"), món chứa đúng cụm người dùng gõ, kể cả dấu
-     * ({@code phrase}, dạng LIKE đã thoát bằng '!'), xếp trước; sau đó theo độ khớp, rồi theo tên hiển thị
+     * Vì so khớp bỏ dấu ("pho" khớp cả "phở" lẫn "phô mai"), món có đúng các từ người dùng gõ, kể cả dấu
+     * ({@code phrase} dạng "% phở %", xem {@link #NAME_VI_WORDS}), xếp trước; sau đó theo độ khớp, rồi theo tên hiển thị
      * (tên Việt cho nguồn VN_FCT, tên gốc cho USDA, khớp displayName ở service).
      * {@code tsquery} do service dựng từ các token đã lọc, không nhận chuỗi người dùng trực tiếp.
      */
     @Query(value = "select f.* from nutrition_foods f " + SEARCH_FILTER
-            + "order by case when " + NAME_VI_LOWERCASE + " like cast(:phrase as text) escape '!'"
-            + " or lower(f.name) like cast(:phrase as text) escape '!' then 0 else 1 end," + """
+            + "order by case when " + NAME_VI_WORDS + " like cast(:phrase as text)"
+            + " or " + NAME_WORDS + " like cast(:phrase as text) then 0 else 1 end," + """
                      greatest(
                          ts_rank(to_tsvector('english', f.name), to_tsquery('english', cast(:tsquery as text))),
                          ts_rank(to_tsvector('simple', coalesce(f.search_vi, '')), to_tsquery('simple', cast(:tsquery as text)))) desc,

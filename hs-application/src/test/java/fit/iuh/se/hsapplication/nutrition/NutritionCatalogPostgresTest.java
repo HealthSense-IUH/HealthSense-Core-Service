@@ -306,6 +306,8 @@ class NutritionCatalogPostgresTest {
                 Integer.class);
         assertTrue(exact >= 2 && exact < 50, "exact = " + exact);
         var content = pho.getContent();
+        assertTrue(content.stream().anyMatch(f -> f.sourceFoodCode().equals("56117090")),
+                "\"Sợi mì gạo (bún / phở)\": a slash must not glue two words into one search token");
         assertTrue(content.subList(0, exact).stream().allMatch(f -> f.localName().toLowerCase().contains("phở")), names(pho).toString());
         assertTrue(content.subList(exact, content.size()).stream().noneMatch(f -> f.localName().toLowerCase().contains("phở")));
         assertTrue(names(pho).subList(0, exact).containsAll(List.of("Soup, pho, with meat", "Soup, pho, no meat")));

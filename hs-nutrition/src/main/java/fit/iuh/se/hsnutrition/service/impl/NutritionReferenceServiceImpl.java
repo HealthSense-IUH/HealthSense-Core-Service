@@ -96,13 +96,14 @@ public class NutritionReferenceServiceImpl implements NutritionReferenceService 
     }
 
     /**
-     * Mẫu LIKE của cả cụm người dùng gõ, giữ dấu, chữ thường, gộp khoảng trắng; ký tự đặc biệt của LIKE
-     * được thoát bằng '!'. Dùng để xếp món khớp đúng dấu ("phở") lên trước món chỉ khớp khi bỏ dấu ("phô mai").
+     * Mẫu LIKE khớp nguyên các từ người dùng gõ, giữ dấu, chữ thường ("Phở!" -> "% phở %"), để xếp món khớp đúng
+     * dấu lên trước món chỉ khớp khi bỏ dấu ("phô mai", "phong"). Chỉ còn chữ, số và dấu cách nên không có ký tự
+     * đặc biệt của LIKE.
      */
     static String toPhrasePattern(String query) {
-        String phrase = String.join(" ", Normalizer.normalize(query, Normalizer.Form.NFC)
-                .toLowerCase(Locale.ROOT).trim().split("\\s+"));
-        return "%" + phrase.replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%";
+        String words = Normalizer.normalize(query, Normalizer.Form.NFC).toLowerCase(Locale.ROOT)
+                .replaceAll("[^\\p{L}\\p{N}]+", " ").trim();
+        return "% " + words + " %";
     }
 
     /**
