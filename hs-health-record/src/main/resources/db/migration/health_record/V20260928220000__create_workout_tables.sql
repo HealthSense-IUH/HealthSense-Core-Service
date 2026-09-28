@@ -133,13 +133,13 @@ CREATE TABLE IF NOT EXISTS health_statistics_daily (
 INSERT INTO workout_exercises (id, user_id, code, name, category, tracking_type, met_rate, icon_name, is_system, description, created_at)
 VALUES
     (1001, NULL, 'walking', 'Đi bộ', 'GENERAL', 'DISTANCE_GPS', 3.5, 'Footprints', TRUE, 'Đi bộ tự nhiên giúp tăng cường tuần hoàn máu và thư giãn tinh thần.', NOW()),
-    (1002, NULL, 'running', 'Chạy bộ', 'CARDIO', 'DISTANCE_GPS', 8.0, 'Activity', TRUE, 'Chạy bộ tăng cường sức bền, cải thiện VO2 max và sức khỏe tim mạch.', NOW()),
-    (1003, NULL, 'cycling', 'Đạp xe', 'CARDIO', 'DISTANCE_GPS', 6.0, 'Bike', TRUE, 'Đạp xe ngoài trời hoặc máy đạp xe rèn luyện cơ chân và sức bền.', NOW()),
-    (1004, NULL, 'badminton', 'Cầu lông', 'SPORTS', 'TIME_CALORIES', 5.5, 'Trophy', TRUE, 'Môn thể thao phản xạ nhanh, di chuyển liên tục và rèn luyện toàn thân.', NOW()),
-    (1005, NULL, 'swimming', 'Bơi lội', 'CARDIO', 'TIME_CALORIES', 7.0, 'Waves', TRUE, 'Bơi lội toàn diện phát triển cơ bắp, dung tích phổi và giảm áp lực khớp.', NOW()),
+    (1002, NULL, 'running', 'Chạy bộ', 'AEROBIC', 'DISTANCE_GPS', 8.0, 'Activity', TRUE, 'Chạy bộ tăng cường sức bền, cải thiện VO2 max và sức khỏe tim mạch.', NOW()),
+    (1003, NULL, 'cycling', 'Đạp xe', 'AEROBIC', 'DISTANCE_GPS', 6.0, 'Bike', TRUE, 'Đạp xe ngoài trời hoặc máy đạp xe rèn luyện cơ chân và sức bền.', NOW()),
+    (1004, NULL, 'badminton', 'Cầu lông', 'BALL', 'TIME_CALORIES', 5.5, 'Trophy', TRUE, 'Môn thể thao phản xạ nhanh, di chuyển liên tục và rèn luyện toàn thân.', NOW()),
+    (1005, NULL, 'swimming', 'Bơi lội', 'WATER', 'TIME_CALORIES', 7.0, 'Waves', TRUE, 'Bơi lội toàn diện phát triển cơ bắp, dung tích phổi và giảm áp lực khớp.', NOW()),
     (1006, NULL, 'combined_workout', 'Bài tập kết hợp', 'GENERAL', 'TIME_CALORIES', 5.0, 'Dumbbell', TRUE, 'Tổ hợp các động tác thể chất rèn luyện sức bền và toàn thân.', NOW()),
     (1007, NULL, 'stretching', 'Giãn cơ', 'GENERAL', 'TIME_CALORIES', 2.5, 'Sparkles', TRUE, 'Kéo giãn cơ bắp, hỗ trợ phục hồi và tăng tính linh hoạt của khớp.', NOW()),
     (1008, NULL, 'yoga', 'Yoga', 'GENERAL', 'TIME_CALORIES', 3.0, 'HeartPulse', TRUE, 'Tập trung hơi thở, kéo giãn và cân bằng năng lượng cơ thể.', NOW()),
-    (1009, NULL, 'jump_rope', 'Nhảy dây', 'CARDIO', 'TIME_CALORIES', 9.0, 'Flame', TRUE, 'Đốt calo cường độ cao, phát triển sức bật và nhịp điệu vận động.', NOW()),
-    (1010, NULL, 'strength_training', 'Tập tạ', 'STRENGTH', 'REPS_SETS', 4.5, 'Dumbbell', TRUE, 'Rèn luyện sức mạnh, kích thích phát triển cơ bắp và mật độ xương.', NOW())
+    (1009, NULL, 'jump_rope', 'Nhảy dây', 'AEROBIC', 'TIME_CALORIES', 9.0, 'Flame', TRUE, 'Đốt calo cường độ cao, phát triển sức bật và nhịp điệu vận động.', NOW()),
+    (1010, NULL, 'strength_training', 'Tập tạ', 'FREE_WEIGHT', 'SETS_REST', 4.5, 'Dumbbell', TRUE, 'Rèn luyện sức mạnh, kích thích phát triển cơ bắp và mật độ xương.', NOW())
 ON CONFLICT (id) DO NOTHING;
