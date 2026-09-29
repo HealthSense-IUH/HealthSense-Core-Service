@@ -10,6 +10,18 @@ import fit.iuh.se.hsnutrition.service.NutritionCatalogService;
 import fit.iuh.se.hsnutrition.service.NutritionReferenceService;
 import fit.iuh.se.hsnutrition.service.impl.NutritionCatalogServiceImpl;
 import fit.iuh.se.hsnutrition.service.impl.NutritionReferenceServiceImpl;
+import fit.iuh.se.hsnutrition.service.impl.DietPrescriptionServiceImpl;
+import fit.iuh.se.hsnutrition.service.DietPrescriptionService;
+import fit.iuh.se.hsnutrition.service.DietProfile;
+import fit.iuh.se.hsnutrition.service.DietRuleService;
+import fit.iuh.se.hsnutrition.service.DietThreshold;
+import fit.iuh.se.hsnutrition.service.impl.DietRuleServiceImpl;
+import fit.iuh.se.hsnutrition.dto.DietRuleResponse;
+import fit.iuh.se.hsnutrition.dto.DietThresholdRequest;
+import fit.iuh.se.hsnutrition.entity.enums.DietRuleCode;
+import fit.iuh.se.hsnutrition.dto.DietAdvice;
+import fit.iuh.se.hsnutrition.dto.NutritionDietPrescriptionResponse;
+import fit.iuh.se.hsnutrition.dto.UpdateDietPrescriptionRequest;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsshared.dto.response.PageResponse;
@@ -47,6 +59,8 @@ class NutritionCatalogPostgresTest {
     private String schema;
     private NutritionCatalogService catalog;
     private NutritionReferenceService reference;
+    private DietPrescriptionService prescriptions;
+    private DietRuleService rules;
 
     @BeforeAll
     void start() {
@@ -66,13 +80,15 @@ class NutritionCatalogPostgresTest {
         flyway = Flyway.configure().dataSource(scoped).schemas(schema).defaultSchema(schema)
                 .locations("classpath:db/migration").baselineVersion("20").load();
         flyway.baseline();
-        assertEquals(5, flyway.migrate().migrationsExecuted);
+        assertEquals(7, flyway.migrate().migrationsExecuted);
         context = new AnnotationConfigApplicationContext();
         context.registerBean(DataSource.class, () -> scoped);
         context.register(TestConfiguration.class);
         context.refresh();
         catalog = context.getBean(NutritionCatalogService.class);
         reference = context.getBean(NutritionReferenceService.class);
+        prescriptions = context.getBean(DietPrescriptionService.class);
+        rules = context.getBean(DietRuleService.class);
     }
 
     private DriverManagerDataSource datasource(String url) {
@@ -93,7 +109,8 @@ class NutritionCatalogPostgresTest {
     @Configuration(proxyBeanMethods = false)
     @EnableTransactionManagement
     @EnableJpaRepositories(basePackageClasses = NutritionGuidanceFoodRepository.class)
-    @Import({NutritionCatalogServiceImpl.class, NutritionReferenceServiceImpl.class})
+    @Import({NutritionCatalogServiceImpl.class, NutritionReferenceServiceImpl.class, DietPrescriptionServiceImpl.class,
+            DietRuleServiceImpl.class})
     static class TestConfiguration {
         @Bean
         LocalContainerEntityManagerFactoryBean entityManagerFactory(DataSource ds) {
@@ -302,32 +319,32 @@ class NutritionCatalogPostgresTest {
 
     @Test
     void browsingWithoutAQueryListsEveryFoodByName() {
-        var first = reference.searchFoods("", null, null, 1, 20);
+        var first = reference.searchFoods("", null, null, 1, 20, null);
         assertEquals(5957, first.getTotalElements());
         assertEquals(298, first.getTotalPages());
         assertTrue(first.isHasMore());
         assertEquals(jdbc.queryForList("select cast(id as text) from nutrition_foods order by case when source = 'VN_FCT' then coalesce(name_vi, name) else name end, id limit 20",
                 String.class), first.getContent().stream().map(NutritionReferenceFoodSummaryResponse::id).toList());
-        var last = reference.searchFoods(null, null, null, 298, 20);
+        var last = reference.searchFoods(null, null, null, 298, 20, null);
         assertEquals(17, last.getContent().size());
         assertFalse(last.isHasMore());
-        assertTrue(reference.searchFoods("", null, null, 299, 20).getContent().isEmpty());
+        assertTrue(reference.searchFoods("", null, null, 299, 20, null).getContent().isEmpty());
     }
 
     @Test
     void searchMatchesWordPrefixesInAnyOrder() {
-        var page = reference.searchFoods("salm bak", null, null, 1, 50);
+        var page = reference.searchFoods("salm bak", null, null, 1, 50, null);
         assertFalse(page.getContent().isEmpty());
         assertTrue(names(page).contains("Fish, salmon, baked or broiled"));
         assertTrue(names(page).stream().map(String::toLowerCase).allMatch(n -> n.contains("salm") && n.contains("bak")),
                 "every token must match: " + names(page));
-        assertEquals(page.getTotalElements(), reference.searchFoods("BAKED salmon", null, null, 1, 50).getTotalElements());
+        assertEquals(page.getTotalElements(), reference.searchFoods("BAKED salmon", null, null, 1, 50, null).getTotalElements());
     }
 
     @Test
     void searchStripsVietnameseDiacriticsButRanksTheExactSpellingFirst() {
         // "pho" also matches "phô mai" (cheese) once accents are stripped; the foods spelled "phở" come first
-        var pho = reference.searchFoods("phở", null, "USDA_FNDDS", 1, 50);
+        var pho = reference.searchFoods("phở", null, "USDA_FNDDS", 1, 50, null);
         assertTrue(pho.getTotalElements() > 100, "prefix search without accents also finds phô mai");
         int exact = jdbc.queryForObject("select count(*) from nutrition_foods where source = 'USDA_FNDDS' and lower(name_vi) like '%phở%'",
                 Integer.class);
@@ -340,37 +357,37 @@ class NutritionCatalogPostgresTest {
         assertTrue(names(pho).subList(0, exact).containsAll(List.of("Soup, pho, with meat", "Soup, pho, no meat")));
         // Without accents the English name "pho" is the exact match
         assertEquals(Set.of("Soup, pho, with meat", "Soup, pho, no meat"),
-                new HashSet<>(names(reference.searchFoods("pho", null, "USDA_FNDDS", 1, 20)).subList(0, 2)));
+                new HashSet<>(names(reference.searchFoods("pho", null, "USDA_FNDDS", 1, 20, null)).subList(0, 2)));
     }
 
     @Test
     void groupFilterWorksAloneWithASearchAndWithASource() {
         long mixed = jdbc.queryForObject("select count(*) from nutrition_foods where group_id = 'MIXED_DISH'", Long.class);
-        var all = reference.searchFoods("", "MIXED_DISH", null, 1, 50);
+        var all = reference.searchFoods("", "MIXED_DISH", null, 1, 50, null);
         assertEquals(mixed, all.getTotalElements());
         assertTrue(all.getContent().stream().allMatch(f -> "MIXED_DISH".equals(f.group()) && "Món ăn hỗn hợp".equals(f.groupName())));
-        assertEquals(mixed, reference.searchFoods("", "mixed-dishes", null, 1, 50).getTotalElements(), "slug works too");
-        assertEquals(2, reference.searchFoods("pho", "MIXED_DISH", "USDA_FNDDS", 1, 20).getContent().stream()
+        assertEquals(mixed, reference.searchFoods("", "mixed-dishes", null, 1, 50, null).getTotalElements(), "slug works too");
+        assertEquals(2, reference.searchFoods("pho", "MIXED_DISH", "USDA_FNDDS", 1, 20, null).getContent().stream()
                 .filter(f -> f.displayName().startsWith("Soup, pho")).count());
-        assertEquals(0, reference.searchFoods("soup pho", "DAIRY", null, 1, 20).getTotalElements());
-        assertEquals(62, reference.searchFoods("", "FRUIT", "VN_FCT", 1, 20).getTotalElements());
-        error(ErrorCode.INVALID_PARAMETER, () -> reference.searchFoods("", "No such group", null, 1, 20));
+        assertEquals(0, reference.searchFoods("soup pho", "DAIRY", null, 1, 20, null).getTotalElements());
+        assertEquals(62, reference.searchFoods("", "FRUIT", "VN_FCT", 1, 20, null).getTotalElements());
+        error(ErrorCode.INVALID_PARAMETER, () -> reference.searchFoods("", "No such group", null, 1, 20, null));
     }
 
     @Test
     void searchInputCannotInjectTsquerySyntax() {
-        assertEquals(reference.searchFoods("salmon baked", null, null, 1, 20).getTotalElements(),
-                reference.searchFoods("salmon & (baked | !", null, null, 1, 20).getTotalElements());
-        assertEquals(0, reference.searchFoods("&&& :* |", null, null, 1, 20).getTotalElements());
-        assertEquals(0, reference.searchFoods("with the", null, null, 1, 20).getTotalElements(), "stop words only");
-        assertEquals(0, reference.searchFoods("'; drop table nutrition_foods; --", null, null, 1, 20).getTotalElements());
+        assertEquals(reference.searchFoods("salmon baked", null, null, 1, 20, null).getTotalElements(),
+                reference.searchFoods("salmon & (baked | !", null, null, 1, 20, null).getTotalElements());
+        assertEquals(0, reference.searchFoods("&&& :* |", null, null, 1, 20, null).getTotalElements());
+        assertEquals(0, reference.searchFoods("with the", null, null, 1, 20, null).getTotalElements(), "stop words only");
+        assertEquals(0, reference.searchFoods("'; drop table nutrition_foods; --", null, null, 1, 20, null).getTotalElements());
         assertEquals(5957, jdbc.queryForObject("select count(*) from nutrition_foods", Long.class));
     }
 
     @Test
     void summaryCarriesTheFourMainNutrientsPer100Grams() {
         // "with" is an English stop word, so this also matches "Soup, pho, no meat"; pick the row by code.
-        var pho = reference.searchFoods("pho with meat", "MIXED_DISH", null, 1, 5).getContent().stream()
+        var pho = reference.searchFoods("pho with meat", "MIXED_DISH", null, 1, 5, null).getContent().stream()
                 .filter(f -> f.sourceFoodCode().equals("28310330")).findFirst().orElseThrow();
         assertEquals(column("28310330", "energy_kcal"), pho.energyKcal());
         assertEquals(column("28310330", "protein_g"), pho.proteinG());
@@ -382,7 +399,7 @@ class NutritionCatalogPostgresTest {
     void referenceDetailHasAllNutrientsAndPortionsInOrder() {
         String id = String.valueOf(jdbc.queryForObject(
                 "select id from nutrition_foods where source_food_code = '28310330'", Long.class));
-        NutritionReferenceFoodResponse pho = reference.getFood(id);
+        NutritionReferenceFoodResponse pho = reference.getFood(id, null);
         assertEquals("Soup, pho, with meat", pho.displayName());
         assertEquals("Phở có thịt", pho.localName());
         assertEquals("MIXED_DISH", pho.group());
@@ -392,16 +409,16 @@ class NutritionCatalogPostgresTest {
         assertEquals(18, pho.nutrients().size());
         assertEquals(List.of(new NutritionReferenceFoodResponse.Portion("1 cup", 245, false),
                 new NutritionReferenceFoodResponse.Portion("Quantity not specified", 245, true)), pho.portions());
-        error(ErrorCode.ENTITY_NOT_FOUND, () -> reference.getFood("999999999"));
-        error(ErrorCode.ENTITY_NOT_FOUND, () -> reference.getFood("not-a-number"));
+        error(ErrorCode.ENTITY_NOT_FOUND, () -> reference.getFood("999999999", null));
+        error(ErrorCode.ENTITY_NOT_FOUND, () -> reference.getFood("not-a-number", null));
     }
 
     @Test
     void invalidPagingIsRejected() {
-        error(ErrorCode.INVALID_PARAMETER, () -> reference.searchFoods("", null, null, 0, 20));
-        error(ErrorCode.INVALID_PARAMETER, () -> reference.searchFoods("", null, null, 1, 0));
-        error(ErrorCode.INVALID_PARAMETER, () -> reference.searchFoods("", null, null, 1, 51));
-        error(ErrorCode.INVALID_PARAMETER, () -> reference.searchFoods("x".repeat(101), null, null, 1, 20));
+        error(ErrorCode.INVALID_PARAMETER, () -> reference.searchFoods("", null, null, 0, 20, null));
+        error(ErrorCode.INVALID_PARAMETER, () -> reference.searchFoods("", null, null, 1, 0, null));
+        error(ErrorCode.INVALID_PARAMETER, () -> reference.searchFoods("", null, null, 1, 51, null));
+        error(ErrorCode.INVALID_PARAMETER, () -> reference.searchFoods("x".repeat(101), null, null, 1, 20, null));
     }
 
     // ---------------------------------------------------------------- Vietnamese food composition table (V23)
@@ -409,30 +426,30 @@ class NutritionCatalogPostgresTest {
     @Test
     void vietnameseFoodsAreSearchableWithOrWithoutDiacritics() {
         for (String q : List.of("rau muống", "rau muong", "RAU MUONG")) {
-            var page = reference.searchFoods(q, null, null, 1, 20);
+            var page = reference.searchFoods(q, null, null, 1, 20, null);
             assertTrue(page.getContent().stream().anyMatch(f -> "Rau muống".equals(f.displayName()) && "VN_FCT".equals(f.source())),
                     q + " -> " + page.getContent());
         }
-        assertTrue(reference.searchFoods("gio lua", null, null, 1, 20).getContent().stream()
+        assertTrue(reference.searchFoods("gio lua", null, null, 1, 20, null).getContent().stream()
                 .anyMatch(f -> "Giò lụa".equals(f.displayName())));
-        assertEquals(2, reference.searchFoods("mam tom", null, "VN_FCT", 1, 20).getTotalElements());
+        assertEquals(2, reference.searchFoods("mam tom", null, "VN_FCT", 1, 20, null).getTotalElements());
         // English name printed in the book is searchable too
-        assertTrue(reference.searchFoods("water spinach", null, "VN_FCT", 1, 20).getContent().stream()
+        assertTrue(reference.searchFoods("water spinach", null, "VN_FCT", 1, 20, null).getContent().stream()
                 .anyMatch(f -> "Rau muống".equals(f.displayName())));
     }
 
     @Test
     void sourceFilterSeparatesTheTwoDatabases() {
-        assertEquals(526, reference.searchFoods("", null, "VN_FCT", 1, 20).getTotalElements());
-        assertEquals(5431, reference.searchFoods("", null, "USDA_FNDDS", 1, 20).getTotalElements());
-        assertTrue(reference.searchFoods("pho", null, "VN_FCT", 1, 20).getContent().stream()
+        assertEquals(526, reference.searchFoods("", null, "VN_FCT", 1, 20, null).getTotalElements());
+        assertEquals(5431, reference.searchFoods("", null, "USDA_FNDDS", 1, 20, null).getTotalElements());
+        assertTrue(reference.searchFoods("pho", null, "VN_FCT", 1, 20, null).getContent().stream()
                 .allMatch(f -> f.source().equals("VN_FCT")));
-        error(ErrorCode.INVALID_PARAMETER, () -> reference.searchFoods("", null, "OTHER", 1, 20));
+        error(ErrorCode.INVALID_PARAMETER, () -> reference.searchFoods("", null, "OTHER", 1, 20, null));
     }
 
     @Test
     void vietnameseDetailKeepsTheBookValuesAndCrudeFiberSeparately() {
-        NutritionReferenceFoodResponse rau = reference.getFood("900004083");
+        NutritionReferenceFoodResponse rau = reference.getFood("900004083", null);
         assertEquals("Rau muống", rau.displayName());
         assertEquals("Rau muống", rau.localName());
         assertEquals("VN_FCT", rau.source());
@@ -450,12 +467,12 @@ class NutritionCatalogPostgresTest {
         assertFalse(byCode.containsKey("fiber"), "the book has no dietary fiber, only crude fiber");
         assertFalse(byCode.containsKey("caffeine"), "missing values are omitted, not shown as 0");
         // A book value of "-" (no data) is NULL, not 0: Giò lụa has no sodium in the table
-        assertFalse(reference.getFood("900007069").nutrients().stream().anyMatch(n -> n.nutrientCode().equals("sodium")));
+        assertFalse(reference.getFood("900007069", null).nutrients().stream().anyMatch(n -> n.nutrientCode().equals("sodium")));
     }
 
     @Test
     void v24FixesTheNamesSplitWrongInV23() {
-        assertEquals("Mứt đu đủ", reference.getFood("900011011").displayName());
+        assertEquals("Mứt đu đủ", reference.getFood("900011011", null).displayName());
         assertEquals("Quả cóc", jdbc.queryForObject("select name from nutrition_foods where id = 900005043", String.class));
         assertEquals(0, jdbc.queryForObject(
                 "select count(*) from nutrition_foods where name = '-' or name_vi like 'Tên thực phẩm%'", Long.class));
@@ -467,11 +484,11 @@ class NutritionCatalogPostgresTest {
     void everyUsdaFoodHasAVietnameseNameAndKeepsItsEnglishDisplayName() {
         assertEquals(0, jdbc.queryForObject(
                 "select count(*) from nutrition_foods where name_vi is null or trim(name_vi) = ''", Long.class));
-        var chicken = reference.searchFoods("ức gà nướng", null, "USDA_FNDDS", 1, 50);
+        var chicken = reference.searchFoods("ức gà nướng", null, "USDA_FNDDS", 1, 50, null);
         assertTrue(chicken.getContent().stream().anyMatch(f -> f.sourceFoodCode().equals("24122131")), names(chicken).toString());
         assertTrue(chicken.getContent().stream().allMatch(f -> !f.displayName().equals(f.localName())),
                 "USDA foods show the English name, the translation is only localName");
-        assertEquals(chicken.getTotalElements(), reference.searchFoods("uc ga nuong", null, "USDA_FNDDS", 1, 50).getTotalElements());
+        assertEquals(chicken.getTotalElements(), reference.searchFoods("uc ga nuong", null, "USDA_FNDDS", 1, 50, null).getTotalElements());
     }
 
     @Test
@@ -483,5 +500,182 @@ class NutritionCatalogPostgresTest {
 
     private static Set<String> ids(List<NutritionFoodResponse> foods) {
         return new HashSet<>(foods.stream().map(NutritionFoodResponse::id).toList());
+    }
+
+    // ---------------------------------------------------------------- diet prescription (V26)
+
+    /** Ngưỡng khởi tạo của V27 (giữ đúng các ngưỡng trước đây). */
+    private static final Map<DietRuleCode, DietThreshold> V27_DEFAULTS = Map.of(
+            DietRuleCode.SODIUM, new DietThreshold(600.0, 120.0),
+            DietRuleCode.ALCOHOL, new DietThreshold(0.5, null),
+            DietRuleCode.CAFFEINE, new DietThreshold(null, 10.0),
+            DietRuleCode.VITAMIN_K, new DietThreshold(null, 100.0));
+    private static final DietProfile STRICT = new DietProfile(true, true, true, true, true, V27_DEFAULTS);
+    private static final DietProfile GENERAL = DietProfile.general(V27_DEFAULTS);
+
+    private DietAdvice advice(String id, DietProfile diet) {
+        return reference.getFood(id, diet).advice();
+    }
+
+    private List<String> reasonCodes(DietAdvice advice) {
+        return advice.reasons().stream().map(DietAdvice.Reason::code).toList();
+    }
+
+    @Test
+    void v26FillsAlcoholOfVietnameseDrinksFromTheBook() {
+        assertEquals(4.5, column("14001", "alcohol_g"), "Bia (cồn: 4,5 g)");
+        assertEquals(39, column("14012", "alcohol_g"), "Rượu trắng (cồn 39 g)");
+        assertEquals(0, column("14005", "alcohol_g"), "Nước cam tươi");
+        assertEquals(0, jdbc.queryForObject("select count(*) from nutrition_foods where source = 'VN_FCT' "
+                + "and group_id = 'BEVERAGE' and alcohol_g is null", Long.class));
+    }
+
+    @Test
+    void prescriptionDefaultsToGeneralAdviceThenIsOverwrittenByTheDoctor() {
+        long member = 9_000_001L;
+        NutritionDietPrescriptionResponse none = prescriptions.get(member);
+        assertFalse(none.personalized());
+        assertTrue(none.limitSodium());
+        assertTrue(none.avoidAlcohol());
+        assertFalse(none.onWarfarin());
+        assertNull(none.prescribedBy());
+        assertEquals(GENERAL, prescriptions.profileOf(member));
+        assertEquals(List.of("SODIUM", "ALCOHOL", "CAFFEINE", "VITAMIN_K"),
+                none.rules().stream().map(NutritionDietPrescriptionResponse.Rule::code).toList());
+        assertEquals(600.0, none.rules().getFirst().effectiveLimit());
+
+        prescriptions.save(member, 77L, 555L, new UpdateDietPrescriptionRequest(true, true, false, true, "  Ăn thêm cá  ", null));
+        NutritionDietPrescriptionResponse saved = prescriptions.get(member);
+        assertTrue(saved.personalized());
+        assertTrue(saved.onWarfarin());
+        assertFalse(saved.avoidAlcohol());
+        assertEquals("Ăn thêm cá", saved.note());
+        assertEquals(77L, saved.prescribedBy());
+        assertEquals(555L, saved.consultationSessionId());
+        assertEquals(new DietProfile(true, true, false, true, true, V27_DEFAULTS), prescriptions.profileOf(member));
+
+        prescriptions.save(member, 88L, 556L, new UpdateDietPrescriptionRequest(false, false, true, false, " ", null));
+        NutritionDietPrescriptionResponse updated = prescriptions.get(member);
+        assertFalse(updated.onWarfarin());
+        assertNull(updated.note(), "blank note is cleared");
+        assertEquals(88L, updated.prescribedBy());
+        assertEquals(1, jdbc.queryForObject("select count(*) from nutrition_diet_prescriptions where member_id = ?",
+                Long.class, member), "one row per member");
+        error(ErrorCode.INVALID_PARAMETER, () -> prescriptions.save(member, 77L, 555L,
+                new UpdateDietPrescriptionRequest(true, false, false, false, "x".repeat(1001), null)));
+    }
+
+    @Test
+    void foodsAreRatedAgainstThePrescriptionWithReasons() {
+        // Rau muống: ít muối nhưng nhiều vitamin K -> vàng với người dùng warfarin, xanh với lời khuyên chung
+        DietAdvice spinach = advice("900004083", STRICT);
+        assertEquals("CAUTION", spinach.level());
+        assertEquals(List.of("VITAMIN_K_CAUTION"), reasonCodes(spinach));
+        assertTrue(spinach.personalized());
+        DietAdvice general = advice("900004083", GENERAL);
+        assertEquals("OK", general.level());
+        assertTrue(general.reasons().isEmpty());
+        assertFalse(general.personalized());
+
+        // Bia của sách (cồn điền ở V26) -> đỏ khi dặn tránh rượu bia
+        DietAdvice beer = advice("900014001", STRICT);
+        assertEquals("LIMIT", beer.level());
+        assertTrue(reasonCodes(beer).contains("ALCOHOL_LIMIT"));
+
+        // Món USDA nhiều muối -> đỏ; lý do nặng nhất đứng đầu
+        String salty = String.valueOf(jdbc.queryForObject("""
+                select id from nutrition_foods where source = 'USDA_FNDDS' and sodium_mg > 600
+                  and alcohol_g = 0 and caffeine_mg = 0 and vitamin_k_mcg < 100 order by id limit 1""", Long.class));
+        DietAdvice saltyAdvice = advice(salty, STRICT);
+        assertEquals("LIMIT", saltyAdvice.level());
+        assertEquals("SODIUM_LIMIT", saltyAdvice.reasons().getFirst().code());
+
+        // Mắm tôm: sách không có số liệu natri -> xám, không tô xanh bừa
+        String shrimpPaste = String.valueOf(jdbc.queryForObject(
+                "select id from nutrition_foods where source = 'VN_FCT' and name_vi like 'Mắm tôm%' and sodium_mg is null limit 1",
+                Long.class));
+        DietAdvice unknown = advice(shrimpPaste, GENERAL);
+        assertEquals("UNKNOWN", unknown.level());
+        assertEquals(List.of("SODIUM_UNKNOWN"), reasonCodes(unknown));
+
+        // Không truyền đơn (bác sĩ, quản trị) -> không chấm màu
+        assertNull(advice("900004083", null));
+    }
+
+    @Test
+    void searchResultsCarryTheSameAdviceAsTheDetail() {
+        var page = reference.searchFoods("rau muong", null, "VN_FCT", 1, 20, STRICT);
+        var spinach = page.getContent().stream().filter(f -> f.id().equals("900004083")).findFirst().orElseThrow();
+        assertEquals(advice("900004083", STRICT), spinach.advice());
+        assertTrue(reference.searchFoods("rau muong", null, "VN_FCT", 1, 20, null).getContent().stream()
+                .allMatch(f -> f.advice() == null));
+    }
+
+    // ---------------------------------------------------------------- configurable thresholds (V27)
+
+    private void restoreDefaultRules() {
+        rules.update(List.of(new DietThresholdRequest("SODIUM", 600.0, 120.0),
+                new DietThresholdRequest("ALCOHOL", 0.5, null), new DietThresholdRequest("CAFFEINE", null, 10.0),
+                new DietThresholdRequest("VITAMIN_K", null, 100.0)));
+    }
+
+    @Test
+    void adminDefaultsDriveTheRatingAndAreValidated() {
+        assertEquals(V27_DEFAULTS, rules.defaults());
+        try {
+            // Rau muống có 37 mg natri: xanh với ngưỡng mặc định, đỏ khi admin hạ ngưỡng đỏ xuống 30 mg
+            List<DietRuleResponse> updated = rules.update(List.of(new DietThresholdRequest("SODIUM", 30.0, 20.0)));
+            assertEquals(30.0, updated.getFirst().limit());
+            DietProfile general = prescriptions.profileOf(9_000_002L);
+            assertEquals(new DietThreshold(30.0, 20.0), general.threshold(DietRuleCode.SODIUM));
+            DietAdvice spinach = advice("900004083", general);
+            assertEquals("LIMIT", spinach.level());
+            assertEquals("SODIUM_LIMIT", spinach.reasons().getFirst().code());
+            assertTrue(spinach.reasons().getFirst().message().contains("ngưỡng đỏ từ 30 mg"), spinach.toString());
+        } finally {
+            restoreDefaultRules();
+        }
+        assertEquals(V27_DEFAULTS, rules.defaults());
+
+        error(ErrorCode.INVALID_PARAMETER, () -> rules.update(List.of(new DietThresholdRequest("SODIUM", 100.0, 200.0))));
+        error(ErrorCode.INVALID_PARAMETER, () -> rules.update(List.of(new DietThresholdRequest("SODIUM", -1.0, null))));
+        error(ErrorCode.INVALID_PARAMETER, () -> rules.update(List.of(new DietThresholdRequest("SODIUM", null, null))));
+        error(ErrorCode.INVALID_PARAMETER, () -> rules.update(List.of(new DietThresholdRequest("SUGAR", 1.0, null))));
+        error(ErrorCode.INVALID_PARAMETER, () -> rules.update(List.of(new DietThresholdRequest("SODIUM", 600.0, 120.0),
+                new DietThresholdRequest("SODIUM", 500.0, 100.0))));
+        error(ErrorCode.INVALID_PARAMETER, () -> rules.update(List.of()));
+        assertEquals(V27_DEFAULTS, rules.defaults(), "rejected updates change nothing");
+    }
+
+    @Test
+    void doctorOverridesPerMemberWinOverDefaultsAndFallBackWhenBlank() {
+        long member = 9_000_003L;
+        // Riêng bệnh nhân này: muối đỏ từ 400 mg; vàng để trống -> vẫn 120 mg mặc định
+        var saved = prescriptions.save(member, 77L, 555L, new UpdateDietPrescriptionRequest(true, false, false, false,
+                null, List.of(new DietThresholdRequest("SODIUM", 400.0, null))));
+        var sodium = saved.rules().getFirst();
+        assertEquals(400.0, sodium.limit());
+        assertNull(sodium.caution());
+        assertEquals(600.0, sodium.defaultLimit());
+        assertEquals(400.0, sodium.effectiveLimit());
+        assertEquals(120.0, sodium.effectiveCaution());
+        assertEquals(new DietThreshold(400.0, 120.0), prescriptions.profileOf(member).threshold(DietRuleCode.SODIUM));
+
+        // Món 400-600 mg natri: đỏ với bệnh nhân này, chỉ vàng với ngưỡng chung
+        String mid = String.valueOf(jdbc.queryForObject("""
+                select id from nutrition_foods where source = 'USDA_FNDDS' and sodium_mg >= 450 and sodium_mg < 550
+                order by id limit 1""", Long.class));
+        assertEquals("LIMIT", advice(mid, prescriptions.profileOf(member)).level());
+        assertEquals("CAUTION", advice(mid, new DietProfile(true, false, false, false, true, V27_DEFAULTS)).level());
+
+        // Không gửi ngưỡng -> về mặc định
+        prescriptions.save(member, 77L, 555L, new UpdateDietPrescriptionRequest(true, false, false, false, null, null));
+        assertEquals(new DietThreshold(600.0, 120.0), prescriptions.profileOf(member).threshold(DietRuleCode.SODIUM));
+
+        // Ngưỡng vàng riêng cao hơn ngưỡng đỏ mặc định -> cặp ngưỡng ngược nhau, từ chối
+        error(ErrorCode.INVALID_PARAMETER, () -> prescriptions.save(member, 77L, 555L, new UpdateDietPrescriptionRequest(
+                true, false, false, false, null, List.of(new DietThresholdRequest("SODIUM", null, 800.0)))));
+        error(ErrorCode.INVALID_PARAMETER, () -> prescriptions.save(member, 77L, 555L, new UpdateDietPrescriptionRequest(
+                true, false, false, false, null, List.of(new DietThresholdRequest("SUGAR", 1.0, null)))));
     }
 }

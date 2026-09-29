@@ -1,6 +1,7 @@
 package fit.iuh.se.hsapplication.nutrition;
 
 import fit.iuh.se.hsapplication.config.security.*;
+import fit.iuh.se.hsapplication.controller.nutrition.DietPrescriptionController;
 import fit.iuh.se.hsapplication.controller.nutrition.NutritionController;
 import fit.iuh.se.hsapplication.controller.nutrition.NutritionReferenceController;
 import fit.iuh.se.hsapplication.dto.auth.UserAuthentication;
@@ -12,6 +13,16 @@ import fit.iuh.se.hsnutrition.dto.NutritionFoodResponse.NutrientValue;
 import fit.iuh.se.hsnutrition.dto.NutritionFoodResponse.ServingReference;
 import fit.iuh.se.hsnutrition.dto.NutritionReferenceFoodResponse;
 import fit.iuh.se.hsnutrition.dto.NutritionReferenceFoodSummaryResponse;
+import fit.iuh.se.hsapplication.service.nutrition.DoctorDietPrescriptionService;
+import fit.iuh.se.hsnutrition.dto.DietAdvice;
+import fit.iuh.se.hsnutrition.dto.NutritionDietPrescriptionResponse;
+import fit.iuh.se.hsnutrition.dto.UpdateDietPrescriptionRequest;
+import fit.iuh.se.hsnutrition.dto.DietRuleResponse;
+import fit.iuh.se.hsnutrition.dto.DietThresholdRequest;
+import fit.iuh.se.hsnutrition.service.DietRuleService;
+import fit.iuh.se.hsapplication.controller.admin.AdminDietRuleController;
+import fit.iuh.se.hsnutrition.service.DietPrescriptionService;
+import fit.iuh.se.hsnutrition.service.DietProfile;
 import fit.iuh.se.hsnutrition.service.NutritionCatalogService;
 import fit.iuh.se.hsnutrition.service.NutritionReferenceService;
 import fit.iuh.se.hsshared.advice.entity.AppException;
@@ -44,8 +55,10 @@ import java.util.Map;
 
 import static org.mockito.Mockito.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -57,6 +70,8 @@ class NutritionHttpTest {
     private MockMvc mvc;
     private NutritionCatalogService catalog;
     private NutritionReferenceService reference;
+    private DietPrescriptionService prescriptions;
+    private DoctorDietPrescriptionService doctorPrescriptions;
 
     @BeforeEach
     void start() {
@@ -69,6 +84,8 @@ class NutritionHttpTest {
         mvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
         catalog = context.getBean(NutritionCatalogService.class);
         reference = context.getBean(NutritionReferenceService.class);
+        prescriptions = context.getBean(DietPrescriptionService.class);
+        doctorPrescriptions = context.getBean(DoctorDietPrescriptionService.class);
     }
 
     @AfterEach
@@ -78,7 +95,8 @@ class NutritionHttpTest {
 
     @Configuration(proxyBeanMethods = false)
     @EnableWebMvc
-    @Import({SecurityConfig.class, NutritionController.class, NutritionReferenceController.class, JwtAuthenticationFilter.class,
+    @Import({SecurityConfig.class, NutritionController.class, NutritionReferenceController.class,
+            DietPrescriptionController.class, AdminDietRuleController.class, JwtAuthenticationFilter.class,
             fit.iuh.se.hsshared.advice.handler.GlobalExceptionHandler.class,
             RateLimitFilter.class, RestAuthenticationEntryPoint.class, RestAccessDeniedHandler.class})
     static class Config {
@@ -90,6 +108,21 @@ class NutritionHttpTest {
         @Bean
         NutritionReferenceService reference() {
             return mock(NutritionReferenceService.class);
+        }
+
+        @Bean
+        DietPrescriptionService prescriptions() {
+            return mock(DietPrescriptionService.class);
+        }
+
+        @Bean
+        DietRuleService dietRules() {
+            return mock(DietRuleService.class);
+        }
+
+        @Bean
+        DoctorDietPrescriptionService doctorPrescriptions() {
+            return mock(DoctorDietPrescriptionService.class);
         }
 
         @Bean
@@ -205,18 +238,23 @@ class NutritionHttpTest {
     void referenceEndpointsRequireLoginAndUseDefaultPaging() throws Exception {
         for (String path : List.of("/api/nutrition/reference/foods", "/api/nutrition/reference/foods/2707124"))
             mvc.perform(get(path)).andExpect(status().isUnauthorized());
-        when(reference.searchFoods("", null, null, 1, 20)).thenReturn(new PageResponse<>(new PageImpl<>(List.of(),
+        when(reference.searchFoods("", null, null, 1, 20, null)).thenReturn(new PageResponse<>(new PageImpl<>(List.of(),
                 PageRequest.of(0, 20), 0)));
         mvc.perform(get("/api/nutrition/reference/foods").with(authentication(actor(UserRole.DOCTOR))))
                 .andExpect(status().isOk());
-        verify(reference).searchFoods("", null, null, 1, 20);
+        // Bác sĩ xem số liệu thuần: không chấm màu theo đơn ăn uống
+        verify(reference).searchFoods("", null, null, 1, 20, null);
+        verify(prescriptions, never()).profileOf(anyLong());
     }
 
     @Test
     void referenceSearchJsonIsAPageOfSummaries() throws Exception {
         var pho = new NutritionReferenceFoodSummaryResponse("2707124", "USDA_FNDDS", "28310330",
-                "Soup, pho, with meat", "Phở có thịt", "MIXED_DISH", "Món ăn hỗn hợp", 77.0, 5.81, 5.6, null);
-        when(reference.searchFoods("pho", "MIXED_DISH", "USDA_FNDDS", 2, 10)).thenReturn(
+                "Soup, pho, with meat", "Phở có thịt", "MIXED_DISH", "Món ăn hỗn hợp", 77.0, 5.81, 5.6, null,
+                new DietAdvice("CAUTION", List.of(new DietAdvice.Reason("SODIUM_MEDIUM", "CAUTION", "Muối ở mức vừa")), true));
+        DietProfile diet = new DietProfile(true, true, true, false, true, java.util.Map.of());
+        when(prescriptions.profileOf(123L)).thenReturn(diet);
+        when(reference.searchFoods("pho", "MIXED_DISH", "USDA_FNDDS", 2, 10, diet)).thenReturn(
                 new PageResponse<>(new PageImpl<>(List.of(pho), PageRequest.of(1, 10), 11)));
         mvc.perform(get("/api/nutrition/reference/foods").param("q", "pho")
                         .param("group", "MIXED_DISH").param("source", "USDA_FNDDS").param("page", "2").param("size", "10")
@@ -238,17 +276,24 @@ class NutritionHttpTest {
                 .andExpect(jsonPath("$.data.content[0].name").doesNotExist())
                 .andExpect(jsonPath("$.data.content[0].energyKcal").value(77.0))
                 .andExpect(jsonPath("$.data.content[0].carbohydrateG").value(5.6))
-                .andExpect(jsonPath("$.data.content[0].fatTotalG").doesNotExist());
+                .andExpect(jsonPath("$.data.content[0].fatTotalG").doesNotExist())
+                .andExpect(jsonPath("$.data.content[0].advice.level").value("CAUTION"))
+                .andExpect(jsonPath("$.data.content[0].advice.personalized").value(true))
+                .andExpect(jsonPath("$.data.content[0].advice.reasons[0].code").value("SODIUM_MEDIUM"))
+                .andExpect(jsonPath("$.data.content[0].advice.reasons[0].message").value("Muối ở mức vừa"));
     }
 
     @Test
     void referenceDetailJsonUsesTheFrontendFieldNames() throws Exception {
-        when(reference.getFood("2707124")).thenReturn(new NutritionReferenceFoodResponse("2707124", "28310330",
+        DietProfile general = DietProfile.general(java.util.Map.of());
+        when(prescriptions.profileOf(123L)).thenReturn(general);
+        when(reference.getFood("2707124", general)).thenReturn(new NutritionReferenceFoodResponse("2707124", "28310330",
                 "Soup, pho, with meat", "Phở có thịt", "MIXED_DISH", "Món ăn hỗn hợp", "Ramen and Asian broth-based soups",
                 "USDA_FNDDS", "2021-2023", 12.5,
                 List.of(new NutrientValue("energy", "Năng lượng", 77, "kcal", true)),
                 List.of(new NutritionReferenceFoodResponse.Portion("1 cup", 245, false),
-                        new NutritionReferenceFoodResponse.Portion("Quantity not specified", 245, true))));
+                        new NutritionReferenceFoodResponse.Portion("Quantity not specified", 245, true)),
+                new DietAdvice("OK", List.of(), false)));
         mvc.perform(get("/api/nutrition/reference/foods/2707124").with(authentication(actor(UserRole.MEMBER))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.sourceVersion").value("2021-2023"))
@@ -262,6 +307,88 @@ class NutritionHttpTest {
                 .andExpect(jsonPath("$.data.portions[0].description").value("1 cup"))
                 .andExpect(jsonPath("$.data.portions[0].gramWeight").value(245.0))
                 .andExpect(jsonPath("$.data.portions[1].isDefault").value(true))
-                .andExpect(jsonPath("$.data.portions[1].default").doesNotExist());
+                .andExpect(jsonPath("$.data.portions[1].default").doesNotExist())
+                .andExpect(jsonPath("$.data.advice.level").value("OK"))
+                .andExpect(jsonPath("$.data.advice.personalized").value(false));
+    }
+
+    // ---------------------------------------------------------------- diet prescription
+
+    private static NutritionDietPrescriptionResponse prescription() {
+        return new NutritionDietPrescriptionResponse(123L, true, true, true, true, false, "Ăn thêm cá",
+                77L, 555L, java.time.Instant.parse("2026-09-28T01:02:03Z"),
+                List.of(new NutritionDietPrescriptionResponse.Rule("SODIUM", "Muối (natri)", "mg", true, 600.0, 120.0,
+                        400.0, null, 400.0, 120.0)));
+    }
+
+    @Test
+    void memberReadsOwnPrescriptionAndOthersCannot() throws Exception {
+        mvc.perform(get("/api/nutrition/diet-prescription/me")).andExpect(status().isUnauthorized());
+        when(prescriptions.get(123L)).thenReturn(prescription());
+        mvc.perform(get("/api/nutrition/diet-prescription/me").with(authentication(actor(UserRole.MEMBER))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.memberId").value(123))
+                .andExpect(jsonPath("$.data.personalized").value(true))
+                .andExpect(jsonPath("$.data.limitSodium").value(true))
+                .andExpect(jsonPath("$.data.onWarfarin").value(true))
+                .andExpect(jsonPath("$.data.limitCaffeine").value(false))
+                .andExpect(jsonPath("$.data.note").value("Ăn thêm cá"))
+                .andExpect(jsonPath("$.data.consultationSessionId").value(555))
+                .andExpect(jsonPath("$.data.rules[0].code").value("SODIUM"))
+                .andExpect(jsonPath("$.data.rules[0].defaultLimit").value(600.0))
+                .andExpect(jsonPath("$.data.rules[0].limit").value(400.0))
+                .andExpect(jsonPath("$.data.rules[0].caution").doesNotExist())
+                .andExpect(jsonPath("$.data.rules[0].effectiveCaution").value(120.0));
+        mvc.perform(get("/api/nutrition/diet-prescription/me").with(authentication(actor(UserRole.DOCTOR))))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void onlyDoctorsUseTheSessionPrescriptionEndpoints() throws Exception {
+        String path = "/api/doctor/consultation-sessions/555/diet-prescription";
+        when(doctorPrescriptions.get(123L, 555L)).thenReturn(prescription());
+        mvc.perform(get(path).with(authentication(actor(UserRole.DOCTOR))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.prescribedBy").value(77));
+
+        var body = new UpdateDietPrescriptionRequest(true, true, true, false, "Ăn thêm cá",
+                List.of(new DietThresholdRequest("SODIUM", 400.0, null)));
+        when(doctorPrescriptions.update(123L, 555L, body)).thenReturn(prescription());
+        mvc.perform(put(path).with(authentication(actor(UserRole.DOCTOR))).with(csrf())
+                        .contentType("application/json")
+                        .content("{\"limitSodium\":true,\"onWarfarin\":true,\"avoidAlcohol\":true,\"limitCaffeine\":false,"
+                                + "\"note\":\"Ăn thêm cá\",\"thresholds\":[{\"code\":\"SODIUM\",\"limit\":400}]}"))
+                .andExpect(status().isOk());
+        verify(doctorPrescriptions).update(123L, 555L, body);
+
+        for (UserRole role : List.of(UserRole.MEMBER, UserRole.ADMIN))
+            mvc.perform(get(path).with(authentication(actor(role)))).andExpect(status().isForbidden());
+        verify(doctorPrescriptions, times(1)).get(anyLong(), anyLong());
+    }
+
+    @Test
+    void onlyAdminsReadAndChangeDefaultThresholds() throws Exception {
+        String path = "/api/admin/nutrition/diet-rules";
+        DietRuleService rules = context.getBean(DietRuleService.class);
+        var sodium = new DietRuleResponse("SODIUM", "Muối (natri)", "mg", 500.0, 100.0, null, null);
+        when(rules.list()).thenReturn(List.of(sodium));
+        when(rules.update(List.of(new DietThresholdRequest("SODIUM", 500.0, 100.0)))).thenReturn(List.of(sodium));
+
+        mvc.perform(get(path)).andExpect(status().isUnauthorized());
+        for (UserRole role : List.of(UserRole.MEMBER, UserRole.DOCTOR))
+            mvc.perform(get(path).with(authentication(actor(role)))).andExpect(status().isForbidden());
+        mvc.perform(get(path).with(authentication(actor(UserRole.ADMIN))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].code").value("SODIUM"))
+                .andExpect(jsonPath("$.data[0].limit").value(500.0))
+                .andExpect(jsonPath("$.data[0].unit").value("mg"));
+        mvc.perform(put(path).with(authentication(actor(UserRole.SUPER_ADMIN))).with(csrf())
+                        .contentType("application/json")
+                        .content("[{\"code\":\"SODIUM\",\"limit\":500,\"caution\":100}]"))
+                .andExpect(status().isOk());
+        verify(rules).update(List.of(new DietThresholdRequest("SODIUM", 500.0, 100.0)));
+        mvc.perform(put(path).with(authentication(actor(UserRole.DOCTOR))).with(csrf())
+                        .contentType("application/json").content("[]"))
+                .andExpect(status().isForbidden());
     }
 }

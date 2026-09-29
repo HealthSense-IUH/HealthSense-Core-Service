@@ -56,6 +56,7 @@ public class SecurityConfig {
             "/api/admin/users/**",
             "/api/admin/health-records/**",
             "/api/admin/credits/**",
+            "/api/admin/nutrition/**",
     };
 
     static String[] CONSULTATION_MANAGEMENT_ENDPOINTS = {

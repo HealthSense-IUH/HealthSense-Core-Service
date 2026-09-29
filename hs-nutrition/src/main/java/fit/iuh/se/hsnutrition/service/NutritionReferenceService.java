@@ -13,10 +13,10 @@ public interface NutritionReferenceService {
      * Không có {@code query}: duyệt theo tên. Có {@code query}: tìm theo tên tiếng Anh và tên tiếng Việt,
      * khớp tiền tố, không phân biệt dấu ("rau muong" ra "Rau muống"). {@code group}: null, id hoặc slug của
      * nhóm chung (danh sách và số món ở /api/nutrition/groups). {@code source}: null, USDA_FNDDS hoặc VN_FCT.
-     * {@code page} bắt đầu từ 1.
+     * {@code page} bắt đầu từ 1. {@code diet}: đơn ăn uống của người xem để chấm màu từng món; null thì không chấm.
      */
     PageResponse<NutritionReferenceFoodSummaryResponse> searchFoods(String query, String group, String source,
-                                                                    int page, int size);
+                                                                    int page, int size, DietProfile diet);
 
-    NutritionReferenceFoodResponse getFood(String id);
+    NutritionReferenceFoodResponse getFood(String id, DietProfile diet);
 }

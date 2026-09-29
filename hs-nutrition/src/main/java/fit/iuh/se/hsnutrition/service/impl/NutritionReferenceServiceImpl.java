@@ -8,6 +8,7 @@ import fit.iuh.se.hsnutrition.entity.NutritionFoodGroup;
 import fit.iuh.se.hsnutrition.repository.NutritionFoodGroupRepository;
 import fit.iuh.se.hsnutrition.repository.NutritionFoodPortionRepository;
 import fit.iuh.se.hsnutrition.repository.NutritionFoodRepository;
+import fit.iuh.se.hsnutrition.service.DietProfile;
 import fit.iuh.se.hsnutrition.service.NutritionReferenceService;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
@@ -39,7 +40,7 @@ public class NutritionReferenceServiceImpl implements NutritionReferenceService 
 
     @Override
     public PageResponse<NutritionReferenceFoodSummaryResponse> searchFoods(String query, String group, String source,
-                                                                           int page, int size) {
+                                                                           int page, int size, DietProfile diet) {
         if (page < 1 || size < 1 || size > MAX_PAGE_SIZE)
             throw new AppException(ErrorCode.INVALID_PARAMETER,
                     "page must be positive and size must be between 1 and " + MAX_PAGE_SIZE);
@@ -56,17 +57,17 @@ public class NutritionReferenceServiceImpl implements NutritionReferenceService 
         Pageable pageable = PageRequest.of(page - 1, size);
         if (query == null || query.isBlank())
             return new PageResponse<>(foods.browse(groupFilter, sourceFilter, pageable)
-                    .map(food -> toSummary(food, allGroups)));
+                    .map(food -> toSummary(food, allGroups, diet)));
 
         String tsquery = toPrefixTsQuery(query);
         // Chỉ toàn ký tự đặc biệt: không có gì để tìm, trả trang rỗng thay vì trả về mọi món.
         if (tsquery == null) return new PageResponse<>(new PageImpl<>(List.of(), pageable, 0));
         return new PageResponse<>(foods.search(tsquery, toPhrasePattern(query), groupFilter, sourceFilter, pageable)
-                .map(food -> toSummary(food, allGroups)));
+                .map(food -> toSummary(food, allGroups, diet)));
     }
 
     @Override
-    public NutritionReferenceFoodResponse getFood(String id) {
+    public NutritionReferenceFoodResponse getFood(String id, DietProfile diet) {
         Long foodId = parseId(id);
         NutritionFood food = (foodId == null ? Optional.<NutritionFood>empty() : foods.findById(foodId))
                 .orElseThrow(() -> new AppException(ErrorCode.ENTITY_NOT_FOUND, "Nutrition reference food not found"));
@@ -77,7 +78,7 @@ public class NutritionReferenceServiceImpl implements NutritionReferenceService 
         return new NutritionReferenceFoodResponse(String.valueOf(food.getId()), food.getSourceFoodCode(),
                 displayName(food), food.getNameVi(), group.getId(), group.getName(), food.getCategory(),
                 food.getSource(), food.getSourceVersion(), NutrientMapper.amount(food.getWastePct()),
-                NutrientMapper.of(food), foodPortions);
+                NutrientMapper.of(food), foodPortions, diet == null ? null : DietAdvisor.advise(food, diet));
     }
 
     /**
@@ -132,13 +133,15 @@ public class NutritionReferenceServiceImpl implements NutritionReferenceService 
         }
     }
 
-    private NutritionReferenceFoodSummaryResponse toSummary(NutritionFood food, Map<String, NutritionFoodGroup> allGroups) {
+    private NutritionReferenceFoodSummaryResponse toSummary(NutritionFood food, Map<String, NutritionFoodGroup> allGroups,
+                                                            DietProfile diet) {
         // getId() của proxy lazy không truy vấn thêm; tên nhóm lấy từ danh sách nhóm đã nạp
         NutritionFoodGroup group = allGroups.get(food.getGroup().getId());
         return new NutritionReferenceFoodSummaryResponse(String.valueOf(food.getId()), food.getSource(),
                 food.getSourceFoodCode(), displayName(food), food.getNameVi(), group.getId(), group.getName(),
                 NutrientMapper.amount(food.getEnergyKcal()),
                 NutrientMapper.amount(food.getProteinG()), NutrientMapper.amount(food.getCarbohydrateG()),
-                NutrientMapper.amount(food.getFatTotalG()));
+                NutrientMapper.amount(food.getFatTotalG()),
+                diet == null ? null : DietAdvisor.advise(food, diet));
     }
 }
