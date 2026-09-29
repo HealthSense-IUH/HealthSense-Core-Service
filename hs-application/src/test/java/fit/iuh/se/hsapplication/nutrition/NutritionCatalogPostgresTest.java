@@ -80,7 +80,10 @@ class NutritionCatalogPostgresTest {
         flyway = Flyway.configure().dataSource(scoped).schemas(schema).defaultSchema(schema)
                 .locations("classpath:db/migration").baselineVersion("20").load();
         flyway.baseline();
-        assertEquals(7, flyway.migrate().migrationsExecuted);
+        flyway.migrate();
+        // Chỉ kiểm tra các migration dinh dưỡng; module khác có thể thêm migration vào cùng thư mục quét
+        List<String> applied = Arrays.stream(flyway.info().applied()).map(i -> i.getVersion().getVersion()).toList();
+        assertTrue(applied.containsAll(List.of("21", "22", "23", "24", "25", "26", "27")), applied.toString());
         context = new AnnotationConfigApplicationContext();
         context.registerBean(DataSource.class, () -> scoped);
         context.register(TestConfiguration.class);
