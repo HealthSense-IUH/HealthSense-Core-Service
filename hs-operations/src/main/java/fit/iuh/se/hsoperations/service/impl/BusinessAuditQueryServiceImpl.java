@@ -37,7 +37,7 @@ public class BusinessAuditQueryServiceImpl implements BusinessAuditQueryService 
     public BusinessAuditEventResponse get(UserRole role, Long id) {
         return repository.findOne(allowed(role).and((r, q, b) -> b.equal(r.get("id"), id)))
                 .map(BusinessAuditEventResponse::from)
-                .orElseThrow(() -> new AppException(ErrorCode.ENTITY_NOT_FOUND, "Business audit event not found"));
+                .orElseThrow(() -> AppException.of(ErrorCode.ENTITY_NOT_FOUND, "detail.audit-event-not-found"));
     }
 
     private Specification<BusinessAuditEvent> allowed(UserRole role) {

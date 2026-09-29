@@ -44,9 +44,9 @@ public class NeedsActionServiceImpl implements NeedsActionService {
     public NeedsActionResponse claim(UserRole role, Long actorId, Long id) {
         NeedsActionItem item = lockedAllowed(role, id);
         if (item.getStatus() == NeedsActionStatus.RESOLVED)
-            throw new AppException(ErrorCode.BAD_REQUEST, "Needs Action is resolved");
+            throw AppException.of(ErrorCode.BAD_REQUEST, "detail.needs-action-resolved");
         if (item.getStatus() == NeedsActionStatus.CLAIMED && !actorId.equals(item.getClaimedBy()))
-            throw new AppException(ErrorCode.DATA_INTEGRITY_VIOLATION, "Needs Action is already claimed");
+            throw AppException.of(ErrorCode.DATA_INTEGRITY_VIOLATION, "detail.needs-action-claimed");
         item.setStatus(NeedsActionStatus.CLAIMED);
         item.setClaimedBy(actorId);
         item.setClaimedAt(Instant.now());
@@ -85,6 +85,6 @@ public class NeedsActionServiceImpl implements NeedsActionService {
     }
 
     private AppException notFound() {
-        return new AppException(ErrorCode.ENTITY_NOT_FOUND, "Needs Action not found");
+        return AppException.of(ErrorCode.ENTITY_NOT_FOUND, "detail.needs-action-not-found");
     }
 }

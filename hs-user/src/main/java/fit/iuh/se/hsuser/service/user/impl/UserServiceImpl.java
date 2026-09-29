@@ -47,7 +47,7 @@ public class UserServiceImpl implements UserService {
     @Transactional(readOnly = true)
     public UserResponse getProfile(Long currentUserId) {
         if (currentUserId == null)
-            throw new AppException(ErrorCode.INVALID_ARGUMENT, "Current user ID must not be null");
+            throw AppException.of(ErrorCode.INVALID_ARGUMENT, "detail.current-user-id-required");
         UserAccount user = userAccountRepository.findByIdAndStatusNot(currentUserId, AccountStatus.INACTIVE)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
         return userMapper.toUserResponse(user);
@@ -57,11 +57,11 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public UserResponse updateProfile(Long currentUserId, UserRole currentUserRole, UserProfileUpdateRequest request) {
         if (currentUserId == null)
-            throw new AppException(ErrorCode.INVALID_ARGUMENT, "Current user ID must not be null");
+            throw AppException.of(ErrorCode.INVALID_ARGUMENT, "detail.current-user-id-required");
         if (currentUserRole == null)
-            throw new AppException(ErrorCode.INVALID_ARGUMENT, "Current user role must not be null");
+            throw AppException.of(ErrorCode.INVALID_ARGUMENT, "detail.current-user-role-required");
         if (request == null)
-            throw new AppException(ErrorCode.INVALID_ARGUMENT, "User profile update request must not be null");
+            throw AppException.of(ErrorCode.INVALID_ARGUMENT, "detail.profile-update-request-required");
         validateSelfUpdateRole(currentUserRole);
 
         UserAccount user = userAccountRepository.findByIdAndStatusNot(currentUserId, AccountStatus.INACTIVE)
@@ -75,9 +75,9 @@ public class UserServiceImpl implements UserService {
     @Transactional(readOnly = true)
     public AvatarPresignedUrlResponse generateAvatarPresignedUrl(Long currentUserId, AvatarPresignedUrlRequest request) {
         if (currentUserId == null)
-            throw new AppException(ErrorCode.INVALID_ARGUMENT, "Current user ID must not be null");
+            throw AppException.of(ErrorCode.INVALID_ARGUMENT, "detail.current-user-id-required");
         if (request == null || request.getFileName() == null || request.getFileName().trim().isEmpty())
-            throw new AppException(ErrorCode.INVALID_ARGUMENT, "Yêu cầu tạo Presigned URL không hợp lệ: Thiếu tên file ảnh");
+            throw AppException.of(ErrorCode.INVALID_ARGUMENT, "detail.presigned-avatar-filename-required");
 
         String fileName = request.getFileName().trim();
         String lowerName = fileName.toLowerCase();
@@ -96,7 +96,7 @@ public class UserServiceImpl implements UserService {
             else if (lowerName.endsWith(".tiff") || lowerName.endsWith(".tif")) contentType = "image/tiff";
             else if (lowerName.endsWith(".ico")) contentType = "image/x-icon";
             else {
-                throw new AppException(ErrorCode.INVALID_ARGUMENT, "Định dạng file ảnh không hợp lệ (hỗ trợ .jpg, .jpeg, .png, .webp, .gif, .heic, .avif, .svg...)");
+                throw AppException.of(ErrorCode.INVALID_ARGUMENT, "detail.image-format-invalid");
             }
         }
 
@@ -120,9 +120,9 @@ public class UserServiceImpl implements UserService {
             Long currentUserId,
             fit.iuh.se.hsuser.dto.request.IdentityCardPresignedUrlRequest request) {
         if (currentUserId == null)
-            throw new AppException(ErrorCode.INVALID_ARGUMENT, "Current user ID must not be null");
+            throw AppException.of(ErrorCode.INVALID_ARGUMENT, "detail.current-user-id-required");
         if (request == null || request.getFileName() == null || request.getFileName().trim().isEmpty())
-            throw new AppException(ErrorCode.INVALID_ARGUMENT, "Yêu cầu tạo Presigned URL không hợp lệ: Thiếu tên file ảnh CCCD");
+            throw AppException.of(ErrorCode.INVALID_ARGUMENT, "detail.presigned-id-card-filename-required");
 
         String fileName = request.getFileName().trim();
         String lowerName = fileName.toLowerCase();
@@ -137,7 +137,7 @@ public class UserServiceImpl implements UserService {
             else if (lowerName.endsWith(".avif")) contentType = "image/avif";
             else if (lowerName.endsWith(".pdf")) contentType = "application/pdf";
             else {
-                throw new AppException(ErrorCode.INVALID_ARGUMENT, "Định dạng file CCCD không hợp lệ (hỗ trợ .jpg, .jpeg, .png, .webp, .heic, .pdf...)");
+                throw AppException.of(ErrorCode.INVALID_ARGUMENT, "detail.id-card-format-invalid");
             }
         }
 
@@ -162,12 +162,12 @@ public class UserServiceImpl implements UserService {
                 || currentUserRole == UserRole.DOCTOR
                 || currentUserRole == UserRole.MEMBER)
             return;
-        throw new AppException(ErrorCode.ACCESS_DENIED, "Only admins, care coordinators, doctors and members can update profile here");
+        throw AppException.of(ErrorCode.ACCESS_DENIED, "detail.profile-update-role-not-allowed");
     }
 
     private void updateProfile(UserProfile profile, UserProfileUpdateRequest request) {
         if (request.getDisplayName() != null)
-            profile.setDisplayName(TextNormalize.requireText(request.getDisplayName(), "Display name must not be blank"));
+            profile.setDisplayName(TextNormalize.requireText(request.getDisplayName(), "detail.display-name-required"));
         if (request.getPhone() != null)
             profile.setPhone(request.getPhone().trim());
         if (request.getDateOfBirth() != null)

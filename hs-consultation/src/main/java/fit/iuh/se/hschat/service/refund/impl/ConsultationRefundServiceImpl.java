@@ -51,7 +51,7 @@ public class ConsultationRefundServiceImpl implements ConsultationRefundService 
                 .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_PAYMENT_NOT_FOUND));
         requirePaidEvidence(payment);
         CareServiceAgreement agreement = agreementRepository.findById(payment.getAgreementId())
-                .orElseThrow(() -> new AppException(ErrorCode.ENTITY_NOT_FOUND, "Agreement not found"));
+                .orElseThrow(() -> AppException.of(ErrorCode.ENTITY_NOT_FOUND, "detail.agreement-not-found"));
 
         ConsultationRefund refund = refundRepository.findByPaymentIdForUpdate(paymentId)
                 .orElseGet(() -> ConsultationRefund.builder()
@@ -96,13 +96,11 @@ public class ConsultationRefundServiceImpl implements ConsultationRefundService 
             if (Boolean.TRUE.equals(request.getApproved())
                     && refund.getApprovedAmount().compareTo(request.getApprovedAmount()) == 0)
                 return toResponse(refund);
-            throw new AppException(ErrorCode.INVALID_REFUND_STATUS,
-                    "Final refund decision cannot be changed");
+            throw AppException.of(ErrorCode.INVALID_REFUND_STATUS, "detail.refund-decision-final");
         }
         if (refund.getStatus() == ConsultationRefundStatus.REJECTED) {
             if (!Boolean.TRUE.equals(request.getApproved())) return toResponse(refund);
-            throw new AppException(ErrorCode.INVALID_REFUND_STATUS,
-                    "Final refund decision cannot be changed");
+            throw AppException.of(ErrorCode.INVALID_REFUND_STATUS, "detail.refund-decision-final");
         }
         if (refund.getStatus() != ConsultationRefundStatus.RECOMMENDED)
             throw new AppException(ErrorCode.INVALID_REFUND_STATUS);
@@ -202,8 +200,7 @@ public class ConsultationRefundServiceImpl implements ConsultationRefundService 
         boolean paid = payment.getStatus() == ConsultationPaymentStatus.PAID
                 || (payment.getStatus() == ConsultationPaymentStatus.REQUIRES_REVIEW && payment.getPaidAt() != null);
         if (!paid)
-            throw new AppException(ErrorCode.INVALID_CONSULTATION_PAYMENT_STATUS,
-                    "Refund review requires verified paid evidence");
+            throw AppException.of(ErrorCode.INVALID_CONSULTATION_PAYMENT_STATUS, "detail.refund-requires-paid-evidence");
     }
 
     private Long resolveSessionId(ConsultationPayment payment) {
@@ -227,21 +224,18 @@ public class ConsultationRefundServiceImpl implements ConsultationRefundService 
 
     private BigDecimal requireValidAmount(BigDecimal amount, BigDecimal paidAmount) {
         if (amount == null || amount.signum() <= 0 || amount.compareTo(paidAmount) > 0)
-            throw new AppException(ErrorCode.INVALID_PARAMETER,
-                    "Refund amount must be positive and cannot exceed the original paid amount");
+            throw AppException.of(ErrorCode.INVALID_PARAMETER, "detail.refund-amount-invalid");
         return amount;
     }
 
     private void requireCoordinator(UserRole role) {
         if (role != UserRole.CARE_COORDINATOR)
-            throw new AppException(ErrorCode.ACCESS_DENIED,
-                    "Only a Care Coordinator may recommend a refund");
+            throw AppException.of(ErrorCode.ACCESS_DENIED, "detail.only-coordinator-recommend-refund");
     }
 
     private void requireFinancialAdmin(UserRole role) {
         if (role != UserRole.ADMIN && role != UserRole.SUPER_ADMIN)
-            throw new AppException(ErrorCode.ACCESS_DENIED,
-                    "Only Admin or Super Admin may decide or execute a refund");
+            throw AppException.of(ErrorCode.ACCESS_DENIED, "detail.only-admin-refund");
     }
 
     private void requireRefundStaff(UserRole role) {

@@ -11,7 +11,7 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class CreateRoutineRequest {
 
-    @NotBlank(message = "Tên lịch trình không được để trống")
+    @NotBlank(message = "{validation.routine-name-required}")
     String name;
 
     @Builder.Default

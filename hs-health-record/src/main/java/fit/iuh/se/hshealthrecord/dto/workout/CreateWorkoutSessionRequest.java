@@ -17,30 +17,30 @@ import java.time.Instant;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class CreateWorkoutSessionRequest {
 
-    @NotBlank(message = "Mã bài tập không được để trống")
+    @NotBlank(message = "{validation.exercise-code-required}")
     String exerciseCode;
 
-    @NotBlank(message = "Tên bài tập không được để trống")
+    @NotBlank(message = "{validation.exercise-name-required}")
     String exerciseName;
 
-    @NotNull(message = "Thể loại bài tập không được để trống")
+    @NotNull(message = "{validation.exercise-category-required}")
     ExerciseCategory category;
 
-    @NotNull(message = "Dữ liệu cần ghi không được để trống")
+    @NotNull(message = "{validation.tracking-type-required}")
     TrackingMetricType trackingType;
 
     String iconName;
 
-    @NotNull(message = "Thời điểm bắt đầu không được để trống")
+    @NotNull(message = "{validation.start-time-required}")
     Instant startedAt;
 
-    @NotNull(message = "Thời điểm kết thúc không được để trống")
+    @NotNull(message = "{validation.end-time-required}")
     Instant endedAt;
 
-    @NotNull(message = "Thời lượng không được để trống")
+    @NotNull(message = "{validation.duration-required}")
     Integer durationSeconds;
 
-    @NotNull(message = "Calo tiêu hao không được để trống")
+    @NotNull(message = "{validation.calories-burned-required}")
     Integer caloriesBurned;
 
     Integer totalCalories;

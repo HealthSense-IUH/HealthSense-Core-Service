@@ -12,13 +12,13 @@ import lombok.experimental.FieldDefaults;
 @Builder
 public class ResetPasswordRequest {
 
-    @NotBlank(message = "Reset token is required")
+    @NotBlank(message = "{validation.reset-token-required}")
     String resetToken;
 
-    @NotBlank(message = "Password is required")
+    @NotBlank(message = "{validation.password-required}")
     @Pattern(
             regexp = "^(?=.*[A-Za-z])(?=.*\\d).{8,}$",
-            message = "Password must be at least 8 characters and include letters and numbers"
+            message = "{validation.password-min-8-letters-numbers}"
     )
     String newPassword;
 }

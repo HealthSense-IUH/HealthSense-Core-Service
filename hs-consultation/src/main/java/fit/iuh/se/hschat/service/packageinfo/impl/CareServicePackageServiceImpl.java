@@ -290,10 +290,7 @@ public class CareServicePackageServiceImpl implements CareServicePackageService 
         try {
             return packageRepository.saveAndFlush(carePackage);
         } catch (DataIntegrityViolationException exception) {
-            throw new AppException(
-                    ErrorCode.DATA_INTEGRITY_VIOLATION,
-                    "Package version identity conflicts with an existing version"
-            );
+            throw AppException.of(ErrorCode.DATA_INTEGRITY_VIOLATION, "detail.package-version-conflict");
         }
     }
 
@@ -310,7 +307,7 @@ public class CareServicePackageServiceImpl implements CareServicePackageService 
     private void validatePackageManager(UserRole actorRole) {
         if (actorRole == UserRole.SUPER_ADMIN || actorRole == UserRole.ADMIN)
             return;
-        throw new AppException(ErrorCode.ACCESS_DENIED, "You are not allowed to manage care service packages");
+        throw AppException.of(ErrorCode.ACCESS_DENIED, "detail.forbidden-manage-packages");
     }
 
     private void ensureNotRetired(CareServicePackage carePackage) {
@@ -320,11 +317,11 @@ public class CareServicePackageServiceImpl implements CareServicePackageService 
 
     private void validateServiceScope(List<CareServiceCode> included, List<CareServiceCode> excluded) {
         if (included == null || included.isEmpty())
-            throw new AppException(ErrorCode.BAD_REQUEST, "At least one included service is required");
+            throw AppException.of(ErrorCode.BAD_REQUEST, "detail.package-included-service-required");
         Set<CareServiceCode> overlap = new LinkedHashSet<>(included);
         overlap.retainAll(excluded == null ? List.of() : excluded);
         if (!overlap.isEmpty())
-            throw new AppException(ErrorCode.BAD_REQUEST, "A service cannot be both included and excluded");
+            throw AppException.of(ErrorCode.BAD_REQUEST, "detail.package-service-both");
     }
 
     private List<CareServiceCode> normalizeServices(
@@ -333,7 +330,7 @@ public class CareServicePackageServiceImpl implements CareServicePackageService 
     ) {
         List<CareServiceCode> source = services == null ? defaults : services;
         if (source.stream().anyMatch(Objects::isNull))
-            throw new AppException(ErrorCode.BAD_REQUEST, "Service scope contains an invalid value");
+            throw AppException.of(ErrorCode.BAD_REQUEST, "detail.package-scope-invalid");
         return new ArrayList<>(new LinkedHashSet<>(source));
     }
 

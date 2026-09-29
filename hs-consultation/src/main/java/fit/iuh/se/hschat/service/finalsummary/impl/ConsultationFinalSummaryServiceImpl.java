@@ -60,7 +60,7 @@ public class ConsultationFinalSummaryServiceImpl implements ConsultationFinalSum
         ConsultationSession session = getAssignedDoctorSession(doctorId, sessionId);
         return summaryRepository.findBySessionId(sessionId)
                 .map(summary -> toResponse(summary, session))
-                .orElseThrow(() -> new AppException(ErrorCode.ENTITY_NOT_FOUND, "Final care summary not found"));
+                .orElseThrow(() -> AppException.of(ErrorCode.ENTITY_NOT_FOUND, "detail.final-summary-not-found"));
     }
 
     @Override
@@ -73,8 +73,7 @@ public class ConsultationFinalSummaryServiceImpl implements ConsultationFinalSum
                 && session.getStatus() != ConsultationStatus.COMPLETED
                 && !(session.getStatus() == ConsultationStatus.CANCELLED
                 && Boolean.TRUE.equals(session.getMeaningfulCareOccurred())))
-            throw new AppException(ErrorCode.INVALID_CONSULTATION_STATUS,
-                    "Final summary draft can be edited only for active or completed sessions");
+            throw AppException.of(ErrorCode.INVALID_CONSULTATION_STATUS, "detail.final-summary-draft-status");
 
         ConsultationFinalSummary summary = summaryRepository.findBySessionIdForUpdate(sessionId)
                 .orElseGet(() -> ConsultationFinalSummary.builder()
@@ -84,8 +83,7 @@ public class ConsultationFinalSummaryServiceImpl implements ConsultationFinalSum
                         .build());
 
         if (summary.getStatus() == ConsultationFinalSummaryStatus.FINALIZED)
-            throw new AppException(ErrorCode.INVALID_CONSULTATION_STATUS,
-                    "Finalized care summary cannot be edited");
+            throw AppException.of(ErrorCode.INVALID_CONSULTATION_STATUS, "detail.final-summary-finalized");
         if (!summary.getCreatedByDoctorId().equals(doctorId))
             throw new AppException(ErrorCode.CONSULTATION_ACCESS_DENIED);
 
@@ -104,8 +102,7 @@ public class ConsultationFinalSummaryServiceImpl implements ConsultationFinalSum
         if (session.getStatus() != ConsultationStatus.COMPLETED
                 && !(session.getStatus() == ConsultationStatus.CANCELLED
                 && Boolean.TRUE.equals(session.getMeaningfulCareOccurred())))
-            throw new AppException(ErrorCode.INVALID_CONSULTATION_STATUS,
-                    "Final summary can be finalized only after session completion");
+            throw AppException.of(ErrorCode.INVALID_CONSULTATION_STATUS, "detail.final-summary-finalize-after-completion");
 
         DoctorCareProfile queueProfile = session.getFlowType() == ConsultationFlowType.QUEUE_DISPATCH_V1
                 ? doctorCareProfileRepository.findByDoctorIdForUpdate(doctorId)
@@ -113,8 +110,7 @@ public class ConsultationFinalSummaryServiceImpl implements ConsultationFinalSum
                 : null;
 
         ConsultationFinalSummary summary = summaryRepository.findBySessionIdForUpdate(sessionId)
-                .orElseThrow(() -> new AppException(ErrorCode.ENTITY_NOT_FOUND,
-                        "Final care summary draft not found"));
+                .orElseThrow(() -> AppException.of(ErrorCode.ENTITY_NOT_FOUND, "detail.final-summary-draft-not-found"));
         if (!summary.getCreatedByDoctorId().equals(doctorId))
             throw new AppException(ErrorCode.CONSULTATION_ACCESS_DENIED);
         if (summary.getStatus() == ConsultationFinalSummaryStatus.FINALIZED) {
@@ -150,8 +146,7 @@ public class ConsultationFinalSummaryServiceImpl implements ConsultationFinalSum
         ConsultationSession session = getAssignedDoctorSession(doctorId, sessionId);
         ConsultationFinalSummary summary = summaryRepository.findBySessionIdForUpdate(sessionId)
                 .filter(item -> item.getStatus() == ConsultationFinalSummaryStatus.FINALIZED)
-                .orElseThrow(() -> new AppException(ErrorCode.INVALID_CONSULTATION_STATUS,
-                        "An addendum requires a finalized Final Care Summary"));
+                .orElseThrow(() -> AppException.of(ErrorCode.INVALID_CONSULTATION_STATUS, "detail.addendum-requires-final-summary"));
         if (!summary.getCreatedByDoctorId().equals(doctorId))
             throw new AppException(ErrorCode.CONSULTATION_ACCESS_DENIED);
 
@@ -199,16 +194,14 @@ public class ConsultationFinalSummaryServiceImpl implements ConsultationFinalSum
                 .filter(user -> user.getStatus() == AccountStatus.ACTIVE)
                 .isPresent();
         if (!activeDoctor)
-            throw new AppException(ErrorCode.CONSULTATION_ACCESS_DENIED,
-                    "Only the active assigned Doctor may author clinical closure content");
+            throw AppException.of(ErrorCode.CONSULTATION_ACCESS_DENIED, "detail.only-assigned-doctor-closure");
     }
 
     private UserAccount requireActiveDoctorForUpdate(Long doctorId) {
         UserAccount doctor = userAccountRepository.findByIdForUpdate(doctorId)
                 .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_ACCESS_DENIED));
         if (doctor.getRole() != UserRole.DOCTOR || doctor.getStatus() != AccountStatus.ACTIVE)
-            throw new AppException(ErrorCode.CONSULTATION_ACCESS_DENIED,
-                    "Only the active assigned Doctor may author clinical closure content");
+            throw AppException.of(ErrorCode.CONSULTATION_ACCESS_DENIED, "detail.only-assigned-doctor-closure");
         return doctor;
     }
 
@@ -239,8 +232,7 @@ public class ConsultationFinalSummaryServiceImpl implements ConsultationFinalSum
     private ConsultationFinalSummaryResponse getFinalizedSummary(ConsultationSession session) {
         ConsultationFinalSummary summary = summaryRepository.findBySessionId(session.getId())
                 .filter(item -> item.getStatus() == ConsultationFinalSummaryStatus.FINALIZED)
-                .orElseThrow(() -> new AppException(ErrorCode.ENTITY_NOT_FOUND,
-                        "Final care summary has not been finalized"));
+                .orElseThrow(() -> AppException.of(ErrorCode.ENTITY_NOT_FOUND, "detail.final-summary-not-finalized"));
         return toResponse(summary, session);
     }
 
@@ -249,8 +241,7 @@ public class ConsultationFinalSummaryServiceImpl implements ConsultationFinalSum
                 || actorRole == UserRole.ADMIN
                 || actorRole == UserRole.CARE_COORDINATOR)
             return;
-        throw new AppException(ErrorCode.ACCESS_DENIED,
-                "You are not allowed to view final care summaries");
+        throw AppException.of(ErrorCode.ACCESS_DENIED, "detail.forbidden-view-final-summaries");
     }
 
     private void validateRequiredFinalizationFields(ConsultationFinalSummary summary) {
@@ -261,8 +252,7 @@ public class ConsultationFinalSummaryServiceImpl implements ConsultationFinalSum
 
     private void requireNonBlank(String value, String field) {
         if (value == null || value.isBlank())
-            throw new AppException(ErrorCode.INVALID_PARAMETER,
-                    field + " is required to finalize a Final Care Summary");
+            throw AppException.of(ErrorCode.INVALID_PARAMETER, "detail.final-summary-field-required", field);
     }
 
     private void apply(ConsultationFinalSummary summary, UpsertConsultationFinalSummaryRequest request) {
@@ -274,8 +264,7 @@ public class ConsultationFinalSummaryServiceImpl implements ConsultationFinalSum
             Set<Long> references = new LinkedHashSet<>(request.getReferencedHealthRecordIds());
             references.forEach(recordId -> {
                 if (!authorizationRepository.existsBySessionIdAndHealthRecordId(summary.getSessionId(), recordId))
-                    throw new AppException(ErrorCode.CONSULTATION_ACCESS_DENIED,
-                            "Final Summary may reference only HealthRecords authorized for this episode");
+                    throw AppException.of(ErrorCode.CONSULTATION_ACCESS_DENIED, "detail.final-summary-unauthorized-record");
             });
             summary.setReferencedHealthRecordIds(references);
         }

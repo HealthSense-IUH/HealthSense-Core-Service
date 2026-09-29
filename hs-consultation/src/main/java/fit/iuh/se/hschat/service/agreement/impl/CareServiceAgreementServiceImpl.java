@@ -111,8 +111,7 @@ public class CareServiceAgreementServiceImpl implements CareServiceAgreementServ
         validateOwner(memberId, request);
         return agreementRepository.findFirstByRequestIdOrderByCreatedAtDesc(requestId)
                 .map(this::toResponse)
-                .orElseThrow(() -> new AppException(ErrorCode.INVALID_CONSULTATION_STATUS,
-                        "Care Service Agreement not found"));
+                .orElseThrow(() -> AppException.of(ErrorCode.INVALID_CONSULTATION_STATUS, "detail.care-agreement-not-found"));
     }
 
     @Override
@@ -154,13 +153,11 @@ public class CareServiceAgreementServiceImpl implements CareServiceAgreementServ
         CareServiceAgreement agreement = agreementRepository
                 .findFirstByRequestIdAndStatusInOrderByCreatedAtDesc(
                         request.getId(), List.of(CareServiceAgreementStatus.ACCEPTED))
-                .orElseThrow(() -> new AppException(ErrorCode.INVALID_CONSULTATION_STATUS,
-                        "An accepted Care Service Agreement is required"));
+                .orElseThrow(() -> AppException.of(ErrorCode.INVALID_CONSULTATION_STATUS, "detail.care-agreement-required"));
         if (!Objects.equals(agreement.getMemberId(), request.getMemberId())
                 || !Objects.equals(agreement.getDoctorId(), request.getAssignedDoctorId())
                 || !agreement.getValidUntil().isAfter(Instant.now()))
-            throw new AppException(ErrorCode.INVALID_CONSULTATION_STATUS,
-                    "The accepted Care Service Agreement is no longer valid");
+            throw AppException.of(ErrorCode.INVALID_CONSULTATION_STATUS, "detail.care-agreement-invalid");
         return agreement;
     }
 
@@ -240,8 +237,7 @@ public class CareServiceAgreementServiceImpl implements CareServiceAgreementServ
                 .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_ACCESS_DENIED));
         return agreementRepository.findFirstByRenewalIdOrderByCreatedAtDesc(renewal.getId())
                 .map(this::toResponse)
-                .orElseThrow(() -> new AppException(ErrorCode.INVALID_CONSULTATION_STATUS,
-                        "Renewal Agreement not found"));
+                .orElseThrow(() -> AppException.of(ErrorCode.INVALID_CONSULTATION_STATUS, "detail.renewal-agreement-not-found"));
     }
 
     @Override
@@ -279,14 +275,12 @@ public class CareServiceAgreementServiceImpl implements CareServiceAgreementServ
         CareServiceAgreement agreement = agreementRepository
                 .findFirstByRenewalIdAndStatusInOrderByCreatedAtDesc(
                         renewal.getId(), List.of(CareServiceAgreementStatus.ACCEPTED))
-                .orElseThrow(() -> new AppException(ErrorCode.INVALID_CONSULTATION_STATUS,
-                        "An accepted Renewal Agreement is required"));
+                .orElseThrow(() -> AppException.of(ErrorCode.INVALID_CONSULTATION_STATUS, "detail.renewal-agreement-required"));
         if (agreement.getAgreementType() != CareServiceAgreementType.RENEWAL
                 || !Objects.equals(agreement.getMemberId(), renewal.getMemberId())
                 || !Objects.equals(agreement.getDoctorId(), renewal.getDoctorId())
                 || !agreement.getValidUntil().isAfter(Instant.now()))
-            throw new AppException(ErrorCode.INVALID_CONSULTATION_STATUS,
-                    "The accepted Renewal Agreement is no longer valid");
+            throw AppException.of(ErrorCode.INVALID_CONSULTATION_STATUS, "detail.renewal-agreement-invalid");
         return agreement;
     }
 

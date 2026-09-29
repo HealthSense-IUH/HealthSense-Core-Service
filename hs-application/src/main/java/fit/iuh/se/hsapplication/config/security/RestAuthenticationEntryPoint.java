@@ -2,6 +2,8 @@ package fit.iuh.se.hsapplication.config.security;
 
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsshared.dto.response.ApiResponse;
+import fit.iuh.se.hsshared.i18n.ErrorMessages;
+import fit.iuh.se.hsshared.i18n.RequestLanguage;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -32,9 +34,10 @@ public class RestAuthenticationEntryPoint implements AuthenticationEntryPoint {
         ErrorCode errorCode = ErrorCode.UNAUTHORIZED;
         response.setStatus(errorCode.getStatus().value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.setCharacterEncoding("UTF-8");
         ApiResponse<?> apiResponse = ApiResponse.builder()
                 .code(errorCode.getCode())
-                .message(errorCode.getMessage())
+                .message(ErrorMessages.code(errorCode, RequestLanguage.resolve(request)))
                 .build();
         objectMapper.writeValue(response.getWriter(), apiResponse);
         response.flushBuffer();

@@ -12,7 +12,7 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class RejectConsultationRequest {
 
-    @NotBlank(message = "Lý do từ chối không được để trống")
-    @Size(max = 500, message = "Lý do từ chối không được vượt quá 500 ký tự")
+    @NotBlank(message = "{validation.rejection-reason-required}")
+    @Size(max = 500, message = "{validation.rejection-reason-max-500}")
     String rejectionReason;
 }

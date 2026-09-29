@@ -132,8 +132,7 @@ public class AdminCreditController {
     }
 
     private PageRequest page(int page, int size) {
-        if (page < 1 || size < 1 || size > 100) throw new AppException(ErrorCode.INVALID_PARAMETER,
-                "page must be positive and size must be between 1 and 100");
+        if (page < 1 || size < 1 || size > 100) throw AppException.of(ErrorCode.INVALID_PARAMETER, "detail.page-size-range", "100");
         return PageRequest.of(page - 1, size);
     }
 

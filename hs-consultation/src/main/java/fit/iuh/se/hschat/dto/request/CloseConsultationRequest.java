@@ -13,8 +13,8 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class CloseConsultationRequest {
 
-    @NotBlank(message = "Lý do đóng phiên tư vấn không được để trống")
-    @Size(max = 500, message = "Lý do đóng phiên tư vấn không được vượt quá 500 ký tự")
+    @NotBlank(message = "{validation.close-consultation-reason-required}")
+    @Size(max = 500, message = "{validation.close-consultation-reason-max-500}")
     String closeReason;
 
     CareTerminationReason terminationReason;

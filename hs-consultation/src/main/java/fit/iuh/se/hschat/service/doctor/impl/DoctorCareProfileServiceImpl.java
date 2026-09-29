@@ -133,7 +133,7 @@ public class DoctorCareProfileServiceImpl implements DoctorCareProfileService {
                 || actorRole == UserRole.ADMIN
                 || actorRole == UserRole.CARE_COORDINATOR)
             return;
-        throw new AppException(ErrorCode.ACCESS_DENIED, "You are not allowed to manage doctor care profiles");
+        throw AppException.of(ErrorCode.ACCESS_DENIED, "detail.forbidden-manage-doctor-profiles");
     }
 
     private void validateDoctor(Long doctorId) {

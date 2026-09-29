@@ -13,11 +13,11 @@ import lombok.experimental.FieldDefaults;
 @Builder
 public class VerifyForgotPasswordOtpRequest {
 
-    @NotBlank(message = "Email is required")
-    @Email(message = "Email is invalid")
+    @NotBlank(message = "{validation.email-required}")
+    @Email(message = "{validation.email-invalid}")
     String email;
 
-    @NotBlank(message = "OTP is required")
-    @Pattern(regexp = "\\d{6}", message = "OTP must contain 6 digits")
+    @NotBlank(message = "{validation.otp-required}")
+    @Pattern(regexp = "\\d{6}", message = "{validation.otp-6-digits}")
     String otp;
 }

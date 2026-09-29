@@ -12,7 +12,7 @@ import lombok.experimental.FieldDefaults;
 @Builder
 public class ForgotPasswordOtpRequest {
 
-    @NotBlank(message = "Email is required")
-    @Email(message = "Email is invalid")
+    @NotBlank(message = "{validation.email-required}")
+    @Email(message = "{validation.email-invalid}")
     String email;
 }

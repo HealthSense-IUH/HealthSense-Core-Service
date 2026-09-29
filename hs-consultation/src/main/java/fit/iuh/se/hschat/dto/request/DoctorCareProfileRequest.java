@@ -15,21 +15,21 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class DoctorCareProfileRequest {
 
-    @NotNull(message = "Chuyên khoa không được để trống")
+    @NotNull(message = "{validation.specialty-required}")
     DoctorSpecialty specialty;
 
-    @NotNull(message = "Trạng thái nhận chăm sóc 1-1 không được để trống")
+    @NotNull(message = "{validation.accepts-one-on-one-care-required}")
     Boolean acceptsOneOnOneCare;
 
-    @NotNull(message = "Số phiên tối đa không được để trống")
-    @Min(value = 1, message = "Số phiên tối đa phải lớn hơn 0")
+    @NotNull(message = "{validation.max-active-consultations-required}")
+    @Min(value = 1, message = "{validation.max-active-consultations-positive}")
     Integer maxActiveConsultations;
 
-    @Size(max = 4000, message = "Lịch hỗ trợ không được vượt quá 4000 ký tự")
+    @Size(max = 4000, message = "{validation.availability-max-4000}")
     String availabilityJson;
 
     DoctorAvailabilityDto availability;
 
-    @Size(max = 80, message = "Timezone không được vượt quá 80 ký tự")
+    @Size(max = 80, message = "{validation.timezone-max-80}")
     String timezone;
 }

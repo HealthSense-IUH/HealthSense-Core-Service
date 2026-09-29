@@ -11,6 +11,6 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ApproveConsultationRequest {
 
-    @NotNull(message = "Id bác sĩ không được để trống")
+    @NotNull(message = "{validation.doctor-id-required}")
     Long doctorId;
 }

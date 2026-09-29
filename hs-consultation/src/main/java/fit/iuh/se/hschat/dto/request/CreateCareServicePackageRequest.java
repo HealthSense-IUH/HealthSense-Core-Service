@@ -17,32 +17,32 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class CreateCareServicePackageRequest {
 
-    @NotBlank(message = "Mã gói không được để trống")
-    @Size(max = 80, message = "Mã gói không được vượt quá 80 ký tự")
+    @NotBlank(message = "{validation.package-code-required}")
+    @Size(max = 80, message = "{validation.package-code-max-80}")
     String code;
 
-    @NotBlank(message = "Tên gói không được để trống")
-    @Size(max = 160, message = "Tên gói không được vượt quá 160 ký tự")
+    @NotBlank(message = "{validation.package-name-required}")
+    @Size(max = 160, message = "{validation.package-name-max-160}")
     String name;
 
-    @Size(max = 1000, message = "Mô tả không được vượt quá 1000 ký tự")
+    @Size(max = 1000, message = "{validation.description-max-1000}")
     String description;
 
-    @Size(max = 500, message = "Mô tả ngắn không được vượt quá 500 ký tự")
+    @Size(max = 500, message = "{validation.short-description-max-500}")
     String shortDescription;
 
-    @Size(max = 4000, message = "Mô tả chi tiết không được vượt quá 4000 ký tự")
+    @Size(max = 4000, message = "{validation.detailed-description-max-4000}")
     String detailedDescription;
 
-    @NotNull(message = "Giá gói không được để trống")
-    @DecimalMin(value = "0.01", message = "Giá gói phải lớn hơn 0")
+    @NotNull(message = "{validation.package-price-required}")
+    @DecimalMin(value = "0.01", message = "{validation.package-price-positive}")
     BigDecimal priceAmount;
 
-    @Size(min = 3, max = 3, message = "Mã tiền tệ phải có 3 ký tự")
+    @Size(min = 3, max = 3, message = "{validation.currency-code-length-3}")
     String currency;
 
-    @NotNull(message = "Thời lượng gói không được để trống")
-    @Min(value = 1, message = "Thời lượng gói phải lớn hơn 0")
+    @NotNull(message = "{validation.package-duration-required}")
+    @Min(value = 1, message = "{validation.package-duration-positive}")
     Integer durationDays;
 
     List<CareServiceCode> includedServices;
@@ -53,9 +53,9 @@ public class CreateCareServicePackageRequest {
 
     CareServiceSupportPolicy supportPolicy;
 
-    @NotNull(message = "Trạng thái gia hạn không được để trống")
+    @NotNull(message = "{validation.renewable-required}")
     Boolean renewable;
 
-    @Size(max = 255, message = "Tham chiếu điều khoản không được vượt quá 255 ký tự")
+    @Size(max = 255, message = "{validation.terms-policy-reference-max-255}")
     String termsPolicyReference;
 }

@@ -199,7 +199,7 @@ public class QueueContinuationServiceImpl implements QueueContinuationService {
 
     private void validateDecision(ContinuationDecision decision) {
         if (decision != ContinuationDecision.CONTINUE && decision != ContinuationDecision.STOP)
-            throw new AppException(ErrorCode.INVALID_PARAMETER, "Decision must be CONTINUE or STOP");
+            throw AppException.of(ErrorCode.INVALID_PARAMETER, "detail.continuation-decision-invalid");
     }
 
     private Instant graceExpiresAt(ConsultationSession session) {

@@ -85,14 +85,12 @@ public class ConsultationRenewalServiceImpl implements ConsultationRenewalServic
         CareServicePackage originalPackage = packageRepository.findById(session.getPackageId())
                 .orElseThrow(() -> new AppException(ErrorCode.CARE_SERVICE_PACKAGE_NOT_FOUND));
         if (!Boolean.TRUE.equals(originalPackage.getRenewable()))
-            throw new AppException(ErrorCode.INVALID_CONSULTATION_STATUS, "Current package is not renewable");
+            throw AppException.of(ErrorCode.INVALID_CONSULTATION_STATUS, "detail.package-not-renewable");
         if (request != null && request.getPackageFamilyId() != null
                 && !Objects.equals(request.getPackageFamilyId(), originalPackage.getFamilyId()))
-            throw new AppException(ErrorCode.INVALID_PARAMETER,
-                    "Renewal cannot switch package/service family");
+            throw AppException.of(ErrorCode.INVALID_PARAMETER, "detail.renewal-cannot-switch-family");
         if (renewalRepository.existsBySessionIdAndStatusIn(sessionId, UNRESOLVED))
-            throw new AppException(ErrorCode.INVALID_CONSULTATION_STATUS,
-                    "Session already has an unresolved renewal");
+            throw AppException.of(ErrorCode.INVALID_CONSULTATION_STATUS, "detail.renewal-pending");
 
         ConsultationRenewal renewal = renewalRepository.saveAndFlush(ConsultationRenewal.builder()
                 .sessionId(session.getId())
@@ -112,7 +110,7 @@ public class ConsultationRenewalServiceImpl implements ConsultationRenewalServic
     public ConsultationRenewalResponse beginReview(Long actorId, UserRole role, Long renewalId) {
         requireCoordinator(role);
         ConsultationRenewal renewal = renewalRepository.findByIdForUpdate(renewalId)
-                .orElseThrow(() -> new AppException(ErrorCode.ENTITY_NOT_FOUND, "Renewal not found"));
+                .orElseThrow(() -> AppException.of(ErrorCode.ENTITY_NOT_FOUND, "detail.renewal-not-found"));
         if (renewal.getStatus() != ConsultationRenewalStatus.REQUESTED)
             throw new AppException(ErrorCode.INVALID_CONSULTATION_STATUS);
         ConsultationSession session = sessionRepository.findByIdForUpdate(renewal.getSessionId())
@@ -133,12 +131,12 @@ public class ConsultationRenewalServiceImpl implements ConsultationRenewalServic
             Long actorId, UserRole role, Long renewalId, DecideConsultationRenewalRequest request) {
         requireCoordinator(role);
         ConsultationRenewal renewal = renewalRepository.findByIdForUpdate(renewalId)
-                .orElseThrow(() -> new AppException(ErrorCode.ENTITY_NOT_FOUND, "Renewal not found"));
+                .orElseThrow(() -> AppException.of(ErrorCode.ENTITY_NOT_FOUND, "detail.renewal-not-found"));
         if (renewal.getStatus() != ConsultationRenewalStatus.UNDER_REVIEW)
             throw new AppException(ErrorCode.INVALID_CONSULTATION_STATUS);
         if (!Boolean.TRUE.equals(request.getApproved())) {
             if (request.getRejectionReason() == null || request.getRejectionReason().isBlank())
-                throw new AppException(ErrorCode.INVALID_PARAMETER, "Rejection reason is required");
+                throw AppException.of(ErrorCode.INVALID_PARAMETER, "detail.rejection-reason-required");
             renewal.setStatus(ConsultationRenewalStatus.REJECTED);
             renewal.setReviewedBy(actorId);
             renewal.setReviewedAt(Instant.now());
@@ -158,8 +156,7 @@ public class ConsultationRenewalServiceImpl implements ConsultationRenewalServic
             carePackage = packageRepository
                     .findByFamilyIdAndStatus(renewal.getPackageFamilyId(), CareServicePackageStatus.ACTIVE)
                     .filter(item -> Boolean.TRUE.equals(item.getRenewable()))
-                    .orElseThrow(() -> new AppException(ErrorCode.CARE_SERVICE_PACKAGE_NOT_FOUND,
-                            "No renewable ACTIVE package version exists for this family"));
+                    .orElseThrow(() -> AppException.of(ErrorCode.CARE_SERVICE_PACKAGE_NOT_FOUND, "detail.no-renewable-package-version"));
             profile = validateFutureCapacity(renewal, session, carePackage, Instant.now());
         } catch (AppException exception) {
             renewal.setStatus(ConsultationRenewalStatus.REJECTED);
@@ -178,8 +175,7 @@ public class ConsultationRenewalServiceImpl implements ConsultationRenewalServic
         Instant deadline = now.plus(paymentWindowMinutes, ChronoUnit.MINUTES);
         if (deadline.isAfter(previousEndsAt)) deadline = previousEndsAt;
         if (!deadline.isAfter(now))
-            throw new AppException(ErrorCode.INVALID_CONSULTATION_STATUS,
-                    "Session ends too soon to complete a renewal payment");
+            throw AppException.of(ErrorCode.INVALID_CONSULTATION_STATUS, "detail.session-ends-too-soon-for-renewal");
 
         renewal.setStatus(ConsultationRenewalStatus.APPROVED);
         renewal.setReviewedBy(actorId);
@@ -268,7 +264,7 @@ public class ConsultationRenewalServiceImpl implements ConsultationRenewalServic
     @Transactional
     public void applyVerifiedPayment(ConsultationPayment payment, Instant now) {
         ConsultationRenewal renewal = renewalRepository.findByIdForUpdate(payment.getRenewalId())
-                .orElseThrow(() -> new AppException(ErrorCode.ENTITY_NOT_FOUND, "Renewal not found"));
+                .orElseThrow(() -> AppException.of(ErrorCode.ENTITY_NOT_FOUND, "detail.renewal-not-found"));
         ConsultationSession session = sessionRepository.findByIdForUpdate(renewal.getSessionId())
                 .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_NOT_FOUND));
         if (renewal.getStatus() != ConsultationRenewalStatus.WAITING_PAYMENT
@@ -433,7 +429,7 @@ public class ConsultationRenewalServiceImpl implements ConsultationRenewalServic
     @Transactional(propagation = org.springframework.transaction.annotation.Propagation.MANDATORY)
     public void lockSessionForPayment(Long renewalId) {
         ConsultationRenewal renewal = renewalRepository.findById(renewalId)
-                .orElseThrow(() -> new AppException(ErrorCode.ENTITY_NOT_FOUND, "Renewal not found"));
+                .orElseThrow(() -> AppException.of(ErrorCode.ENTITY_NOT_FOUND, "detail.renewal-not-found"));
         sessionRepository.findByIdForUpdate(renewal.getSessionId())
                 .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_NOT_FOUND));
     }
@@ -509,8 +505,7 @@ public class ConsultationRenewalServiceImpl implements ConsultationRenewalServic
     private void requireOwnedActiveSession(Long memberId, ConsultationSession session) {
         requireOwner(memberId, session);
         if (session.getStatus() != ConsultationStatus.ACTIVE)
-            throw new AppException(ErrorCode.INVALID_CONSULTATION_STATUS,
-                    "Only ACTIVE sessions can be renewed");
+            throw AppException.of(ErrorCode.INVALID_CONSULTATION_STATUS, "detail.only-active-session-renewable");
     }
 
     private void requireOwner(Long memberId, ConsultationSession session) {
@@ -523,8 +518,7 @@ public class ConsultationRenewalServiceImpl implements ConsultationRenewalServic
         if (session.getStatus() != ConsultationStatus.ACTIVE
                 || !Objects.equals(session.getMemberId(), renewal.getMemberId())
                 || !Objects.equals(session.getDoctorId(), renewal.getDoctorId()))
-            throw new AppException(ErrorCode.INVALID_CONSULTATION_STATUS,
-                    "Renewal must keep the same ACTIVE Member, Doctor and Session");
+            throw AppException.of(ErrorCode.INVALID_CONSULTATION_STATUS, "detail.renewal-same-participants");
     }
 
     private void requireCoordinator(UserRole role) {

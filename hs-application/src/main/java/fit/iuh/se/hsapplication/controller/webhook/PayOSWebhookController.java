@@ -55,7 +55,7 @@ public class PayOSWebhookController {
         try {
             verified = paymentGateway.verifyWebhook(webhook);
         } catch (Exception exception) {
-            throw new AppException(ErrorCode.INVALID_PAYMENT_WEBHOOK, "Invalid PayOS webhook signature or payload");
+            throw AppException.of(ErrorCode.INVALID_PAYMENT_WEBHOOK, "detail.payos-webhook-invalid");
         }
         boolean handled = creditPayments.handle(verified.getOrderCode(), verified.getAmount(),
                 verified.getCurrency(), verified.getPaymentLinkId(), verified.getCode(), verified.getReference());

@@ -11,7 +11,7 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class AiCallbackFailedRequest {
 
-    @NotNull(message = "ID bản ghi không được để trống")
+    @NotNull(message = "{validation.record-id-required}")
     Long recordId;
 
     String errorReason;

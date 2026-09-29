@@ -42,13 +42,12 @@ public class NutritionReferenceServiceImpl implements NutritionReferenceService 
     public PageResponse<NutritionReferenceFoodSummaryResponse> searchFoods(String query, String group, String source,
                                                                            int page, int size, DietProfile diet) {
         if (page < 1 || size < 1 || size > MAX_PAGE_SIZE)
-            throw new AppException(ErrorCode.INVALID_PARAMETER,
-                    "page must be positive and size must be between 1 and " + MAX_PAGE_SIZE);
+            throw AppException.of(ErrorCode.INVALID_PARAMETER, "detail.page-size-range", MAX_PAGE_SIZE);
         if (query != null && query.length() > MAX_QUERY_LENGTH)
-            throw new AppException(ErrorCode.INVALID_PARAMETER, "q must be at most " + MAX_QUERY_LENGTH + " characters");
+            throw AppException.of(ErrorCode.INVALID_PARAMETER, "detail.query-too-long", MAX_QUERY_LENGTH);
         String sourceFilter = source == null || source.isBlank() ? null : source.trim();
         if (sourceFilter != null && !SOURCES.contains(sourceFilter))
-            throw new AppException(ErrorCode.INVALID_PARAMETER, "source must be one of " + SOURCES);
+            throw AppException.of(ErrorCode.INVALID_PARAMETER, "detail.source-invalid", SOURCES);
 
         Map<String, NutritionFoodGroup> allGroups = groups.findAll().stream()
                 .collect(Collectors.toMap(NutritionFoodGroup::getId, Function.identity()));
@@ -70,7 +69,7 @@ public class NutritionReferenceServiceImpl implements NutritionReferenceService 
     public NutritionReferenceFoodResponse getFood(String id, DietProfile diet) {
         Long foodId = parseId(id);
         NutritionFood food = (foodId == null ? Optional.<NutritionFood>empty() : foods.findById(foodId))
-                .orElseThrow(() -> new AppException(ErrorCode.ENTITY_NOT_FOUND, "Nutrition reference food not found"));
+                .orElseThrow(() -> AppException.of(ErrorCode.ENTITY_NOT_FOUND, "detail.reference-food-not-found"));
         List<Portion> foodPortions = portions.findByFoodIdOrderBySequenceNumberAsc(food.getId()).stream()
                 .map(p -> new Portion(p.getDescription(), NutrientMapper.amount(p.getGramWeight()), p.isDefaultPortion()))
                 .toList();
@@ -90,7 +89,7 @@ public class NutritionReferenceServiceImpl implements NutritionReferenceService 
         if (allGroups.containsKey(value)) return value;
         return allGroups.values().stream().filter(g -> g.getSlug().equals(value)).map(NutritionFoodGroup::getId)
                 .findFirst()
-                .orElseThrow(() -> new AppException(ErrorCode.INVALID_PARAMETER, "Unknown food group: " + value));
+                .orElseThrow(() -> AppException.of(ErrorCode.INVALID_PARAMETER, "detail.food-group-unknown", value));
     }
 
     /**

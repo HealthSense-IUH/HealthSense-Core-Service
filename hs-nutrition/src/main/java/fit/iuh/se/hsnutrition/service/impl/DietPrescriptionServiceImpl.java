@@ -81,7 +81,7 @@ public class DietPrescriptionServiceImpl implements DietPrescriptionService {
         Set<DietRuleCode> seen = new HashSet<>();
         for (DietThresholdRequest request : thresholds) {
             DietRuleCode code = DietRuleService.parseCode(request.code());
-            if (!seen.add(code)) throw new AppException(ErrorCode.INVALID_PARAMETER, "Duplicate diet rule: " + code);
+            if (!seen.add(code)) throw AppException.of(ErrorCode.INVALID_PARAMETER, "detail.diet-rule-duplicate", code);
             DietThreshold override = new DietThreshold(request.limit(), request.caution()).validated(code.name());
             defaults.getOrDefault(code, new DietThreshold(null, null))
                     .overriddenBy(override.limit(), override.caution()).validated(code.name());
@@ -104,7 +104,7 @@ public class DietPrescriptionServiceImpl implements DietPrescriptionService {
         if (note == null || note.isBlank()) return null;
         String trimmed = note.strip();
         if (trimmed.length() > MAX_NOTE_LENGTH)
-            throw new AppException(ErrorCode.INVALID_PARAMETER, "note must be at most " + MAX_NOTE_LENGTH + " characters");
+            throw AppException.of(ErrorCode.INVALID_PARAMETER, "detail.note-too-long", MAX_NOTE_LENGTH);
         return trimmed;
     }
 

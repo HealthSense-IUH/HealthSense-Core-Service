@@ -11,16 +11,16 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class UpsertConsultationFinalSummaryRequest {
 
-    @Size(max = 10000, message = "Nội dung tổng kết không được vượt quá 10000 ký tự")
+    @Size(max = 10000, message = "{validation.summary-content-max-10000}")
     String summary;
 
-    @Size(max = 10000, message = "Nhận xét không được vượt quá 10000 ký tự")
+    @Size(max = 10000, message = "{validation.observations-max-10000}")
     String observations;
 
-    @Size(max = 10000, message = "Khuyến nghị không được vượt quá 10000 ký tự")
+    @Size(max = 10000, message = "{validation.recommendations-max-10000}")
     String recommendations;
 
-    @Size(max = 10000, message = "Khuyến nghị theo dõi không được vượt quá 10000 ký tự")
+    @Size(max = 10000, message = "{validation.follow-up-recommendation-max-10000}")
     String followUpRecommendation;
 
     java.util.Set<Long> referencedHealthRecordIds;

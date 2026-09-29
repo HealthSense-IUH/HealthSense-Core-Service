@@ -13,10 +13,10 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class PresignedUrlRequest {
 
-    @NotBlank(message = "Tên file không được để trống")
+    @NotBlank(message = "{validation.file-name-required}")
     String fileName;
 
-    @NotNull(message = "Dung lượng file không được để trống")
-    @Positive(message = "Dung lượng file phải lớn hơn 0")
+    @NotNull(message = "{validation.file-size-required}")
+    @Positive(message = "{validation.upload-file-size-positive}")
     Long fileSize;
 }

@@ -14,24 +14,24 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class SendConsultationMessageRequest {
 
-    @NotNull(message = "Loại tin nhắn không được để trống")
+    @NotNull(message = "{validation.message-type-required}")
     ConsultationMessageType type;
 
-    @Size(max = 4000, message = "Nội dung tin nhắn không được vượt quá 4000 ký tự")
+    @Size(max = 4000, message = "{validation.message-content-max-4000}")
     String content;
 
-    @Size(max = 1000, message = "URL file đính kèm không được vượt quá 1000 ký tự")
+    @Size(max = 1000, message = "{validation.attachment-url-max-1000}")
     String attachmentUrl;
 
-    @Size(max = 255, message = "Tên file đính kèm không được vượt quá 255 ký tự")
+    @Size(max = 255, message = "{validation.attachment-file-name-max-255}")
     String attachmentName;
 
-    @Positive(message = "Dung lượng file đính kèm phải lớn hơn 0")
+    @Positive(message = "{validation.attachment-file-size-positive}")
     Long attachmentSize;
 
-    @Size(max = 100, message = "Content type file đính kèm không được vượt quá 100 ký tự")
+    @Size(max = 100, message = "{validation.attachment-content-type-max-100}")
     String attachmentContentType;
 
-    @Size(max = 100, message = "Client message id không được vượt quá 100 ký tự")
+    @Size(max = 100, message = "{validation.client-message-id-max-100}")
     String clientMessageId;
 }

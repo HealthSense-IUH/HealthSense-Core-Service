@@ -20,10 +20,10 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = lombok.AccessLevel.PRIVATE)
 @Builder
 public class LoginRequest {
-    @NotBlank(message = "Email is required")
-    @Email(message = "Email is invalid")
+    @NotBlank(message = "{validation.email-required}")
+    @Email(message = "{validation.email-invalid}")
     String email;
 
-    @NotBlank(message = "Password is required")
+    @NotBlank(message = "{validation.password-required}")
     String password;
 }

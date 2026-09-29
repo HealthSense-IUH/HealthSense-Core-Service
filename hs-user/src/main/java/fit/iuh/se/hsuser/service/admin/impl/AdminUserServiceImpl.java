@@ -49,15 +49,15 @@ public class AdminUserServiceImpl implements AdminUserService {
     @Transactional
     public AdminUserCreateResult createUser(Long currentUserId, UserRole currentUserRole, AdminUserCreateRequest request) {
         if (currentUserId == null)
-            throw new AppException(ErrorCode.INVALID_ARGUMENT, "Current user ID must not be null");
+            throw AppException.of(ErrorCode.INVALID_ARGUMENT, "detail.current-user-id-required");
         if (currentUserRole == null)
-            throw new AppException(ErrorCode.INVALID_ARGUMENT, "Current user role must not be null");
+            throw AppException.of(ErrorCode.INVALID_ARGUMENT, "detail.current-user-role-required");
         if (request == null)
-            throw new AppException(ErrorCode.INVALID_ARGUMENT, "User create request must not be null");
+            throw AppException.of(ErrorCode.INVALID_ARGUMENT, "detail.user-create-request-required");
         validateRoleVisibility(currentUserRole, request.getRole());
 
         String email = TextNormalize.normalizeEmail(
-                TextNormalize.requireText(request.getEmail(), "Email must not be blank")
+                TextNormalize.requireText(request.getEmail(), "detail.email-required")
         );
         if (userAccountRepository.existsByEmail(email))
             throw new AppException(ErrorCode.EMAIL_ALREADY_EXISTS);
@@ -72,7 +72,7 @@ public class AdminUserServiceImpl implements AdminUserService {
 
         UserProfile profile = UserProfile.builder()
                 .user(user)
-                .displayName(TextNormalize.requireText(request.getDisplayName(), "Display name must not be blank"))
+                .displayName(TextNormalize.requireText(request.getDisplayName(), "detail.display-name-required"))
                 .phone(trimToNull(request.getPhone()))
                 .dateOfBirth(request.getDateOfBirth())
                 .gender(trimToNull(request.getGender()))
@@ -98,13 +98,13 @@ public class AdminUserServiceImpl implements AdminUserService {
             String keyword,
             Pageable pageable) {
         if (currentUserId == null)
-            throw new AppException(ErrorCode.INVALID_ARGUMENT, "Current user ID must not be null");
+            throw AppException.of(ErrorCode.INVALID_ARGUMENT, "detail.current-user-id-required");
         if (currentUserRole == null)
-            throw new AppException(ErrorCode.INVALID_ARGUMENT, "Current user role must not be null");
+            throw AppException.of(ErrorCode.INVALID_ARGUMENT, "detail.current-user-role-required");
         if (targetRole == null)
-            throw new AppException(ErrorCode.INVALID_ARGUMENT, "Target role must not be null");
+            throw AppException.of(ErrorCode.INVALID_ARGUMENT, "detail.target-role-required");
         if (pageable == null)
-            throw new AppException(ErrorCode.INVALID_ARGUMENT, "Pageable must not be null");
+            throw AppException.of(ErrorCode.INVALID_ARGUMENT, "detail.pageable-required");
         validateRoleVisibility(currentUserRole, targetRole);
         String normalizedKeyword = trimToNull(keyword);
         Page<UserAccount> userPage = normalizedKeyword == null
@@ -125,7 +125,7 @@ public class AdminUserServiceImpl implements AdminUserService {
     @Transactional(readOnly = true)
     public UserResponse getUser(Long id) {
         if (id == null)
-            throw new AppException(ErrorCode.INVALID_ARGUMENT, "User ID must not be null");
+            throw AppException.of(ErrorCode.INVALID_ARGUMENT, "detail.user-id-required");
         return userMapper.toUserResponse(findAvailableUser(id));
     }
 
@@ -140,9 +140,9 @@ public class AdminUserServiceImpl implements AdminUserService {
     @Transactional
     public UserResponse updateUser(Long currentUserId, UserRole currentUserRole, Long id, UserUpdateRequest request) {
         if (request == null)
-            throw new AppException(ErrorCode.INVALID_ARGUMENT, "User update request must not be null");
+            throw AppException.of(ErrorCode.INVALID_ARGUMENT, "detail.user-update-request-required");
         if (request.getRole() != null)
-            throw new AppException(ErrorCode.ACCESS_DENIED, "Role cannot be updated");
+            throw AppException.of(ErrorCode.ACCESS_DENIED, "detail.role-cannot-be-updated");
         UserAccount user = findManageableUser(currentUserId, currentUserRole, id);
         updateAccount(user, request);
         updateProfile(user.getProfile(), request);
@@ -161,19 +161,19 @@ public class AdminUserServiceImpl implements AdminUserService {
 
     private UserAccount findAvailableUser(Long id) {
         if (id == null)
-            throw new AppException(ErrorCode.INVALID_ARGUMENT, "User ID must not be null");
+            throw AppException.of(ErrorCode.INVALID_ARGUMENT, "detail.user-id-required");
         return userAccountRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
     }
 
     private UserAccount findManageableUser(Long currentUserId, UserRole currentUserRole, Long targetUserId) {
         if (currentUserId == null)
-            throw new AppException(ErrorCode.INVALID_ARGUMENT, "Current user ID must not be null");
+            throw AppException.of(ErrorCode.INVALID_ARGUMENT, "detail.current-user-id-required");
         if (currentUserRole == null)
-            throw new AppException(ErrorCode.INVALID_ARGUMENT, "Current user role must not be null");
+            throw AppException.of(ErrorCode.INVALID_ARGUMENT, "detail.current-user-role-required");
         UserAccount targetUser = findAvailableUser(targetUserId);
         if (targetUser.getId().equals(currentUserId))
-            throw new AppException(ErrorCode.ACCESS_DENIED, "You are not allowed to manage your own account");
+            throw AppException.of(ErrorCode.ACCESS_DENIED, "detail.forbidden-manage-own-account");
         validateRoleVisibility(currentUserRole, targetUser.getRole());
         return targetUser;
     }
@@ -187,7 +187,7 @@ public class AdminUserServiceImpl implements AdminUserService {
                         || targetRole == UserRole.MEMBER
         ))
             return;
-        throw new AppException(ErrorCode.ACCESS_DENIED, "You are not allowed to view users with this role");
+        throw AppException.of(ErrorCode.ACCESS_DENIED, "detail.forbidden-view-role");
     }
 
     private String generateTemporaryPassword() {
@@ -209,7 +209,7 @@ public class AdminUserServiceImpl implements AdminUserService {
     private void updateAccount(UserAccount user, UserUpdateRequest request) {
         if (request.getEmail() != null) {
             String email = TextNormalize.normalizeEmail(
-                    TextNormalize.requireText(request.getEmail(), "Email must not be blank")
+                    TextNormalize.requireText(request.getEmail(), "detail.email-required")
             );
             if (userAccountRepository.existsByEmailAndIdNot(email, user.getId()))
                 throw new AppException(ErrorCode.EMAIL_ALREADY_EXISTS);
@@ -221,7 +221,7 @@ public class AdminUserServiceImpl implements AdminUserService {
 
     private void updateProfile(UserProfile profile, UserUpdateRequest request) {
         if (request.getDisplayName() != null)
-            profile.setDisplayName(TextNormalize.requireText(request.getDisplayName(), "Display name must not be blank"));
+            profile.setDisplayName(TextNormalize.requireText(request.getDisplayName(), "detail.display-name-required"));
         if (request.getPhone() != null)
             profile.setPhone(request.getPhone().trim());
         if (request.getDateOfBirth() != null)

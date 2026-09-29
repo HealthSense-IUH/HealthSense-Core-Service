@@ -119,8 +119,7 @@ public class DoctorDispatchSelectionServiceImpl implements DoctorDispatchSelecti
     @Transactional(propagation = Propagation.MANDATORY)
     public ConsultationDispatchState lockDispatchStateForOfferCommit() {
         return dispatchStateRepository.findSingletonForUpdate()
-                .orElseThrow(() -> new AppException(ErrorCode.DATA_INTEGRITY_VIOLATION,
-                        "Queue dispatch singleton is missing"));
+                .orElseThrow(() -> AppException.of(ErrorCode.DATA_INTEGRITY_VIOLATION, "detail.queue-dispatch-singleton-missing"));
     }
 
     @Override
@@ -144,8 +143,7 @@ public class DoctorDispatchSelectionServiceImpl implements DoctorDispatchSelecti
         if (lockedState == null
                 || !ConsultationDispatchState.SINGLETON_ID.equals(lockedState.getId())
                 || doctorId == null)
-            throw new AppException(ErrorCode.DATA_INTEGRITY_VIOLATION,
-                    "Dispatch pointer requires the locked singleton and a committed offer doctor");
+            throw AppException.of(ErrorCode.DATA_INTEGRITY_VIOLATION, "detail.dispatch-pointer-invalid");
         lockedState.setLastDoctorId(doctorId);
         dispatchStateRepository.save(lockedState);
     }

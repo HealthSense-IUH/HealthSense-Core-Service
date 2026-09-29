@@ -12,10 +12,10 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class RequestMoreConsultationInfoRequest {
 
-    @NotBlank(message = "Lý do yêu cầu bổ sung thông tin không được để trống")
-    @Size(max = 500, message = "Lý do yêu cầu bổ sung thông tin không được vượt quá 500 ký tự")
+    @NotBlank(message = "{validation.more-info-request-reason-required}")
+    @Size(max = 500, message = "{validation.more-info-request-reason-max-500}")
     String reason;
 
-    @Size(max = 120, message = "Nhóm thông tin yêu cầu không được vượt quá 120 ký tự")
+    @Size(max = 120, message = "{validation.requested-items-category-max-120}")
     String requestedItemsCategory;
 }

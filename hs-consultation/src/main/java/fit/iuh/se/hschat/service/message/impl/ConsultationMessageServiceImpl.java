@@ -218,12 +218,12 @@ public class ConsultationMessageServiceImpl implements ConsultationMessageServic
 
     private void validateMessagePayload(SendConsultationMessageRequest request) {
         if (request.getType() == ConsultationMessageType.TEXT && isBlank(request.getContent())) {
-            throw new AppException(ErrorCode.INVALID_PARAMETER, "Text message content is required");
+            throw AppException.of(ErrorCode.INVALID_PARAMETER, "detail.message-text-required");
         }
 
         if ((request.getType() == ConsultationMessageType.IMAGE || request.getType() == ConsultationMessageType.FILE)
                 && isBlank(request.getAttachmentUrl())) {
-            throw new AppException(ErrorCode.INVALID_PARAMETER, "Attachment URL is required");
+            throw AppException.of(ErrorCode.INVALID_PARAMETER, "detail.attachment-url-required");
         }
     }
 
@@ -237,7 +237,7 @@ public class ConsultationMessageServiceImpl implements ConsultationMessageServic
 
     private void validateSupportHours(ConsultationSession session, ConsultationParticipant participant) {
         if (!supportHoursPolicy.canSendNow(session, participant.getRole()))
-            throw new AppException(ErrorCode.CONSULTATION_NOT_ACTIVE, "Member can send messages only during the session support hours");
+            throw AppException.of(ErrorCode.CONSULTATION_NOT_ACTIVE, "detail.outside-support-hours");
     }
 
     private String buildPreview(ConsultationMessage message) {

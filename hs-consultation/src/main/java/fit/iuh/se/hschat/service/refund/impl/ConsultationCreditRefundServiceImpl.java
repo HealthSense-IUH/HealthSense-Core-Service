@@ -27,8 +27,7 @@ public class ConsultationCreditRefundServiceImpl implements ConsultationCreditRe
         if ((session.getCreditPolicy() != ConsultationCreditPolicy.PER_SESSION_V1
                 && session.getCreditPolicy() != ConsultationCreditPolicy.PER_SESSION_CONFIRM_V2)
                 || session.getCreditCost() == null || session.getCreditCost() <= 0)
-            throw new AppException(ErrorCode.CREDIT_REFUND_NOT_ELIGIBLE,
-                    "Free sessions and sessions without a captured charge cannot be refunded");
+            throw AppException.of(ErrorCode.CREDIT_REFUND_NOT_ELIGIBLE, "detail.refund-not-eligible");
         return credits.refundCapturedSession(actorId, role, session.getMemberId(), session.getId(),
                 session.getCreditCost(), reason, key);
     }

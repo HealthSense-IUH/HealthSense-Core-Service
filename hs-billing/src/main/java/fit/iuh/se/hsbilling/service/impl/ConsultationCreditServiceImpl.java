@@ -62,7 +62,7 @@ public class ConsultationCreditServiceImpl implements ConsultationCreditService 
     public PageResponse<CreditLedgerResponse> getLedger(Long memberId, Pageable pageable) {
         requireMember(memberId, true);
         if (pageable == null || pageable.isUnpaged() || pageable.getPageSize() > 100)
-            throw new AppException(ErrorCode.INVALID_PARAMETER, "Page size must be between 1 and 100");
+            throw AppException.of(ErrorCode.INVALID_PARAMETER, "detail.page-size-max", "100");
         // Do not allow callers to reorder financial history inconsistently between pages.
         Pageable ordered = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(),
                 Sort.by(Sort.Direction.DESC, "createdAt", "id"));
@@ -78,7 +78,7 @@ public class ConsultationCreditServiceImpl implements ConsultationCreditService 
         if (source == null) throw new AppException(ErrorCode.INVALID_PARAMETER);
         positiveId(source.purchaseOrderId());
         if (idempotencyKey == null || idempotencyKey.isBlank() || idempotencyKey.length() > 128)
-            throw new AppException(ErrorCode.INVALID_PARAMETER, "Idempotency key must contain 1 to 128 characters");
+            throw AppException.of(ErrorCode.INVALID_PARAMETER, "detail.idempotency-key-length");
         requireMember(memberId, true);
         CreditWallet wallet = lockWallet(memberId);
         String key = "credit:purchase:" + idempotencyKey;
@@ -198,7 +198,7 @@ public class ConsultationCreditServiceImpl implements ConsultationCreditService 
     public CreditReservationResponse release(Long memberId, Long requestId, String reason) {
         positiveId(requestId);
         if (reason == null || reason.isBlank() || reason.length() > 500)
-            throw new AppException(ErrorCode.INVALID_PARAMETER, "A release reason of up to 500 characters is required");
+            throw AppException.of(ErrorCode.INVALID_PARAMETER, "detail.release-reason-required");
         // System timeout/cancellation must still release a hold after account deactivation.
         requireMember(memberId, false);
         CreditWallet wallet = lockExistingWallet(memberId);
@@ -297,13 +297,11 @@ public class ConsultationCreditServiceImpl implements ConsultationCreditService 
     }
 
     private void positive(long value) {
-        if (value <= 0) throw new AppException(ErrorCode.INVALID_PARAMETER, "Credit quantity must be positive");
+        if (value <= 0) throw AppException.of(ErrorCode.INVALID_PARAMETER, "detail.credit-quantity-positive");
     }
 
     private void insufficient(long required, long available) {
-        throw new AppException(ErrorCode.INSUFFICIENT_CONSULTATION_CREDITS,
-                "Insufficient consultation credits: requiredCredits=" + required
-                        + ", availableCredits=" + available);
+        throw AppException.of(ErrorCode.INSUFFICIENT_CONSULTATION_CREDITS, "detail.insufficient-credits", required, available);
     }
 
     private void conflict() {

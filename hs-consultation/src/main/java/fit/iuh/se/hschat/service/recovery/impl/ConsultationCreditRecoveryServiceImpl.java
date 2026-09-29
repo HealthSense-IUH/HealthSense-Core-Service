@@ -33,7 +33,7 @@ public class ConsultationCreditRecoveryServiceImpl implements ConsultationCredit
         if (actorId == null || (role != UserRole.ADMIN && role != UserRole.SUPER_ADMIN))
             throw new AppException(ErrorCode.ACCESS_DENIED);
         if (limit < 1 || limit > 100)
-            throw new AppException(ErrorCode.INVALID_PARAMETER, "limit must be between 1 and 100");
+            throw AppException.of(ErrorCode.INVALID_PARAMETER, "detail.limit-range", "100");
         int examined = 0, released = 0, already = 0;
         List<String> issues = new ArrayList<>();
         for (Long id : requests.findTerminalPaidRequestIds(TERMINAL, PageRequest.of(0, limit))) {

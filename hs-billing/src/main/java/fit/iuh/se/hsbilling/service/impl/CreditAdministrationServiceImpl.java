@@ -64,7 +64,7 @@ public class CreditAdministrationServiceImpl implements CreditAdministrationServ
         try {
             packages.saveAndFlush(pack);
         } catch (DataIntegrityViolationException ex) {
-            throw new AppException(ErrorCode.DATA_INTEGRITY_VIOLATION, "Credit package code already exists");
+            throw AppException.of(ErrorCode.DATA_INTEGRITY_VIOLATION, "detail.credit-package-code-exists");
         }
         audit(pack.getId(), BusinessEventType.CREDIT_PACKAGE_CREATED, actorId, role, null,
                 pack.getStatus().name(), "Credit package created", Map.of("code", pack.getCode(), "version", pack.getVersion().toString()));
@@ -76,17 +76,17 @@ public class CreditAdministrationServiceImpl implements CreditAdministrationServ
     public AdminCreditPackageResponse updatePackage(Long actorId, UserRole role, Long id, AdminCreditPackageRequest r) {
         requireAdmin(actorId, role);
         positiveId(id);
-        if (r == null || r.version() == null) invalid("version is required");
+        if (r == null || r.version() == null) invalid("detail.version-required");
         var pack = packages.findById(id).orElseThrow(() -> new AppException(ErrorCode.CREDIT_PACKAGE_NOT_FOUND));
         if (!Objects.equals(pack.getVersion(), r.version()))
             throw new AppException(ErrorCode.CREDIT_PACKAGE_VERSION_CONFLICT);
         String previous = pack.getStatus().name();
         if (r.name() != null) {
-            if (r.name().isBlank() || r.name().length() > 160) invalid("name must contain 1-160 characters");
+            if (r.name().isBlank() || r.name().length() > 160) invalid("detail.name-length-160");
             pack.setName(r.name().trim());
         }
         if (r.description() != null) {
-            if (r.description().length() > 1000) invalid("description is too long");
+            if (r.description().length() > 1000) invalid("detail.description-too-long");
             pack.setDescription(trim(r.description()));
         }
         if (r.creditQuantity() != null) {
@@ -184,7 +184,7 @@ public class CreditAdministrationServiceImpl implements CreditAdministrationServ
         requireAdmin(actorId, role);
         requireMember(memberId);
         mutation(reason, key);
-        if (delta == 0 || delta == Long.MIN_VALUE) invalid("delta must be non-zero");
+        if (delta == 0 || delta == Long.MIN_VALUE) invalid("detail.delta-non-zero");
         CreditWallet wallet = lockWallet(memberId);
         String fullKey = "admin:adjust:" + actorId + ":" + key;
         var prior = ledger.findByIdempotencyKey(fullKey).orElse(null);
@@ -195,8 +195,7 @@ public class CreditAdministrationServiceImpl implements CreditAdministrationServ
             return mutationResponse(prior, wallet);
         }
         if (delta < 0 && wallet.getBalance() - wallet.getReserved() < -delta)
-            throw new AppException(ErrorCode.INSUFFICIENT_CONSULTATION_CREDITS,
-                    "Negative adjustment exceeds available credits");
+            throw AppException.of(ErrorCode.INSUFFICIENT_CONSULTATION_CREDITS, "detail.negative-adjustment-exceeds");
         try {
             wallet.setBalance(Math.addExact(wallet.getBalance(), delta));
         } catch (ArithmeticException ex) {
@@ -363,18 +362,18 @@ public class CreditAdministrationServiceImpl implements CreditAdministrationServ
 
     private void validateCreate(AdminCreditPackageRequest r) {
         if (r == null || r.code() == null || !r.code().matches("[A-Z0-9_-]{2,80}"))
-            invalid("code must contain 2-80 uppercase letters, digits, '_' or '-'");
+            invalid("detail.package-code-format");
         if (r.name() == null || r.name().isBlank() || r.name().length() > 160)
-            invalid("name must contain 1-160 characters");
-        if (r.description() != null && r.description().length() > 1000) invalid("description is too long");
+            invalid("detail.name-length-160");
+        if (r.description() != null && r.description().length() > 1000) invalid("detail.description-too-long");
         positive(r.creditQuantity(), "creditQuantity");
         positive(r.priceVnd(), "priceVnd");
     }
 
     private void mutation(String reason, String key) {
         if (reason == null || reason.isBlank() || reason.length() > 500)
-            invalid("reason must contain 1-500 characters");
-        if (key == null || !key.matches("[A-Za-z0-9._:-]{1,128}")) invalid("A valid Idempotency-Key is required");
+            invalid("detail.reason-length-500");
+        if (key == null || !key.matches("[A-Za-z0-9._:-]{1,128}")) invalid("detail.idempotency-key-required");
     }
 
     private String trim(String s) {
@@ -390,20 +389,21 @@ public class CreditAdministrationServiceImpl implements CreditAdministrationServ
     }
 
     private void positiveId(Long n) {
-        if (n == null || n <= 0) invalid("id must be positive");
+        if (n == null || n <= 0) invalid("detail.id-positive");
     }
 
     private void page(Pageable p) {
         if (p == null || p.isUnpaged() || p.getPageSize() < 1 || p.getPageSize() > 100)
-            invalid("page size must be between 1 and 100");
+            invalid("detail.page-size-max", 100);
     }
 
     private void range(Instant from, Instant to) {
-        if (from != null && to != null && !from.isBefore(to)) invalid("from must be before to");
+        if (from != null && to != null && !from.isBefore(to)) invalid("detail.from-date-before-to-date");
     }
 
-    private void invalid(String m) {
-        throw new AppException(ErrorCode.INVALID_PARAMETER, m);
+    /** {@code messageKey}: khóa detail.* trong i18n/errors*.properties. */
+    private void invalid(String messageKey, Object... args) {
+        throw AppException.of(ErrorCode.INVALID_PARAMETER, messageKey, args);
     }
 
     private void conflict() {

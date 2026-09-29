@@ -35,16 +35,16 @@ public class DietRuleServiceImpl implements DietRuleService {
     @Transactional
     public List<DietRuleResponse> update(List<DietThresholdRequest> thresholds) {
         if (thresholds == null || thresholds.isEmpty())
-            throw new AppException(ErrorCode.INVALID_PARAMETER, "thresholds must not be empty");
+            throw AppException.of(ErrorCode.INVALID_PARAMETER, "detail.diet-thresholds-empty");
         Set<DietRuleCode> seen = new HashSet<>();
         for (DietThresholdRequest request : thresholds) {
             DietRuleCode code = DietRuleService.parseCode(request.code());
-            if (!seen.add(code)) throw new AppException(ErrorCode.INVALID_PARAMETER, "Duplicate diet rule: " + code);
+            if (!seen.add(code)) throw AppException.of(ErrorCode.INVALID_PARAMETER, "detail.diet-rule-duplicate", code);
             NutritionDietRule rule = rules.findById(code)
-                    .orElseThrow(() -> new AppException(ErrorCode.ENTITY_NOT_FOUND, "Diet rule not found: " + code));
+                    .orElseThrow(() -> AppException.of(ErrorCode.ENTITY_NOT_FOUND, "detail.diet-rule-not-found", code));
             DietThreshold threshold = new DietThreshold(request.limit(), request.caution()).validated(rule.getName());
             if (threshold.limit() == null && threshold.caution() == null)
-                throw new AppException(ErrorCode.INVALID_PARAMETER, rule.getName() + ": cần ít nhất một ngưỡng đỏ hoặc vàng");
+                throw AppException.of(ErrorCode.INVALID_PARAMETER, "detail.diet-threshold-required", rule.getName());
             rule.setLimitThreshold(decimal(threshold.limit()));
             rule.setCautionThreshold(decimal(threshold.caution()));
         }

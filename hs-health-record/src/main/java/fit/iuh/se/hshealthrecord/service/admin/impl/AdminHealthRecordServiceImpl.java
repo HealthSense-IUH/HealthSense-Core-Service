@@ -52,9 +52,9 @@ public class AdminHealthRecordServiceImpl implements AdminHealthRecordService {
     @Transactional
     public HealthRecordResponse createRecordForMember(Long adminId, AdminCreateHealthRecordRequest request) {
         if (adminId == null)
-            throw new AppException(ErrorCode.INVALID_ARGUMENT, "Admin ID must not be null");
+            throw AppException.of(ErrorCode.INVALID_ARGUMENT, "detail.admin-id-required");
         if (request == null)
-            throw new AppException(ErrorCode.INVALID_ARGUMENT, "Health record create request must not be null");
+            throw AppException.of(ErrorCode.INVALID_ARGUMENT, "detail.health-record-create-request-required");
 
         UserAccount member = userAccountRepository.findById(request.getMemberId())
                 .orElseThrow(() -> new AppException(ErrorCode.MEMBER_NOT_FOUND));
@@ -93,9 +93,9 @@ public class AdminHealthRecordServiceImpl implements AdminHealthRecordService {
             Instant toDate,
             Pageable pageable) {
         if (pageable == null)
-            throw new AppException(ErrorCode.INVALID_ARGUMENT, "Pageable must not be null");
+            throw AppException.of(ErrorCode.INVALID_ARGUMENT, "detail.pageable-required");
         if (fromDate != null && toDate != null && fromDate.isAfter(toDate))
-            throw new AppException(ErrorCode.INVALID_ARGUMENT, "From date must be before to date");
+            throw AppException.of(ErrorCode.INVALID_ARGUMENT, "detail.from-date-before-to-date");
 
         Page<HealthRecordResponse> page = repository.findAll(
                 buildFilter(memberId, status, predictionLabel, trimToNull(keyword), fromDate, toDate),
@@ -121,7 +121,7 @@ public class AdminHealthRecordServiceImpl implements AdminHealthRecordService {
 
     private HealthRecord findRecord(Long id) {
         if (id == null)
-            throw new AppException(ErrorCode.INVALID_ARGUMENT, "Health record ID must not be null");
+            throw AppException.of(ErrorCode.INVALID_ARGUMENT, "detail.health-record-id-required");
         return repository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.HEALTH_RECORD_NOT_FOUND));
     }

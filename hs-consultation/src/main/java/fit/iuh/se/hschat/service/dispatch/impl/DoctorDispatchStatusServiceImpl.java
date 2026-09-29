@@ -100,8 +100,7 @@ public class DoctorDispatchStatusServiceImpl implements DoctorDispatchStatusServ
         if (target == DoctorDispatchStatus.AVAILABLE) {
             if (profile.getBusySessionId() != null
                     || sessionRepository.existsByDoctorIdAndStatusIn(doctorId, INCOMPATIBLE_SESSION_STATUSES))
-                throw new AppException(ErrorCode.DOCTOR_NOT_ELIGIBLE_FOR_CONSULTATION,
-                        "Doctor has an incompatible active or scheduled consultation");
+                throw AppException.of(ErrorCode.DOCTOR_NOT_ELIGIBLE_FOR_CONSULTATION, "detail.doctor-has-conflicting-consultation");
         }
 
         Instant changedAt = Instant.now(clock);

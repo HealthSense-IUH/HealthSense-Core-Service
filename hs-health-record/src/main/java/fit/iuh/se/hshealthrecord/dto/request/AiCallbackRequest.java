@@ -12,10 +12,10 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class AiCallbackRequest {
 
-    @NotNull(message = "ID bản ghi không được để trống")
+    @NotNull(message = "{validation.record-id-required}")
     Long recordId;
 
-    @NotNull(message = "Nhãn chẩn đoán không được để trống")
+    @NotNull(message = "{validation.prediction-label-required}")
     PredictionLabel predictionLabel;
 
     Double confidence;

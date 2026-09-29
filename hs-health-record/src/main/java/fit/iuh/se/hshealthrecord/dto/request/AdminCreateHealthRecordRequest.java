@@ -16,16 +16,16 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class AdminCreateHealthRecordRequest {
 
-    @NotNull(message = "Member id is required")
+    @NotNull(message = "{validation.member-id-required}")
     Long memberId;
 
-    @Size(max = 255, message = "File name must not exceed 255 characters")
+    @Size(max = 255, message = "{validation.file-name-max-255}")
     String fileName;
 
-    @Size(max = 500, message = "S3 file key must not exceed 500 characters")
+    @Size(max = 500, message = "{validation.s3-file-key-max-500}")
     String s3FileKey;
 
-    @Positive(message = "File size must be greater than 0")
+    @Positive(message = "{validation.file-size-positive}")
     Long fileSize;
 
     RecordStatus status;

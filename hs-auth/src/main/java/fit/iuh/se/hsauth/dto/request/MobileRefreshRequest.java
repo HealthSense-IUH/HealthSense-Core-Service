@@ -14,9 +14,9 @@ import lombok.experimental.FieldDefaults;
 @Builder
 public class MobileRefreshRequest {
 
-    @NotBlank(message = "Refresh token is required")
+    @NotBlank(message = "{validation.refresh-token-required}")
     String refreshToken;
 
-    @NotBlank(message = "Session ID is required")
+    @NotBlank(message = "{validation.session-id-required}")
     String sessionId;
 }

@@ -41,7 +41,7 @@ public class ConsultationCreditController {
                                                                   @RequestParam(defaultValue = "1") int page,
                                                                   @RequestParam(defaultValue = "10") int size) {
         if (page < 1 || size < 1 || size > 100)
-            throw new AppException(ErrorCode.INVALID_PARAMETER, "page must be positive and size must be between 1 and 100");
+            throw AppException.of(ErrorCode.INVALID_PARAMETER, "detail.page-size-range", "100");
         return new ApiResponse<>(credits.getLedger(member(actor), PageRequest.of(page - 1, size)));
     }
 

@@ -37,7 +37,7 @@ public class NotificationServiceImpl implements NotificationService {
     @Transactional
     public NotificationResponse markRead(Long recipientId, Long notificationId) {
         UserNotification notification = repository.findByIdAndRecipientId(notificationId, recipientId)
-                .orElseThrow(() -> new AppException(ErrorCode.ENTITY_NOT_FOUND, "Notification not found"));
+                .orElseThrow(() -> AppException.of(ErrorCode.ENTITY_NOT_FOUND, "detail.notification-not-found"));
         if (notification.getReadAt() == null) notification.setReadAt(Instant.now());
         return NotificationResponse.from(repository.save(notification));
     }

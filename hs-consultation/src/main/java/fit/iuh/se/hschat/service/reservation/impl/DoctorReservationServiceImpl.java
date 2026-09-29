@@ -65,14 +65,14 @@ public class DoctorReservationServiceImpl implements DoctorReservationService {
             throw new AppException(ErrorCode.INVALID_CONSULTATION_STATUS);
         if (reservationRepository.findByRequestIdAndStatusForUpdate(
                 request.getId(), DoctorReservationStatus.ACTIVE).isPresent())
-            throw new AppException(ErrorCode.INVALID_CONSULTATION_STATUS, "Request already has an active doctor reservation");
+            throw AppException.of(ErrorCode.INVALID_CONSULTATION_STATUS, "detail.request-has-reservation");
 
         // The doctor row is the serialization point for all capacity-consuming reservations.
         UserAccount doctor = userAccountRepository.findByIdForUpdate(doctorId)
                 .orElseThrow(() -> new AppException(ErrorCode.DOCTOR_NOT_FOUND));
         List<DoctorIneligibilityReason> reasons = getIneligibilityReasons(request, doctor, Instant.now(), null);
         if (!reasons.isEmpty())
-            throw new AppException(ErrorCode.DOCTOR_NOT_ELIGIBLE_FOR_CONSULTATION, "Doctor is not eligible: " + reasons);
+            throw AppException.of(ErrorCode.DOCTOR_NOT_ELIGIBLE_FOR_CONSULTATION, "detail.doctor-not-eligible-reasons", reasons);
 
         Instant now = Instant.now();
         DoctorReservation reservation = DoctorReservation.builder()

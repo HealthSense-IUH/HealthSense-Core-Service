@@ -76,8 +76,7 @@ public class PaymentCancellationServiceImpl implements PaymentCancellationServic
     @Transactional
     public void reconcileProviderCancellation(Long actorId, UserRole role, Long paymentId) {
         if (role != UserRole.ADMIN && role != UserRole.SUPER_ADMIN)
-            throw new AppException(ErrorCode.ACCESS_DENIED,
-                    "Only Admin or Super Admin may reconcile provider cancellation");
+            throw AppException.of(ErrorCode.ACCESS_DENIED, "detail.only-admin-reconcile-cancellation");
         ConsultationPayment payment = paymentRepository.findByIdForUpdate(paymentId)
                 .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_PAYMENT_NOT_FOUND));
         if (payment.getProviderCancellationStatus() != PaymentProviderCancellationStatus.FAILED

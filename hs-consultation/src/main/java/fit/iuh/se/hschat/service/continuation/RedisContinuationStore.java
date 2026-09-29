@@ -127,9 +127,7 @@ public class RedisContinuationStore implements ContinuationStore {
     }
 
     private AppException unavailable(Throwable cause) {
-        return new AppException(ErrorCode.DISPATCH_TEMPORARILY_UNAVAILABLE,
-                cause == null ? "Redis continuation state is unavailable"
-                        : "Redis continuation state is unavailable: " + cause.getClass().getSimpleName());
+        return AppException.of(ErrorCode.DISPATCH_TEMPORARILY_UNAVAILABLE, "detail.redis-continuation-unavailable", cause == null ? "" : ": " + cause.getClass().getSimpleName());
     }
 
     private String key(Long sessionId, int round) { return PREFIX + sessionId + ":" + round; }

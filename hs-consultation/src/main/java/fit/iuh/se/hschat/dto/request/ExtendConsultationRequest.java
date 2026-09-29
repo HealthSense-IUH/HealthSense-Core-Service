@@ -15,13 +15,13 @@ import java.time.Instant;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ExtendConsultationRequest {
 
-    @NotNull(message = "Thời điểm hết hạn tư vấn mới không được để trống")
-    @Future(message = "Thời điểm hết hạn tư vấn mới phải ở tương lai")
+    @NotNull(message = "{validation.new-consultation-expiry-required}")
+    @Future(message = "{validation.new-consultation-expiry-future}")
     Instant endsAt;
 
-    @Future(message = "Thời điểm hết hỗ trợ mới phải ở tương lai")
+    @Future(message = "{validation.new-support-end-future}")
     Instant supportEndsAt;
 
-    @Size(max = 500, message = "Lý do gia hạn không được vượt quá 500 ký tự")
+    @Size(max = 500, message = "{validation.renewal-reason-max-500}")
     String reason;
 }

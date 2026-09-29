@@ -13,13 +13,11 @@ public final class ConsultationFlowGuard {
 
     public static void requireLegacy(ConsultationRequest request) {
         if (request.getFlowType() != ConsultationFlowType.LEGACY_V3)
-            throw new AppException(ErrorCode.INVALID_CONSULTATION_STATUS,
-                    "Queue Dispatch requests cannot use the legacy commercial workflow");
+            throw AppException.of(ErrorCode.INVALID_CONSULTATION_STATUS, "detail.queue-request-legacy-flow");
     }
 
     public static void requireLegacy(ConsultationSession session) {
         if (session.getFlowType() != ConsultationFlowType.LEGACY_V3)
-            throw new AppException(ErrorCode.INVALID_CONSULTATION_STATUS,
-                    "Queue Dispatch sessions cannot use the legacy commercial workflow");
+            throw AppException.of(ErrorCode.INVALID_CONSULTATION_STATUS, "detail.queue-session-legacy-flow");
     }
 }

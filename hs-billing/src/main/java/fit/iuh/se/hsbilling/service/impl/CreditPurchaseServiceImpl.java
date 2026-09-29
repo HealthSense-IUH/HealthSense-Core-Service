@@ -56,7 +56,7 @@ public class CreditPurchaseServiceImpl implements CreditPurchaseService {
         positiveId(memberId);
         positiveId(packageId);
         if (idempotencyKey == null || !idempotencyKey.matches("[A-Za-z0-9._:-]{1,128}"))
-            throw new AppException(ErrorCode.INVALID_PARAMETER, "Idempotency-Key must contain 1-128 ASCII letters, digits, '.', '_', ':' or '-'");
+            throw AppException.of(ErrorCode.INVALID_PARAMETER, "detail.idempotency-key-format");
         var provider = configuration.requireEnabledProvider();
         Start start = transactions.execute(status -> start(memberId, packageId, idempotencyKey, provider));
         if (start == null) throw new AppException(ErrorCode.UNCATEGORIZED);
@@ -123,7 +123,7 @@ public class CreditPurchaseServiceImpl implements CreditPurchaseService {
                 a.setLastError("PayOS link creation outcome is unknown");
                 attempts.save(a);
             }));
-            throw new AppException(ErrorCode.PAYMENT_PROVIDER_ERROR, "Unable to create PayOS checkout link");
+            throw AppException.of(ErrorCode.PAYMENT_PROVIDER_ERROR, "detail.payos-checkout-create-failed");
         }
     }
 
@@ -161,7 +161,7 @@ public class CreditPurchaseServiceImpl implements CreditPurchaseService {
         try {
             payOSGateway.cancelPaymentLink(attempt.getOrderCode(), "Member requested cancellation");
         } catch (RuntimeException ex) {
-            throw new AppException(ErrorCode.PAYMENT_PROVIDER_ERROR, "Unable to cancel PayOS checkout");
+            throw AppException.of(ErrorCode.PAYMENT_PROVIDER_ERROR, "detail.payos-checkout-cancel-failed");
         }
         transactions.executeWithoutResult(status -> {
             var lockedOrder = orders.findByIdForUpdate(orderId)

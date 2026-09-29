@@ -22,21 +22,21 @@ public class CreateConsultationRequest {
     @Deprecated
     String reason;
 
-    @NotBlank(message = "Lý do chăm sóc không được để trống")
-    @Size(max = 1000, message = "Lý do chăm sóc không được vượt quá 1000 ký tự")
+    @NotBlank(message = "{validation.care-reason-required}")
+    @Size(max = 1000, message = "{validation.care-reason-max-1000}")
     String reasonForCare;
 
-    @NotBlank(message = "Mối quan tâm hiện tại không được để trống")
-    @Size(max = 2000, message = "Mối quan tâm hiện tại không được vượt quá 2000 ký tự")
+    @NotBlank(message = "{validation.current-concern-required}")
+    @Size(max = 2000, message = "{validation.current-concern-max-2000}")
     String currentConcern;
 
-    @Size(max = 1000, message = "Mục tiêu chăm sóc không được vượt quá 1000 ký tự")
+    @Size(max = 1000, message = "{validation.care-goal-max-1000}")
     String careGoal;
 
-    @Size(max = 1000, message = "Ghi chú của thành viên không được vượt quá 1000 ký tự")
+    @Size(max = 1000, message = "{validation.member-note-max-1000}")
     String memberNote;
 
-    @Size(max = 4000, message = "Bối cảnh tự khai không được vượt quá 4000 ký tự")
+    @Size(max = 4000, message = "{validation.self-reported-context-max-4000}")
     String relevantSelfReportedContext;
 
     List<Long> selectedHealthRecordIds;

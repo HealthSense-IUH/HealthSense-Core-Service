@@ -63,8 +63,7 @@ public class CareHistoryServiceImpl implements CareHistoryService {
         if (!session.getMemberId().equals(memberId))
             throw new AppException(ErrorCode.CONSULTATION_ACCESS_DENIED);
         if (session.getActivatedAt() == null)
-            throw new AppException(ErrorCode.CONSULTATION_NOT_ACTIVE,
-                    "Care history exists only for an activated episode");
+            throw AppException.of(ErrorCode.CONSULTATION_NOT_ACTIVE, "detail.care-history-requires-activation");
         return toMemberEpisode(session);
     }
 

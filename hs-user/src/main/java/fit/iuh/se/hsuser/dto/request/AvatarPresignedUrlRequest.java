@@ -12,7 +12,7 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class AvatarPresignedUrlRequest {
 
-    @NotBlank(message = "Tên file ảnh không được để trống")
+    @NotBlank(message = "{validation.image-file-name-required}")
     String fileName;
 
     String contentType;

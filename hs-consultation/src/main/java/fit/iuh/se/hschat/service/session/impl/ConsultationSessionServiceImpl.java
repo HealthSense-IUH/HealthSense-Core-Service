@@ -83,12 +83,11 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
     @Transactional
     public ConsultationSessionResponse createSessionByAdmin(Long actorId, UserRole actorRole, AdminCreateConsultationSessionRequest request) {
         if (actorRole != UserRole.ADMIN && actorRole != UserRole.SUPER_ADMIN)
-            throw new AppException(ErrorCode.ACCESS_DENIED,
-                    "Only Admin or Super Admin may use exceptional care activation override");
+            throw AppException.of(ErrorCode.ACCESS_DENIED, "detail.only-admin-exceptional-override");
         if (request.getOverrideReason() == null || request.getOverrideReason().isBlank())
-            throw new AppException(ErrorCode.INVALID_PARAMETER, "Exceptional override reason is required");
+            throw AppException.of(ErrorCode.INVALID_PARAMETER, "detail.exceptional-override-reason-required");
         if (request.getServiceScope() == null || request.getServiceScope().isBlank())
-            throw new AppException(ErrorCode.INVALID_PARAMETER, "Exceptional override service scope is required");
+            throw AppException.of(ErrorCode.INVALID_PARAMETER, "detail.exceptional-override-scope-required");
         log.info("Creating consultation session by actor {} with role {} for member {} and doctor {}",
                 actorId, actorRole, request.getMemberId(), request.getDoctorId());
 
@@ -200,8 +199,7 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
     @Override
     public ConsultationSessionResponse extendSession(Long actorId, UserRole actorRole, Long sessionId, ExtendConsultationRequest request) {
         validateConsultationManager(actorRole);
-        throw new AppException(ErrorCode.INVALID_CONSULTATION_STATUS,
-                "Direct extension is disabled; use the Renewal Agreement and verified payment workflow");
+        throw AppException.of(ErrorCode.INVALID_CONSULTATION_STATUS, "detail.direct-extension-disabled");
     }
 
     @Override
@@ -249,8 +247,7 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
     public ConsultationSessionResponse requestTermination(
             Long actorId, UserRole actorRole, Long sessionId, RequestSessionTerminationRequest request) {
         if (actorRole != UserRole.MEMBER && actorRole != UserRole.DOCTOR)
-            throw new AppException(ErrorCode.ACCESS_DENIED,
-                    "Only the assigned Member or Doctor may request care termination");
+            throw AppException.of(ErrorCode.ACCESS_DENIED, "detail.only-participants-terminate");
         ConsultationSession session = sessionRepository.findByIdForUpdate(sessionId)
                 .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_NOT_FOUND));
         ConsultationFlowGuard.requireLegacy(session);
@@ -413,7 +410,7 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
                 || actorRole == UserRole.ADMIN
                 || actorRole == UserRole.CARE_COORDINATOR)
             return;
-        throw new AppException(ErrorCode.ACCESS_DENIED, "You are not allowed to manage consultation sessions");
+        throw AppException.of(ErrorCode.ACCESS_DENIED, "detail.forbidden-manage-sessions");
     }
 
     private ConsultationSessionResponse toSessionResponse(ConsultationSession session, Long userId) {
@@ -544,7 +541,7 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
 
     private void validateConsultationPeriod(Instant endsAt, Instant supportEndsAt) {
         if (supportEndsAt != null && supportEndsAt.isBefore(endsAt)) {
-            throw new AppException(ErrorCode.INVALID_PARAMETER, "Support end time must not be before consultation end time");
+            throw AppException.of(ErrorCode.INVALID_PARAMETER, "detail.support-end-before-session-end");
         }
     }
 }

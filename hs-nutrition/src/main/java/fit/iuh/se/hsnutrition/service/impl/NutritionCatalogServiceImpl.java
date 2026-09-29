@@ -57,14 +57,14 @@ public class NutritionCatalogServiceImpl implements NutritionCatalogService {
     public NutritionFoodResponse getFood(String id) {
         return foods.findWithDetailsById(id)
                 .map(this::toResponse)
-                .orElseThrow(() -> new AppException(ErrorCode.ENTITY_NOT_FOUND, "Nutrition food not found"));
+                .orElseThrow(() -> AppException.of(ErrorCode.ENTITY_NOT_FOUND, "detail.nutrition-food-not-found"));
     }
 
     @Override
     public List<NutritionFoodResponse> searchFoods(String query) {
         if (query == null || query.isBlank()) return List.of();
         if (query.length() > MAX_QUERY_LENGTH)
-            throw new AppException(ErrorCode.INVALID_PARAMETER, "q must be at most " + MAX_QUERY_LENGTH + " characters");
+            throw AppException.of(ErrorCode.INVALID_PARAMETER, "detail.query-too-long", MAX_QUERY_LENGTH);
         String escaped = normalizeForSearch(query)
                 .replace("!", "!!").replace("%", "!%").replace("_", "!_");
         // Không phân trang trong SQL: truy vấn fetch kèm danh sách bằng chứng, Hibernate sẽ phải cắt trong bộ nhớ.
@@ -87,7 +87,7 @@ public class NutritionCatalogServiceImpl implements NutritionCatalogService {
     private NutritionFoodGroup findGroup(String idOrSlug) {
         return groups.findById(idOrSlug)
                 .or(() -> groups.findBySlug(idOrSlug))
-                .orElseThrow(() -> new AppException(ErrorCode.ENTITY_NOT_FOUND, "Nutrition food group not found"));
+                .orElseThrow(() -> AppException.of(ErrorCode.ENTITY_NOT_FOUND, "detail.food-group-not-found"));
     }
 
     /**

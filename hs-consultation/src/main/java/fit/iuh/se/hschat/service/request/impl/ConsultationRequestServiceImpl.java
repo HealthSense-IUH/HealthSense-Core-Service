@@ -148,8 +148,7 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
 
         // Queue mutations share this order: account -> dispatch -> request -> queue -> doctor -> wallet.
         dispatchStateRepository.findSingletonForUpdate()
-                .orElseThrow(() -> new AppException(ErrorCode.DATA_INTEGRITY_VIOLATION,
-                        "Queue dispatch singleton is missing"));
+                .orElseThrow(() -> AppException.of(ErrorCode.DATA_INTEGRITY_VIOLATION, "detail.queue-dispatch-singleton-missing"));
         // This singleton lock serializes counter-row creation as well as increments. It makes
         // the first admission of a business date safe without relying on COUNT + 1.
         ConsultationQueueCounter counter = queueCounterRepository.findByQueueDateForUpdate(queueDate)
@@ -201,7 +200,7 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
     @Transactional
     public ConsultationRequestResponse approveRequest(Long actorId, UserRole actorRole, Long requestId, ApproveConsultationRequest request) {
         if (actorRole != UserRole.CARE_COORDINATOR)
-            throw new AppException(ErrorCode.ACCESS_DENIED, "Only a Care Coordinator may reserve a doctor");
+            throw AppException.of(ErrorCode.ACCESS_DENIED, "detail.only-coordinator-reserve-doctor");
         log.info("Reserving doctor for consultation request {} by actor {} with role {}", requestId, actorId, actorRole);
 
         ConsultationRequest consultationRequest = requestRepository.findByIdForUpdate(requestId)
@@ -581,8 +580,7 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
 
         Optional<DoctorOffer> activeOffer = doctorOfferStore.findByQueueEntryId(entry.getId());
         if (entry.getStatus() != ConsultationQueueStatus.WAITING && activeOffer.isEmpty())
-            throw new AppException(ErrorCode.DISPATCH_TEMPORARILY_UNAVAILABLE,
-                    "The active Redis offer cannot be verified safely");
+            throw AppException.of(ErrorCode.DISPATCH_TEMPORARILY_UNAVAILABLE, "detail.redis-offer-unverifiable");
         if (activeOffer.isPresent() && !doctorOfferStore.release(activeOffer.get()))
             throw new AppException(ErrorCode.CONSULTATION_OFFER_STALE);
 
@@ -728,7 +726,7 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
                 || actorRole == UserRole.ADMIN
                 || actorRole == UserRole.CARE_COORDINATOR)
             return;
-        throw new AppException(ErrorCode.ACCESS_DENIED, "You are not allowed to manage consultation requests");
+        throw AppException.of(ErrorCode.ACCESS_DENIED, "detail.forbidden-manage-requests");
     }
 
     private void validateMember(Long memberId) {

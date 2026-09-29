@@ -15,6 +15,6 @@ public class AcceptCareServiceAgreementRequest {
     @NotNull
     Long agreementId;
 
-    @AssertTrue(message = "Agreement acceptance must be explicit")
+    @AssertTrue(message = "{validation.agreement-acceptance-must-be-explicit}")
     boolean accepted;
 }

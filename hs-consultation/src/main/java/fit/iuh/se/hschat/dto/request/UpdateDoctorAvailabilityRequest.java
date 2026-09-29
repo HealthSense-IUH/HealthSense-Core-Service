@@ -5,10 +5,10 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public record UpdateDoctorAvailabilityRequest(
-        @NotNull(message = "Lịch hỗ trợ không được để trống")
+        @NotNull(message = "{validation.availability-required}")
         DoctorAvailabilityDto availability,
 
-        @Size(max = 80, message = "Timezone không được vượt quá 80 ký tự")
+        @Size(max = 80, message = "{validation.timezone-max-80}")
         String timezone
 ) {
 }

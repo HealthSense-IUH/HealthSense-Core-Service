@@ -5,6 +5,8 @@ import fit.iuh.se.hsapplication.dto.ratelimit.RateLimitResult;
 import fit.iuh.se.hsapplication.service.ratelimit.RateLimiterService;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsshared.dto.response.ApiResponse;
+import fit.iuh.se.hsshared.i18n.ErrorMessages;
+import fit.iuh.se.hsshared.i18n.RequestLanguage;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -62,8 +64,9 @@ public class RateLimitFilter extends OncePerRequestFilter {
         ErrorCode errorCode = ErrorCode.TOO_MANY_REQUESTS;
         response.setStatus(errorCode.getStatus().value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.setCharacterEncoding("UTF-8");
         response.setHeader(RETRY_AFTER, String.valueOf(result.getRetryAfterSeconds()));
-        objectMapper.writeValue(response.getWriter(), new ApiResponse<>(errorCode.getCode(), errorCode.getMessage()));
+        objectMapper.writeValue(response.getWriter(), new ApiResponse<>(errorCode.getCode(), ErrorMessages.code(errorCode, RequestLanguage.resolve(request))));
     }
 
     private String resolveKey(HttpServletRequest request) {

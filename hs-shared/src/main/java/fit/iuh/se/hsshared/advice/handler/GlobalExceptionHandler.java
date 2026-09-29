@@ -3,6 +3,8 @@ package fit.iuh.se.hsshared.advice.handler;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsshared.dto.response.ApiResponse;
+import fit.iuh.se.hsshared.i18n.ErrorMessages;
+import fit.iuh.se.hsshared.i18n.RequestLanguage;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -13,6 +15,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.oauth2.jwt.JwtException;
+import org.springframework.validation.FieldError;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingRequestCookieException;
@@ -22,31 +25,34 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.sql.SQLIntegrityConstraintViolationException;
+import java.util.Locale;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
+/**
+ * Chuyển lỗi thành {@link ApiResponse}. Thông báo theo ngôn ngữ của request: header {@code lang} (vi | en), sau đó
+ * {@code Accept-Language}; mặc định tiếng Anh (xem RequestLanguage, ErrorMessages).
+ */
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(AppException.class)
     public ResponseEntity<ApiResponse<Void>> handleAppException(AppException exception) {
-        ErrorCode errorCode = exception.getErrorCode();
-        return build(errorCode, exception.getMessage());
+        return build(exception.getErrorCode(), exception.localizedMessage(locale()));
     }
 
+    /** Thông báo của từng trường đã được Bean Validation dịch theo locale của request (bộ ValidationMessages). */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<Void>> handleValidationException(MethodArgumentNotValidException exception) {
-        ErrorCode errorCode = ErrorCode.VALIDATION_FAILED;
         String message = exception.getBindingResult()
                 .getFieldErrors()
                 .stream()
-                .map(fieldError -> fieldError.getField() + ": " + fieldError.getDefaultMessage())
-                .collect(Collectors.joining(", "));
-
-        if (message.isBlank()) {
-            message = errorCode.getMessage();
-        }
-        return build(errorCode, message);
+                .map(FieldError::getDefaultMessage)
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.joining("; "));
+        return build(ErrorCode.VALIDATION_FAILED, message.isBlank() ? codeMessage(ErrorCode.VALIDATION_FAILED) : message);
     }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
@@ -56,7 +62,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(NoResourceFoundException.class)
     public ResponseEntity<ApiResponse<Void>> handleNoResourceFound(NoResourceFoundException exception) {
-        return build(ErrorCode.USER_NOT_FOUND, "Resource not found");
+        return build(ErrorCode.USER_NOT_FOUND, ErrorMessages.detail("detail.resource-not-found", null, locale()));
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
@@ -66,19 +72,14 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ApiResponse<Void>> handleParameterTypeMismatch(MethodArgumentTypeMismatchException exception) {
-        String expectedType = exception.getRequiredType() == null
-                ? "valid type"
-                : exception.getRequiredType().getSimpleName();
-        String message = exception.getName() + " must be " + expectedType;
-        return build(ErrorCode.INVALID_PARAMETER, message);
+        String expectedType = exception.getRequiredType() == null ? "?" : exception.getRequiredType().getSimpleName();
+        return build(ErrorCode.INVALID_PARAMETER, ErrorMessages.detail("detail.parameter-type-mismatch",
+                new Object[]{exception.getName(), expectedType}, locale()));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiResponse<Void>> handleIllegalArgumentException(IllegalArgumentException exception) {
-        String message = exception.getMessage() == null || exception.getMessage().isBlank()
-                ? ErrorCode.INVALID_ARGUMENT.getMessage()
-                : exception.getMessage();
-        return build(ErrorCode.INVALID_ARGUMENT, message);
+        return build(ErrorCode.INVALID_ARGUMENT, literalOrCode(exception.getMessage(), ErrorCode.INVALID_ARGUMENT));
     }
 
     @ExceptionHandler({
@@ -109,10 +110,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(EntityNotFoundException.class)
     public ResponseEntity<ApiResponse<Void>> handleEntityNotFound(EntityNotFoundException exception) {
-        String message = exception.getMessage() == null || exception.getMessage().isBlank()
-                ? ErrorCode.ENTITY_NOT_FOUND.getMessage()
-                : exception.getMessage();
-        return build(ErrorCode.ENTITY_NOT_FOUND, message);
+        return build(ErrorCode.ENTITY_NOT_FOUND, literalOrCode(exception.getMessage(), ErrorCode.ENTITY_NOT_FOUND));
     }
 
     @ExceptionHandler({
@@ -130,8 +128,23 @@ public class GlobalExceptionHandler {
         return build(ErrorCode.UNCATEGORIZED);
     }
 
+    private static Locale locale() {
+        return RequestLanguage.current();
+    }
+
+    private static String codeMessage(ErrorCode errorCode) {
+        return ErrorMessages.code(errorCode, locale());
+    }
+
+    /** Câu lỗi của thư viện: giữ nguyên nếu cùng ngôn ngữ với request, không thì dùng thông báo chung của mã lỗi. */
+    private static String literalOrCode(String literal, ErrorCode errorCode) {
+        Locale locale = locale();
+        return literal != null && !literal.isBlank() && ErrorMessages.isInLanguage(literal, locale)
+                ? literal : ErrorMessages.code(errorCode, locale);
+    }
+
     private ResponseEntity<ApiResponse<Void>> build(ErrorCode errorCode) {
-        return build(errorCode, errorCode.getMessage());
+        return build(errorCode, codeMessage(errorCode));
     }
 
     private ResponseEntity<ApiResponse<Void>> build(ErrorCode errorCode, String message) {

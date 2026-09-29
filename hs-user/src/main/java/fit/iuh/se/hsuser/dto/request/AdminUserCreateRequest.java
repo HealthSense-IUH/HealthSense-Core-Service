@@ -18,26 +18,26 @@ import java.time.LocalDate;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class AdminUserCreateRequest {
 
-    @NotBlank(message = "Email is required")
-    @Email(message = "Email is invalid")
-    @Size(max = 255, message = "Email must not exceed 255 characters")
+    @NotBlank(message = "{validation.email-required}")
+    @Email(message = "{validation.email-invalid}")
+    @Size(max = 255, message = "{validation.email-max-255}")
     String email;
 
-    @NotNull(message = "Role is required")
+    @NotNull(message = "{validation.role-required}")
     UserRole role;
 
-    @NotBlank(message = "Display name is required")
-    @Size(max = 120, message = "Display name must not exceed 120 characters")
+    @NotBlank(message = "{validation.display-name-required}")
+    @Size(max = 120, message = "{validation.display-name-max-120}")
     String displayName;
 
-    @Size(max = 30, message = "Phone must not exceed 30 characters")
+    @Size(max = 30, message = "{validation.phone-max-30}")
     String phone;
 
     LocalDate dateOfBirth;
 
-    @Size(max = 20, message = "Gender must not exceed 20 characters")
+    @Size(max = 20, message = "{validation.gender-max-20}")
     String gender;
 
-    @Size(max = 500, message = "Address must not exceed 500 characters")
+    @Size(max = 500, message = "{validation.address-max-500}")
     String address;
 }

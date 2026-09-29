@@ -15,10 +15,11 @@ public class TextNormalize {
         return email.trim().toLowerCase(Locale.ROOT);
     }
 
-    public static String requireText(String value, String message) {
+    /** {@code messageKey}: khóa detail.* trong i18n/errors*.properties. */
+    public static String requireText(String value, String messageKey) {
         String normalized = value.trim();
         if (normalized.isEmpty()) {
-            throw new AppException(ErrorCode.INVALID_ARGUMENT, message);
+            throw AppException.of(ErrorCode.INVALID_ARGUMENT, messageKey);
         }
         return normalized;
     }

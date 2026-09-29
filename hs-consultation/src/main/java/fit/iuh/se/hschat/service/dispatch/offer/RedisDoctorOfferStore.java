@@ -191,8 +191,7 @@ public class RedisDoctorOfferStore implements DoctorOfferStore {
         catch (RuntimeException ex) { throw unavailable(ex); }
     }
     private AppException unavailable(Throwable cause) {
-        return new AppException(ErrorCode.DISPATCH_TEMPORARILY_UNAVAILABLE,
-                cause == null ? "Redis offer state is unavailable" : "Redis offer state is unavailable: " + cause.getClass().getSimpleName());
+        return AppException.of(ErrorCode.DISPATCH_TEMPORARILY_UNAVAILABLE, "detail.redis-offer-unavailable", cause == null ? "" : ": " + cause.getClass().getSimpleName());
     }
     private String offerKey(String id) { return OFFER_PREFIX + id; }
     private String doctorKey(Long id) { return DOCTOR_PREFIX + id; }

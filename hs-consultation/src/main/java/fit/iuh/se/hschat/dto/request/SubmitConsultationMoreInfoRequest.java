@@ -15,10 +15,10 @@ public class SubmitConsultationMoreInfoRequest {
 
     Long healthRecordId;
 
-    @Size(max = 1000, message = "Thông tin bổ sung không được vượt quá 1000 ký tự")
+    @Size(max = 1000, message = "{validation.additional-note-max-1000}")
     String additionalNote;
 
-    @Size(max = 2000, message = "Phản hồi bổ sung không được vượt quá 2000 ký tự")
+    @Size(max = 2000, message = "{validation.additional-response-max-2000}")
     String responseNote;
 
     List<Long> selectedHealthRecordIds;

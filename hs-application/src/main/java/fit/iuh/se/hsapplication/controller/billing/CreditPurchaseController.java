@@ -27,7 +27,7 @@ public class CreditPurchaseController {
                                                    @RequestBody CreateCreditOrderRequest request) {
         Long memberId = member(actor);
         if (key == null || !key.matches("[A-Za-z0-9._:-]{1,128}") || request.packageId() == null || request.packageId() <= 0)
-            throw new AppException(ErrorCode.INVALID_PARAMETER, "A positive packageId and valid Idempotency-Key are required");
+            throw AppException.of(ErrorCode.INVALID_PARAMETER, "detail.credit-purchase-invalid-request");
         return new ApiResponse<>(purchases.createOrder(memberId, request.packageId(), key));
     }
 

@@ -487,9 +487,9 @@ public class ConsultationPaymentServiceImpl implements ConsultationPaymentServic
         if (request.getPaymentDeadline().isBefore(Instant.now()))
             throw new AppException(ErrorCode.INVALID_CONSULTATION_STATUS);
         if (request.getPackagePriceSnapshot() == null || request.getPackagePriceSnapshot().signum() <= 0)
-            throw new AppException(ErrorCode.INVALID_PARAMETER, "Consultation package price snapshot is invalid");
+            throw AppException.of(ErrorCode.INVALID_PARAMETER, "detail.package-price-snapshot-invalid");
         if (request.getPackageDurationDaysSnapshot() == null || request.getPackageDurationDaysSnapshot() <= 0)
-            throw new AppException(ErrorCode.INVALID_PARAMETER, "Consultation package duration snapshot is invalid");
+            throw AppException.of(ErrorCode.INVALID_PARAMETER, "detail.package-duration-snapshot-invalid");
     }
 
     private void validateMemberOwnsRequest(Long memberId, ConsultationRequest request) {
@@ -526,7 +526,7 @@ public class ConsultationPaymentServiceImpl implements ConsultationPaymentServic
         try {
             return amount.longValueExact();
         } catch (ArithmeticException exception) {
-            throw new AppException(ErrorCode.INVALID_PARAMETER, "VND payment amount must be a whole number");
+            throw AppException.of(ErrorCode.INVALID_PARAMETER, "detail.vnd-amount-whole");
         }
     }
 

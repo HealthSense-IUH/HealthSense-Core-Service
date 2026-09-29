@@ -44,7 +44,7 @@ public class DoctorDietPrescriptionService {
         if (request == null) throw new AppException(ErrorCode.INVALID_REQUEST_BODY);
         ConsultationSession session = readableSession(doctorId, sessionId);
         if (session.getStatus() != ConsultationStatus.ACTIVE)
-            throw new AppException(ErrorCode.CONSULTATION_NOT_ACTIVE, "Diet prescription can only be changed during an active consultation");
+            throw AppException.of(ErrorCode.CONSULTATION_NOT_ACTIVE, "detail.diet-prescription-requires-active");
         if (accounts.findById(doctorId).filter(account -> account.getStatus() == AccountStatus.ACTIVE).isEmpty())
             throw new AppException(ErrorCode.ACCOUNT_DISABLED);
         return prescriptions.save(session.getMemberId(), doctorId, session.getId(), request);

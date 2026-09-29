@@ -70,8 +70,7 @@ public class PayOSPaymentGatewayImpl implements PayOSPaymentGateway {
     @Override
     public ProviderRefundResult refundPayment(
             Long orderCode, BigDecimal amount, String currency, String idempotencyKey, String reason) {
-        throw new AppException(ErrorCode.PAYMENT_PROVIDER_ERROR,
-                "The configured PayOS SDK does not expose a refund API; reconcile the externally executed refund");
+        throw AppException.of(ErrorCode.PAYMENT_PROVIDER_ERROR, "detail.payos-refund-not-supported");
     }
 
     @Override

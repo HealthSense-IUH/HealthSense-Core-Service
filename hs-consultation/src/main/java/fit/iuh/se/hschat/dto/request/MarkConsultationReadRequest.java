@@ -11,6 +11,6 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class MarkConsultationReadRequest {
 
-    @NotBlank(message = "Id tin nhắn đã đọc không được để trống")
+    @NotBlank(message = "{validation.last-read-message-id-required}")
     String lastReadMessageId;
 }

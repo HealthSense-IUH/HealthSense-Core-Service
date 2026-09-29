@@ -13,15 +13,15 @@ import lombok.experimental.FieldDefaults;
 @Builder
 public class RegisterRequest {
 
-    @NotBlank(message = "Email is required")
-    @Email(message = "Email is invalid")
+    @NotBlank(message = "{validation.email-required}")
+    @Email(message = "{validation.email-invalid}")
     String email;
 
-    @NotBlank(message = "Password is required")
-    @Size(min = 8, message = "Password must be at least 8 characters")
+    @NotBlank(message = "{validation.password-required}")
+    @Size(min = 8, message = "{validation.password-min-8}")
     String password;
 
-    @NotBlank(message = "Full name is required")
-    @Size(max = 120, message = "Full name must not exceed 120 characters")
+    @NotBlank(message = "{validation.full-name-required}")
+    @Size(max = 120, message = "{validation.full-name-max-120}")
     String fullName;
 }

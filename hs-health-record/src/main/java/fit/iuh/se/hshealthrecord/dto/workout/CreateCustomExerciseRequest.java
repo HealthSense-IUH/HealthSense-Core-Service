@@ -14,13 +14,13 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class CreateCustomExerciseRequest {
 
-    @NotBlank(message = "Tên bài tập không được để trống")
+    @NotBlank(message = "{validation.exercise-name-required}")
     String name;
 
-    @NotNull(message = "Thể loại bài tập không được để trống")
+    @NotNull(message = "{validation.exercise-category-required}")
     ExerciseCategory category;
 
-    @NotNull(message = "Dữ liệu cần ghi không được để trống")
+    @NotNull(message = "{validation.tracking-type-required}")
     TrackingMetricType trackingType;
 
     Double metRate;

@@ -162,7 +162,7 @@ public class DoctorActiveCareServiceImpl implements DoctorActiveCareService {
                 .requireDoctorCurrentWriteAccess(doctorId, session, recordId);
 
         ConsultationHealthRecordAttention attention = attentionRepository.findBySessionIdAndHealthRecordId(sessionId, recordId)
-                .orElseThrow(() -> new AppException(ErrorCode.ENTITY_NOT_FOUND, "Consultation attention not found"));
+                .orElseThrow(() -> AppException.of(ErrorCode.ENTITY_NOT_FOUND, "detail.consultation-attention-not-found"));
         attention.setStatus(ConsultationAttentionStatus.REVIEWED);
         attention.setReviewedAt(Instant.now());
         attention.setReviewedByDoctorId(doctorId);

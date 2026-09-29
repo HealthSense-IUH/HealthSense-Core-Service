@@ -59,7 +59,7 @@ public class PasswordRecoveryServiceImpl implements PasswordRecoveryService {
     public VerifyForgotPasswordOtpResponse verifyOtp(VerifyForgotPasswordOtpRequest request) {
         String email = TextNormalize.normalizeEmail(request.getEmail());
         if (!redisOtpService.verifyForgotPasswordOtp(email, request.getOtp()))
-            throw new AppException(ErrorCode.INVALID_TOKEN, "OTP is invalid or expired");
+            throw AppException.of(ErrorCode.INVALID_TOKEN, "detail.otp-invalid");
 
         UserAccount user = userAccountRepository.findUserByEmail(email)
                 .filter(account -> account.getStatus() == AccountStatus.ACTIVE)

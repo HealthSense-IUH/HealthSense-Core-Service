@@ -135,8 +135,7 @@ public class EpisodeHealthRecordAuthorizationServiceImpl
             Long doctorId, ConsultationSession session, Long healthRecordId) {
         requireOwnActivatedEpisode(doctorId, session);
         if (session.getStatus() != ConsultationStatus.ACTIVE)
-            throw new AppException(ErrorCode.CONSULTATION_ACCESS_DENIED,
-                    "Historical episode HealthRecord access is read-only");
+            throw AppException.of(ErrorCode.CONSULTATION_ACCESS_DENIED, "detail.historical-record-read-only");
         return authorizationRepository.findBySessionIdAndHealthRecordId(session.getId(), healthRecordId)
                 .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_ACCESS_DENIED));
     }

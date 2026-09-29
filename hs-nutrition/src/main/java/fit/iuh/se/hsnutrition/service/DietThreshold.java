@@ -15,8 +15,7 @@ public record DietThreshold(Double limit, Double caution) {
         check(label, limit);
         check(label, caution);
         if (limit != null && caution != null && limit < caution)
-            throw new AppException(ErrorCode.INVALID_PARAMETER,
-                    label + ": ngưỡng đỏ (" + limit + ") phải lớn hơn hoặc bằng ngưỡng vàng (" + caution + ")");
+            throw AppException.of(ErrorCode.INVALID_PARAMETER, "detail.diet-threshold-order", label, limit, caution);
         return this;
     }
 
@@ -29,6 +28,6 @@ public record DietThreshold(Double limit, Double caution) {
     private static void check(String label, Double value) {
         if (value == null) return;
         if (value.isNaN() || value < 0 || value > MAX_VALUE)
-            throw new AppException(ErrorCode.INVALID_PARAMETER, label + ": ngưỡng phải từ 0 đến " + (long) MAX_VALUE);
+            throw AppException.of(ErrorCode.INVALID_PARAMETER, "detail.diet-threshold-range", label, (long) MAX_VALUE);
     }
 }

@@ -15,10 +15,10 @@ import java.time.Instant;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class AdminCreateConsultationSessionRequest {
 
-    @NotNull(message = "Id bệnh nhân không được để trống")
+    @NotNull(message = "{validation.patient-id-required}")
     Long memberId;
 
-    @NotNull(message = "Id bác sĩ không được để trống")
+    @NotNull(message = "{validation.doctor-id-required}")
     Long doctorId;
 
     Long packageId;
@@ -27,19 +27,19 @@ public class AdminCreateConsultationSessionRequest {
 
     Instant startedAt;
 
-    @NotNull(message = "Thời điểm hết hạn tư vấn không được để trống")
-    @Future(message = "Thời điểm hết hạn tư vấn phải ở tương lai")
+    @NotNull(message = "{validation.consultation-expiry-required}")
+    @Future(message = "{validation.consultation-expiry-future}")
     Instant endsAt;
 
-    @Future(message = "Thời điểm hết hỗ trợ phải ở tương lai")
+    @Future(message = "{validation.support-end-future}")
     Instant supportEndsAt;
 
     String initialSystemMessage;
 
-    @NotBlank(message = "Exceptional override reason is required")
+    @NotBlank(message = "{validation.override-reason-required}")
     String overrideReason;
 
-    @NotBlank(message = "Exceptional override service scope is required")
+    @NotBlank(message = "{validation.override-service-scope-required}")
     @jakarta.validation.constraints.Size(max = 2000)
     String serviceScope;
 }
