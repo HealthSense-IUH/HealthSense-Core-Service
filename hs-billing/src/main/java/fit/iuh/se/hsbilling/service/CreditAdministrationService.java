@@ -31,6 +31,8 @@ public interface CreditAdministrationService {
     PageResponse<AdminCreditOrderSummary> getOrders(UserRole role, Long memberId, CreditOrderStatus status,
                                                     CreditPaymentProvider provider, Instant from, Instant to, Pageable pageable);
 
+    AdminCreditPaymentOverview getPaymentOverview(UserRole role, Long memberId, Instant from, Instant to);
+
     AdminCreditOrderResponse getOrder(UserRole role, Long orderId);
 
     CreditMutationResponse adjust(Long actorId, UserRole role, Long memberId, long delta, String reason, String key);
