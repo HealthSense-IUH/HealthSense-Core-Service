@@ -33,6 +33,7 @@ import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.time.Instant;
 import java.util.List;
 
 import static org.mockito.Mockito.*;
@@ -47,6 +48,7 @@ class ConsultationCreditHttpTest {
     private AnnotationConfigWebApplicationContext context;
     private MockMvc mvc;
     private ConsultationCreditService credits;
+    private CreditPurchaseService purchases;
 
     @BeforeEach
     void start() {
@@ -58,6 +60,7 @@ class ConsultationCreditHttpTest {
         context.refresh();
         mvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
         credits = context.getBean(ConsultationCreditService.class);
+        purchases = context.getBean(CreditPurchaseService.class);
     }
 
     @AfterEach
@@ -105,7 +108,7 @@ class ConsultationCreditHttpTest {
 
     @Test
     void anonymousAndAllNonMemberRolesAreRejectedByActualSecurityRouting() throws Exception {
-        for (String path : List.of("wallet", "packages", "ledger")) {
+        for (String path : List.of("wallet", "packages", "ledger", "payments/overview")) {
             mvc.perform(get("/api/credits/" + path)).andExpect(status().isUnauthorized());
             for (UserRole role : UserRole.values()) {
                 if (role == UserRole.MEMBER) continue;
@@ -114,6 +117,7 @@ class ConsultationCreditHttpTest {
             }
         }
         verifyNoInteractions(credits);
+        verifyNoInteractions(purchases);
     }
 
     @Test
@@ -189,16 +193,41 @@ class ConsultationCreditHttpTest {
 
     @Test
     void purchaseHistoryUsesMemberIdentityAndPagination() throws Exception {
-        var purchases = context.getBean(CreditPurchaseService.class);
-        when(purchases.getOrders(123L, PageRequest.of(0, 10))).thenReturn(new PageResponse<>(Page.empty()));
-        mvc.perform(get("/api/credits/orders?memberId=999").with(authentication(actor(UserRole.MEMBER))))
-                .andExpect(status().isOk());
+        Instant from = Instant.parse("2026-09-01T00:00:00Z");
+        Instant to = Instant.parse("2026-10-01T00:00:00Z");
+        var pageable = PageRequest.of(1, 20);
+        when(purchases.getOrders(123L, CreditOrderStatus.PAID, from, to, pageable))
+                .thenReturn(new PageResponse<>(Page.empty(pageable)));
+        mvc.perform(get("/api/credits/orders?memberId=999&status=PAID"
+                        + "&from=2026-09-01T00:00:00Z&to=2026-10-01T00:00:00Z&page=2&size=20")
+                        .with(authentication(actor(UserRole.MEMBER))))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.page").value(2));
         mvc.perform(get("/api/credits/orders/7?memberId=999").with(authentication(actor(UserRole.MEMBER))))
                 .andExpect(status().isOk());
         mvc.perform(get("/api/credits/orders?size=101").with(authentication(actor(UserRole.MEMBER))))
                 .andExpect(status().isBadRequest());
-        verify(purchases).getOrders(123L, PageRequest.of(0, 10));
+        verify(purchases).getOrders(123L, CreditOrderStatus.PAID, from, to, pageable);
         verify(purchases).getOrder(123L, 7L);
         verifyNoMoreInteractions(purchases);
+    }
+
+    @Test
+    void paymentOverviewUsesMemberIdentityAndOptionalDateRange() throws Exception {
+        Instant from = Instant.parse("2026-09-01T00:00:00Z");
+        Instant to = Instant.parse("2026-10-01T00:00:00Z");
+        var overview = new MemberCreditPaymentOverview(150_000, 150, 3, from, to.minusSeconds(1),
+                new CreditWalletResponse(170, 20, 150));
+        when(purchases.getPaymentOverview(123L, from, to)).thenReturn(overview);
+
+        mvc.perform(get("/api/credits/payments/overview?memberId=999"
+                        + "&from=2026-09-01T00:00:00Z&to=2026-10-01T00:00:00Z")
+                        .with(authentication(actor(UserRole.MEMBER))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.totalPaidVnd").value(150000))
+                .andExpect(jsonPath("$.data.totalPurchasedCredits").value(150))
+                .andExpect(jsonPath("$.data.successfulOrderCount").value(3))
+                .andExpect(jsonPath("$.data.wallet.available").value(150));
+
+        verify(purchases).getPaymentOverview(123L, from, to);
     }
 }

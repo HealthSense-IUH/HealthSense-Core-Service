@@ -99,6 +99,16 @@ public class AdminCreditController {
         return new ApiResponse<>(admin.getOrder(actor.getRole(), orderId));
     }
 
+    @GetMapping("/payments/overview")
+    public ApiResponse<AdminCreditPaymentOverview> paymentOverview(
+            @AuthenticationPrincipal UserAuthentication actor,
+            @RequestParam(required = false) Long memberId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to) {
+        require(actor);
+        return new ApiResponse<>(admin.getPaymentOverview(actor.getRole(), memberId, from, to));
+    }
+
     @PostMapping("/wallets/{memberId}/adjustments")
     public ApiResponse<CreditMutationResponse> adjust(@AuthenticationPrincipal UserAuthentication actor,
                                                       @PathVariable Long memberId, @RequestHeader(value = "Idempotency-Key", required = false) String key,

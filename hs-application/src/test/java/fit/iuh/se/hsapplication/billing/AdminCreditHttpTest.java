@@ -28,6 +28,7 @@ import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.util.List;
+import java.time.Instant;
 
 import static org.mockito.Mockito.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
@@ -102,6 +103,7 @@ class AdminCreditHttpTest {
     void adminRoutesRejectAnonymousMemberDoctorAndCoordinator() throws Exception {
         var requests = List.of(get("/api/admin/credits/packages"),
                 get("/api/admin/credits/members"),
+                get("/api/admin/credits/payments/overview"),
                 post("/api/admin/credits/wallets/1/adjustments").header("Idempotency-Key", "x")
                         .contentType("application/json").content("{\"delta\":1,\"reason\":\"fix\"}"),
                 post("/api/admin/credits/session-refunds").header("Idempotency-Key", "x")
@@ -151,5 +153,18 @@ class AdminCreditHttpTest {
                 .andExpect(status().isBadRequest());
 
         verifyNoInteractions(context.getBean(CreditAdministrationService.class));
+    }
+
+    @Test
+    void adminCanReadPaymentOverviewWithMemberAndPeriodFilters() throws Exception {
+        mvc.perform(get("/api/admin/credits/payments/overview").with(authentication(actor(UserRole.ADMIN)))
+                        .param("memberId", "101")
+                        .param("from", "2026-09-01T00:00:00Z")
+                        .param("to", "2026-10-01T00:00:00Z"))
+                .andExpect(status().isOk());
+
+        verify(context.getBean(CreditAdministrationService.class)).getPaymentOverview(
+                UserRole.ADMIN, 101L, Instant.parse("2026-09-01T00:00:00Z"),
+                Instant.parse("2026-10-01T00:00:00Z"));
     }
 }

@@ -4,6 +4,7 @@ import fit.iuh.se.hsbilling.config.CreditPaymentConfiguration;
 import fit.iuh.se.hsbilling.dto.CreditOrderResponse;
 import fit.iuh.se.hsbilling.dto.CreditOrderSummary;
 import fit.iuh.se.hsbilling.dto.CreditPaymentSummary;
+import fit.iuh.se.hsbilling.dto.MemberCreditPaymentOverview;
 import fit.iuh.se.hsbilling.entity.CreditPaymentAttempt;
 import fit.iuh.se.hsbilling.entity.CreditPurchaseOrder;
 import fit.iuh.se.hsbilling.entity.enums.CreditOrderStatus;
@@ -15,6 +16,7 @@ import fit.iuh.se.hsbilling.payment.MockCreditPaymentGateway;
 import fit.iuh.se.hsbilling.repository.CreditOrderRepository;
 import fit.iuh.se.hsbilling.repository.CreditPackageRepository;
 import fit.iuh.se.hsbilling.repository.CreditPaymentAttemptRepository;
+import fit.iuh.se.hsbilling.repository.CreditPaymentAggregate;
 import fit.iuh.se.hsbilling.service.ConsultationCreditService;
 import fit.iuh.se.hsbilling.service.CreditPurchaseCompletionService;
 import fit.iuh.se.hsbilling.service.CreditPurchaseService;
@@ -30,6 +32,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -139,12 +142,36 @@ public class CreditPurchaseServiceImpl implements CreditPurchaseService {
     @Override
     @Transactional(readOnly = true)
     public PageResponse<CreditOrderSummary> getOrders(Long memberId, Pageable pageable) {
+        return getOrders(memberId, null, null, null, pageable);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<CreditOrderSummary> getOrders(Long memberId, CreditOrderStatus status,
+                                                      Instant from, Instant to, Pageable pageable) {
         member(memberId);
-        if (pageable == null || pageable.isUnpaged() || pageable.getPageSize() > 100)
+        if (pageable == null || pageable.isUnpaged() || pageable.getPageSize() < 1 || pageable.getPageSize() > 100)
             throw new AppException(ErrorCode.INVALID_PARAMETER);
+        range(from, to);
         var ordered = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(),
                 Sort.by(Sort.Direction.DESC, "createdAt", "id"));
-        return new PageResponse<>(orders.findByMemberId(memberId, ordered).map(CreditOrderSummary::from));
+        Specification<CreditPurchaseOrder> spec = (root, query, builder) -> builder.equal(root.get("memberId"), memberId);
+        if (status != null) spec = spec.and((root, query, builder) -> builder.equal(root.get("status"), status));
+        if (from != null) spec = spec.and((root, query, builder) ->
+                builder.greaterThanOrEqualTo(root.get("createdAt"), from));
+        if (to != null) spec = spec.and((root, query, builder) -> builder.lessThan(root.get("createdAt"), to));
+        return new PageResponse<>(orders.findAll(spec, ordered).map(CreditOrderSummary::from));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public MemberCreditPaymentOverview getPaymentOverview(Long memberId, Instant from, Instant to) {
+        range(from, to);
+        var wallet = credits.getWallet(memberId);
+        CreditPaymentAggregate aggregate = orders.summarizeSuccessfulPayments(memberId, from, to);
+        if (aggregate == null) return new MemberCreditPaymentOverview(0, 0, 0, null, null, wallet);
+        return new MemberCreditPaymentOverview(aggregate.totalPaidVnd(), aggregate.totalPurchasedCredits(),
+                aggregate.successfulOrderCount(), aggregate.firstPaidAt(), aggregate.lastPaidAt(), wallet);
     }
 
     @Override
@@ -202,6 +229,11 @@ public class CreditPurchaseServiceImpl implements CreditPurchaseService {
 
     private void positiveId(Long id) {
         if (id == null || id <= 0) throw new AppException(ErrorCode.INVALID_PARAMETER);
+    }
+
+    private void range(Instant from, Instant to) {
+        if (from != null && to != null && !from.isBefore(to))
+            throw AppException.of(ErrorCode.INVALID_PARAMETER, "detail.from-date-before-to-date");
     }
 
     private record Start(Long orderId, Long attemptId, long amountVnd, boolean created,

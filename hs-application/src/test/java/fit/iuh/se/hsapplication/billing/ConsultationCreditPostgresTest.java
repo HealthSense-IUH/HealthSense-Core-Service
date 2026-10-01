@@ -40,6 +40,7 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.sql.DataSource;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
@@ -476,6 +477,38 @@ class ConsultationCreditPostgresTest {
     }
 
     @Test
+    void adminPaymentOverviewSupportsAbsentAndPresentOptionalFilters() {
+        var before = administration.getPaymentOverview(UserRole.ADMIN, null, null, null);
+        long member = member(), pack = purchasePackage(6);
+        Instant from = Instant.now().minusSeconds(5);
+        var paid = purchases.createOrder(member, pack, "admin-overview-" + member);
+        Instant to = Instant.now().plusSeconds(5);
+
+        var all = administration.getPaymentOverview(UserRole.ADMIN, null, null, null);
+        assertEquals(before.successfulOrderCount() + 1, all.successfulOrderCount());
+        assertEquals(before.totalPaidVnd() + 6000, all.totalPaidVnd());
+        assertEquals(before.totalPurchasedCredits() + 6, all.totalPurchasedCredits());
+
+        var filtered = administration.getPaymentOverview(UserRole.SUPER_ADMIN, member, from, to);
+        assertEquals(1, filtered.successfulOrderCount());
+        assertEquals(1, filtered.payingMemberCount());
+        assertEquals(6000, filtered.totalPaidVnd());
+        assertEquals(6, filtered.totalPurchasedCredits());
+        assertNotNull(filtered.firstPaidAt());
+        assertEquals(filtered.firstPaidAt(), filtered.lastPaidAt());
+
+        var memberOverview = purchases.getPaymentOverview(member, from, to);
+        assertEquals(1, memberOverview.successfulOrderCount());
+        assertEquals(6000, memberOverview.totalPaidVnd());
+        assertEquals(6, memberOverview.totalPurchasedCredits());
+        assertEquals(6, memberOverview.wallet().available());
+
+        var memberHistory = purchases.getOrders(member, CreditOrderStatus.PAID, from, to, PageRequest.of(0, 10));
+        assertEquals(1, memberHistory.getTotalElements());
+        assertEquals(paid.order().id(), memberHistory.getContent().getFirst().id());
+    }
+
+    @Test
     void invalidInputsAndOverflowDoNotChangeBalance() {
         long member = member();
         error(ErrorCode.INVALID_PARAMETER, () -> fund(member, 0));
@@ -707,7 +740,7 @@ class ConsultationCreditPostgresTest {
                 principal, null, List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_MEMBER")));
         var mvc = org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup(
                         new fit.iuh.se.hsapplication.controller.billing.CreditPurchaseController(purchases),
-                        new fit.iuh.se.hsapplication.controller.billing.ConsultationCreditController(credits))
+                        new fit.iuh.se.hsapplication.controller.billing.ConsultationCreditController(credits, purchases))
                 .setCustomArgumentResolvers(new org.springframework.security.web.method.annotation.AuthenticationPrincipalArgumentResolver())
                 .setControllerAdvice(new fit.iuh.se.hsshared.advice.handler.GlobalExceptionHandler()).build();
         org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(authentication);

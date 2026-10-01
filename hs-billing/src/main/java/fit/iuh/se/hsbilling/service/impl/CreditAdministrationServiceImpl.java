@@ -128,7 +128,11 @@ public class CreditAdministrationServiceImpl implements CreditAdministrationServ
         Map<Long, CreditWallet> walletsByMember = memberIds.isEmpty() ? Map.of()
                 : wallets.findAllByMemberIdIn(memberIds).stream()
                 .collect(Collectors.toMap(CreditWallet::getMemberId, wallet -> wallet));
-        return new PageResponse<>(members.map(member -> memberSummary(member, walletsByMember.get(member.getId()))));
+        Map<Long, MemberCreditPaymentAggregate> paymentsByMember = memberIds.isEmpty() ? Map.of()
+                : orders.summarizeSuccessfulPaymentsByMemberIds(memberIds).stream()
+                .collect(Collectors.toMap(MemberCreditPaymentAggregate::getMemberId, aggregate -> aggregate));
+        return new PageResponse<>(members.map(member -> memberSummary(member, walletsByMember.get(member.getId()),
+                paymentsByMember.get(member.getId()))));
     }
 
     @Override
@@ -164,6 +168,18 @@ public class CreditAdministrationServiceImpl implements CreditAdministrationServ
                 Sort.by(Sort.Direction.DESC, "createdAt", "id"));
         return new PageResponse<>(orders.findAll(orderSpec(memberId, status, provider, from, to), ordered)
                 .map(AdminCreditOrderSummary::from));
+    }
+
+    @Override
+    public AdminCreditPaymentOverview getPaymentOverview(UserRole role, Long memberId, Instant from, Instant to) {
+        requireAdminRole(role);
+        if (memberId != null) requireMember(memberId);
+        range(from, to);
+        CreditPaymentAggregate aggregate = orders.summarizeSuccessfulPayments(memberId, from, to);
+        if (aggregate == null) return new AdminCreditPaymentOverview(0, 0, 0, 0, null, null);
+        return new AdminCreditPaymentOverview(aggregate.totalPaidVnd(), aggregate.totalPurchasedCredits(),
+                aggregate.successfulOrderCount(), aggregate.payingMemberCount(), aggregate.firstPaidAt(),
+                aggregate.lastPaidAt());
     }
 
     @Override
@@ -323,13 +339,21 @@ public class CreditAdministrationServiceImpl implements CreditAdministrationServ
         return new CreditMutationResponse(AdminCreditLedgerResponse.from(e), walletResponse(w));
     }
 
-    private AdminMemberCreditSummary memberSummary(UserAccount member, CreditWallet wallet) {
+    private AdminMemberCreditSummary memberSummary(UserAccount member, CreditWallet wallet,
+                                                    MemberCreditPaymentAggregate payments) {
         var profile = member.getProfile();
         long balance = wallet == null ? 0 : wallet.getBalance();
         long reserved = wallet == null ? 0 : wallet.getReserved();
         return new AdminMemberCreditSummary(member.getId().toString(), profile.getDisplayName(), member.getEmail(),
                 profile.getPhone(), member.getStatus(), profile.getAvatarUrl(), wallet != null, balance, reserved,
-                balance - reserved, wallet == null ? null : wallet.getUpdatedAt());
+                balance - reserved, wallet == null ? null : wallet.getUpdatedAt(),
+                payments == null ? 0 : value(payments.getTotalPaidVnd()),
+                payments == null ? 0 : value(payments.getTotalPurchasedCredits()),
+                payments == null ? 0 : value(payments.getSuccessfulOrderCount()));
+    }
+
+    private long value(Long value) {
+        return value == null ? 0 : value;
     }
 
     private CreditWalletResponse walletResponse(CreditWallet w) {
