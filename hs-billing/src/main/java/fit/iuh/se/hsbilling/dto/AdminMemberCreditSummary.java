@@ -15,5 +15,8 @@ public record AdminMemberCreditSummary(
         long balance,
         long reserved,
         long available,
-        Instant walletUpdatedAt) {
+        Instant walletUpdatedAt,
+        long totalPaidVnd,
+        long totalPurchasedCredits,
+        long successfulOrderCount) {
 }
