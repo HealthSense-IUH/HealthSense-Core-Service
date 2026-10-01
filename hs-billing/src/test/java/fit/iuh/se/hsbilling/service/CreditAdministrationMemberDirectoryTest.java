@@ -2,6 +2,7 @@ package fit.iuh.se.hsbilling.service;
 
 import cn.hutool.core.lang.Snowflake;
 import fit.iuh.se.hsbilling.entity.CreditWallet;
+import fit.iuh.se.hsbilling.repository.MemberCreditPaymentAggregate;
 import fit.iuh.se.hsbilling.repository.*;
 import fit.iuh.se.hsbilling.service.impl.CreditAdministrationServiceImpl;
 import fit.iuh.se.hsoperations.event.OperationalEventPublisher;
@@ -50,6 +51,12 @@ class CreditAdministrationMemberDirectoryTest {
         CreditWallet wallet = CreditWallet.builder().id(201L).memberId(101L).balance(7).reserved(2).version(3L).build();
         wallet.setUpdatedAt(Instant.parse("2026-09-23T08:30:00Z"));
         when(wallets.findAllByMemberIdIn(anyCollection())).thenReturn(List.of(wallet));
+        MemberCreditPaymentAggregate payment = mock(MemberCreditPaymentAggregate.class);
+        when(payment.getMemberId()).thenReturn(101L);
+        when(payment.getTotalPaidVnd()).thenReturn(250_000L);
+        when(payment.getTotalPurchasedCredits()).thenReturn(25L);
+        when(payment.getSuccessfulOrderCount()).thenReturn(2L);
+        when(orders.summarizeSuccessfulPaymentsByMemberIds(anyCollection())).thenReturn(List.of(payment));
 
         var response = service.getMembers(88L, UserRole.ADMIN, null, null, pageable);
 
@@ -60,14 +67,22 @@ class CreditAdministrationMemberDirectoryTest {
         assertEquals(7, fundedResult.balance());
         assertEquals(2, fundedResult.reserved());
         assertEquals(5, fundedResult.available());
+        assertEquals(250_000, fundedResult.totalPaidVnd());
+        assertEquals(25, fundedResult.totalPurchasedCredits());
+        assertEquals(2, fundedResult.successfulOrderCount());
         var emptyResult = response.getContent().get(1);
         assertEquals("102", emptyResult.memberId());
         assertFalse(emptyResult.walletInitialized());
         assertEquals(0, emptyResult.balance());
         assertEquals(0, emptyResult.reserved());
         assertEquals(0, emptyResult.available());
+        assertEquals(0, emptyResult.totalPaidVnd());
+        assertEquals(0, emptyResult.totalPurchasedCredits());
+        assertEquals(0, emptyResult.successfulOrderCount());
         assertNull(emptyResult.walletUpdatedAt());
         verify(wallets).findAllByMemberIdIn(argThat(ids -> ids.containsAll(List.of(101L, 102L))));
+        verify(orders).summarizeSuccessfulPaymentsByMemberIds(
+                argThat(ids -> ids.containsAll(List.of(101L, 102L))));
         verify(wallets, never()).initialize(anyLong(), anyLong());
         verify(wallets, never()).save(any());
     }
@@ -83,6 +98,7 @@ class CreditAdministrationMemberDirectoryTest {
         assertTrue(response.getContent().isEmpty());
         verify(users, never()).findUsers(any(), any(), anyLong(), any());
         verify(wallets, never()).findAllByMemberIdIn(anyCollection());
+        verify(orders, never()).summarizeSuccessfulPaymentsByMemberIds(anyCollection());
     }
 
     @Test
@@ -92,7 +108,7 @@ class CreditAdministrationMemberDirectoryTest {
         assertThrows(AppException.class,
                 () -> service.getMembers(88L, UserRole.MEMBER, null, null, pageable));
 
-        verifyNoInteractions(users, wallets);
+        verifyNoInteractions(users, wallets, orders);
     }
 
     private UserAccount member(Long id, String email, String displayName, String phone) {
