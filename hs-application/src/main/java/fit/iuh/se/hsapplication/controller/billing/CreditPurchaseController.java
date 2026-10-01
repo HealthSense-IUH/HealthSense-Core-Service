@@ -4,6 +4,7 @@ import fit.iuh.se.hsapplication.dto.auth.UserAuthentication;
 import fit.iuh.se.hsbilling.dto.CreateCreditOrderRequest;
 import fit.iuh.se.hsbilling.dto.CreditOrderResponse;
 import fit.iuh.se.hsbilling.dto.CreditOrderSummary;
+import fit.iuh.se.hsbilling.entity.enums.CreditOrderStatus;
 import fit.iuh.se.hsbilling.service.CreditPurchaseService;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
@@ -13,7 +14,10 @@ import fit.iuh.se.hsuser.entity.enums.UserRole;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.Instant;
 
 @RestController
 @RequestMapping("/api/credits/orders")
@@ -44,10 +48,13 @@ public class CreditPurchaseController {
 
     @GetMapping
     public ApiResponse<PageResponse<CreditOrderSummary>> list(@AuthenticationPrincipal UserAuthentication actor,
+                                                              @RequestParam(required = false) CreditOrderStatus status,
+                                                              @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
+                                                              @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
                                                               @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "10") int size) {
         Long memberId = member(actor);
         if (page < 1 || size < 1 || size > 100) throw new AppException(ErrorCode.INVALID_PARAMETER);
-        return new ApiResponse<>(purchases.getOrders(memberId, PageRequest.of(page - 1, size)));
+        return new ApiResponse<>(purchases.getOrders(memberId, status, from, to, PageRequest.of(page - 1, size)));
     }
 
     private Long member(UserAuthentication actor) {
