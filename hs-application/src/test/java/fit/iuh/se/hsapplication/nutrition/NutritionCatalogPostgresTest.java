@@ -512,6 +512,7 @@ class NutritionCatalogPostgresTest {
     private static final DietProfile WARFARIN = new DietProfile(java.util.Set.of(DietRuleCode.SODIUM, DietRuleCode.VITAMIN_K, DietRuleCode.ALCOHOL,
             DietRuleCode.CAFFEINE), true, V28_DEFAULTS);
     private static final DietProfile GENERAL = DietProfile.general(V28_DEFAULTS);
+    private static final DietProfile AF = DietAdvisorTest.AF;
 
     private DietAdvice advice(String id, DietProfile diet) {
         return reference.getFood(id, diet).advice();
@@ -548,7 +549,6 @@ class NutritionCatalogPostgresTest {
         assertEquals(3, sodium.priority());
         assertTrue(sodium.overridable());
         assertTrue(list.stream().allMatch(DietRuleResponse::overridable), "doctors can tune every rule per member");
-        assertFalse(list.get(7).base(), "vitamin K only applies with warfarin");
     }
 
     @Test
@@ -560,7 +560,7 @@ class NutritionCatalogPostgresTest {
         assertNull(none.prescribedBy());
         assertEquals(GENERAL, prescriptions.profileOf(member));
         var noneSodium = rule(none, "SODIUM");
-        assertTrue(noneSodium.enabled(), "base rules always apply");
+        assertFalse(noneSodium.enabled(), "rules only apply once the doctor ticks them");
         assertFalse(noneSodium.prescribed());
         assertEquals(400.0, noneSodium.effectiveLimit());
         assertFalse(rule(none, "VITAMIN_K").enabled());
@@ -576,8 +576,8 @@ class NutritionCatalogPostgresTest {
         assertEquals(555L, saved.consultationSessionId());
         assertEquals(new DietProfile(java.util.Set.of(DietRuleCode.SODIUM, DietRuleCode.VITAMIN_K, DietRuleCode.CAFFEINE), true,
                 V28_DEFAULTS), prescriptions.profileOf(member));
-        var alcohol = rule(saved, "ALCOHOL");
-        assertTrue(alcohol.enabled() && !alcohol.prescribed(), "alcohol stays on as a base rule");
+        assertFalse(rule(saved, "ALCOHOL").enabled(), "alcohol was not ticked");
+        assertTrue(rule(saved, "SODIUM").enabled());
         assertTrue(rule(saved, "VITAMIN_K").enabled());
 
         prescriptions.save(member, 88L, 556L, new UpdateDietPrescriptionRequest(false, false, true, false, " ", null));
@@ -597,8 +597,11 @@ class NutritionCatalogPostgresTest {
 
     @Test
     void realFoodsAreRatedByTheAfRules() {
-        // Bia của sách (cồn điền ở V26): có cồn -> đỏ với mọi người
-        DietAdvice beer = advice("900014001", GENERAL);
+        // Chưa có đơn: không chấm màu
+        assertNull(advice("900014001", GENERAL));
+
+        // Bia của sách (cồn điền ở V26): có cồn -> đỏ khi bác sĩ tick quy tắc cồn
+        DietAdvice beer = advice("900014001", AF);
         assertEquals("LIMIT", beer.level());
         assertEquals("ALCOHOL_LIMIT", beer.reasons().getFirst().code());
 
@@ -606,31 +609,31 @@ class NutritionCatalogPostgresTest {
         String salty = firstFood("""
                 source = 'USDA_FNDDS' and sodium_mg > 400 and potassium_mg > 0 and sodium_mg > 2 * potassium_mg
                   and sugars_g <= 2.5 and fat_saturated_g <= 1.5 and alcohol_g = 0 and caffeine_mg = 0""");
-        assertEquals(List.of("NA_K_RATIO_LIMIT", "SODIUM_LIMIT"), reasonCodes(advice(salty, GENERAL)));
+        assertEquals(List.of("NA_K_RATIO_LIMIT", "SODIUM_LIMIT"), reasonCodes(advice(salty, AF)));
 
         // Giàu magie, ít muối, kali hơn natri, không điểm xấu -> xanh với cả hai điểm tốt
         String magnesiumRich = firstFood("""
                 source = 'USDA_FNDDS' and magnesium_mg >= 50 and sodium_mg <= 140 and potassium_mg >= sodium_mg
                   and sugars_g <= 2.5 and fat_saturated_g <= 1.5 and alcohol_g = 0 and caffeine_mg <= 80""");
-        DietAdvice good = advice(magnesiumRich, GENERAL);
+        DietAdvice good = advice(magnesiumRich, AF);
         assertEquals("GOOD", good.level());
         assertEquals(List.of("NA_K_RATIO_GOOD", "MAGNESIUM_GOOD"), reasonCodes(good));
 
         // Trái cây nhiều đường tự nhiên: không bị chấm đường; kẹo thì có
         String sweetFruit = firstFood("source = 'USDA_FNDDS' and group_id = 'FRUIT' and sugars_g > 10");
-        assertFalse(reasonCodes(advice(sweetFruit, GENERAL)).stream().anyMatch(c -> c.startsWith("SUGARS")));
+        assertFalse(reasonCodes(advice(sweetFruit, AF)).stream().anyMatch(c -> c.startsWith("SUGARS")));
         String candy = firstFood("source = 'USDA_FNDDS' and group_id = 'SWEET' and sugars_g > 10");
-        assertTrue(reasonCodes(advice(candy, GENERAL)).contains("SUGARS_LIMIT"));
+        assertTrue(reasonCodes(advice(candy, AF)).contains("SUGARS_LIMIT"));
 
         // Rau muống: vitamin K chỉ tính khi bác sĩ ghi đang dùng warfarin
         DietAdvice spinach = advice("900004083", WARFARIN);
         assertTrue(reasonCodes(spinach).contains("VITAMIN_K_CAUTION"), spinach.toString());
         assertTrue(spinach.personalized());
-        assertFalse(reasonCodes(advice("900004083", GENERAL)).contains("VITAMIN_K_CAUTION"));
+        assertFalse(reasonCodes(advice("900004083", AF)).contains("VITAMIN_K_CAUTION"));
 
         // Mắm tôm: sách không có số liệu natri -> không tô xanh bừa
         String shrimpPaste = firstFood("source = 'VN_FCT' and name_vi like 'Mắm tôm%' and sodium_mg is null");
-        DietAdvice unknown = advice(shrimpPaste, GENERAL);
+        DietAdvice unknown = advice(shrimpPaste, AF);
         assertTrue(reasonCodes(unknown).contains("SODIUM_UNKNOWN"), unknown.toString());
         assertNotEquals("GOOD", unknown.level());
 
@@ -668,7 +671,8 @@ class NutritionCatalogPostgresTest {
             DietProfile general = prescriptions.profileOf(9_000_002L);
             assertEquals(new DietThreshold(30.0, 20.0), general.threshold(DietRuleCode.SODIUM));
             assertEquals(new DietThreshold(null, null, 60.0), general.threshold(DietRuleCode.MAGNESIUM));
-            DietAdvice spinach = advice("900004083", general);
+            // Ngưỡng mặc định mới áp cho đơn tick quy tắc muối
+            DietAdvice spinach = advice("900004083", new DietProfile(AF.prescribedRules(), true, general.thresholds()));
             assertEquals("LIMIT", spinach.level());
             assertTrue(reasonCodes(spinach).contains("SODIUM_LIMIT"), spinach.toString());
             assertTrue(spinach.reasons().stream().anyMatch(r -> r.message().contains("đỏ khi trên 30 mg")), spinach.toString());
@@ -706,12 +710,12 @@ class NutritionCatalogPostgresTest {
         assertTrue(sodium.prescribed());
         assertEquals(new DietThreshold(300.0, 140.0), prescriptions.profileOf(member).threshold(DietRuleCode.SODIUM));
 
-        // Món 320-380 mg natri, không điểm xấu nào khác: đỏ với bệnh nhân này, chỉ vàng với ngưỡng chung
+        // Món 320-380 mg natri, không điểm xấu nào khác: đỏ với bệnh nhân này, chỉ vàng với ngưỡng mặc định
         String mid = firstFood("""
                 source = 'USDA_FNDDS' and sodium_mg > 320 and sodium_mg < 380 and sugars_g <= 2.5
                   and fat_saturated_g <= 1.5 and alcohol_g = 0 and caffeine_mg = 0""");
         assertEquals("LIMIT", advice(mid, prescriptions.profileOf(member)).level());
-        assertEquals("CAUTION", advice(mid, GENERAL).level());
+        assertEquals("CAUTION", advice(mid, AF).level());
 
         // Không gửi ngưỡng -> về mặc định
         prescriptions.save(member, 77L, 555L, new UpdateDietPrescriptionRequest(true, false, false, false, null, null));
@@ -752,8 +756,8 @@ class NutritionCatalogPostgresTest {
         assertEquals(new DietThreshold(8.0, 2.0), profile.threshold(DietRuleCode.SUGARS));
         assertEquals(new DietThreshold(1.5, null, 0.8), profile.threshold(DietRuleCode.NA_K_RATIO));
         assertEquals(new DietThreshold(null, null, 80.0), profile.threshold(DietRuleCode.MAGNESIUM));
-        assertTrue(profile.prescribed(DietRuleCode.SUGARS));
-        assertFalse(profile.prescribed(DietRuleCode.SODIUM));
+        assertTrue(profile.enabled(DietRuleCode.SUGARS));
+        assertFalse(profile.enabled(DietRuleCode.SODIUM));
 
         // Kẹo nhiều đường: lời nhắn ghi bác sĩ dặn
         String candy = firstFood("source = 'USDA_FNDDS' and group_id = 'SWEET' and sugars_g > 10");

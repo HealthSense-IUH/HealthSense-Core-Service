@@ -7,10 +7,9 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Những gì cần để chấm màu thực phẩm cho một người: ngưỡng đã gộp (ngưỡng riêng của bác sĩ đè lên mặc định của admin)
- * và các quy tắc bác sĩ dặn riêng trong đơn. Bộ quy tắc nền cho người rung nhĩ ({@link DietRuleCode#base()}) luôn áp
- * dụng; quy tắc bác sĩ dặn thì lời nhắn ghi "Bác sĩ dặn bạn ...", riêng VITAMIN_K (đang dùng warfarin) bật thêm quy
- * tắc vitamin K. {@code personalized = false}: chưa có đơn.
+ * Những gì cần để chấm màu thực phẩm cho một người: các quy tắc bác sĩ tick trong đơn và ngưỡng đã gộp (ngưỡng riêng
+ * của bác sĩ đè lên mặc định của admin). Chỉ quy tắc được tick mới có hiệu lực; không có quy tắc nào (chưa có đơn,
+ * {@code personalized = false}, hoặc đơn không tick ô nào) thì món không được chấm màu.
  */
 public record DietProfile(Set<DietRuleCode> prescribedRules, boolean personalized,
                           Map<DietRuleCode, DietThreshold> thresholds) {
@@ -20,18 +19,19 @@ public record DietProfile(Set<DietRuleCode> prescribedRules, boolean personalize
         thresholds = Map.copyOf(thresholds);
     }
 
-    /** Chưa có đơn: chỉ bộ quy tắc nền, theo ngưỡng mặc định. */
+    /** Chưa có đơn: không quy tắc nào, món không được chấm màu. */
     public static DietProfile general(Map<DietRuleCode, DietThreshold> defaults) {
         return new DietProfile(Set.of(), false, defaults);
     }
 
+    /** Quy tắc có hiệu lực: bác sĩ tick quy tắc này trong đơn. */
     public boolean enabled(DietRuleCode code) {
-        return code.base() || prescribed(code);
+        return personalized && prescribedRules.contains(code);
     }
 
-    /** Bác sĩ có dặn riêng về quy tắc này trong đơn. */
-    public boolean prescribed(DietRuleCode code) {
-        return personalized && prescribedRules.contains(code);
+    /** Có ít nhất một quy tắc để chấm màu. */
+    public boolean rates() {
+        return personalized && !prescribedRules.isEmpty();
     }
 
     public DietThreshold threshold(DietRuleCode code) {

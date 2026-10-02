@@ -2,46 +2,36 @@ package fit.iuh.se.hsnutrition.entity.enums;
 
 /**
  * Các quy tắc chấm màu thực phẩm cho người rung nhĩ; khóa của bảng nutrition_diet_rules (V27, V28). Ngưỡng nằm trong
- * bảng (admin sửa được), ở đây chỉ là đặc điểm cố định của từng quy tắc:
- * <ul>
- *   <li>{@code priority}: mức ưu tiên 1-4 (1 lọc cứng: cồn, caffeine, đường; 2 điện giải Na/K; 3 ngưỡng tim mạch chung:
- *       natri, chất béo bão hòa; 4 vi chất bảo vệ: magie). Lý do cùng mức màu xếp theo thứ tự này.</li>
- *   <li>{@code base}: áp cho mọi người (bộ quy tắc nền). VITAMIN_K chỉ áp khi đơn ghi đang dùng warfarin.</li>
- *   <li>{@code overridable}: bác sĩ dặn riêng và chỉnh ngưỡng riêng cho từng hội viên được (cờ và cột trong
- *       nutrition_diet_prescriptions, V26, V27, V29). Hiện mọi quy tắc đều chỉnh riêng được.</li>
- * </ul>
- * Thứ tự khai báo là thứ tự hiển thị mặc định.
+ * bảng (admin sửa được). Quy tắc chỉ có hiệu lực với hội viên khi bác sĩ tick quy tắc đó trong đơn ăn uống
+ * (nutrition_diet_prescriptions, V26, V29); chưa có đơn hoặc đơn không tick ô nào thì món không được chấm màu.
+ * <p>
+ * {@code priority}: mức ưu tiên 1-4 (1 lọc cứng: cồn, caffeine, đường; 2 điện giải Na/K; 3 ngưỡng tim mạch chung:
+ * natri, chất béo bão hòa; 4 vi chất bảo vệ: magie; 5 vitamin K cho người dùng warfarin). Lý do cùng mức màu xếp theo
+ * thứ tự này, cũng là thứ tự khai báo.
  */
 public enum DietRuleCode {
-    ALCOHOL(1, true, true),
-    CAFFEINE(1, true, true),
-    SUGARS(1, true, true),
-    NA_K_RATIO(2, true, true),
-    SODIUM(3, true, true),
-    SATURATED_FAT(3, true, true),
-    MAGNESIUM(4, true, true),
-    VITAMIN_K(5, false, true);
+    ALCOHOL(1),
+    CAFFEINE(1),
+    SUGARS(1),
+    NA_K_RATIO(2),
+    SODIUM(3),
+    SATURATED_FAT(3),
+    MAGNESIUM(4),
+    VITAMIN_K(5);
 
     private final int priority;
-    private final boolean base;
-    private final boolean overridable;
 
-    DietRuleCode(int priority, boolean base, boolean overridable) {
+    DietRuleCode(int priority) {
         this.priority = priority;
-        this.base = base;
-        this.overridable = overridable;
     }
 
     public int priority() {
         return priority;
     }
 
-    public boolean base() {
-        return base;
-    }
-
+    /** Bác sĩ chỉnh ngưỡng riêng cho từng hội viên được (mọi quy tắc). */
     public boolean overridable() {
-        return overridable;
+        return true;
     }
 
     /** Quy tắc có mức tốt cho nhịp tim (tỷ lệ Na/K, magie). */

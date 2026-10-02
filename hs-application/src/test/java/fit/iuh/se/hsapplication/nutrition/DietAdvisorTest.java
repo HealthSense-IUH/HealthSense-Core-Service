@@ -16,7 +16,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/** Bộ quy tắc rung nhĩ (V28) trên món giả, không cần cơ sở dữ liệu. */
+/** Bộ quy tắc rung nhĩ (V28) trên món giả, không cần cơ sở dữ liệu. Quy tắc chỉ xét khi bác sĩ tick trong đơn. */
 class DietAdvisorTest {
     /** Ngưỡng khởi tạo của V28. */
     static final Map<DietRuleCode, DietThreshold> V28_DEFAULTS = Map.of(
@@ -28,7 +28,9 @@ class DietAdvisorTest {
             DietRuleCode.SATURATED_FAT, new DietThreshold(5.0, 1.5),
             DietRuleCode.MAGNESIUM, new DietThreshold(null, null, 50.0),
             DietRuleCode.VITAMIN_K, new DietThreshold(null, 100.0));
-    static final DietProfile GENERAL = DietProfile.general(V28_DEFAULTS);
+    /** Bác sĩ tick cả 7 quy tắc (chưa tick warfarin). */
+    static final DietProfile AF = new DietProfile(
+            java.util.EnumSet.complementOf(java.util.EnumSet.of(DietRuleCode.VITAMIN_K)), true, V28_DEFAULTS);
 
     /** Món giả: nhóm + các cặp (tên trường, giá trị). */
     private static NutritionFood food(String group, Object... fields) {
@@ -49,56 +51,56 @@ class DietAdvisorTest {
 
     @Test
     void anyAlcoholIsRedAndThresholdsMeanStrictlyAbove() {
-        DietAdvice beer = DietAdvisor.advise(food("BEVERAGE", "sodiumMg", 4, "alcoholG", 4.5, "caffeineMg", 0), GENERAL);
+        DietAdvice beer = DietAdvisor.advise(food("BEVERAGE", "sodiumMg", 4, "alcoholG", 4.5, "caffeineMg", 0), AF);
         assertEquals("LIMIT", beer.level());
         assertEquals(List.of("ALCOHOL_LIMIT"), codes(beer));
         assertTrue(beer.reasons().getFirst().message().contains("đỏ khi trên 0 g"), beer.toString());
 
         // Đúng bằng ngưỡng thì chưa vượt: 140 mg natri không vàng, 400 mg không đỏ
-        assertEquals("OK", DietAdvisor.advise(food("CEREAL", "sodiumMg", 140), GENERAL).level());
-        assertEquals("CAUTION", DietAdvisor.advise(food("CEREAL", "sodiumMg", 140.5), GENERAL).level());
-        assertEquals("CAUTION", DietAdvisor.advise(food("CEREAL", "sodiumMg", 400), GENERAL).level());
-        assertEquals("LIMIT", DietAdvisor.advise(food("CEREAL", "sodiumMg", 401), GENERAL).level());
+        assertEquals("OK", DietAdvisor.advise(food("CEREAL", "sodiumMg", 140), AF).level());
+        assertEquals("CAUTION", DietAdvisor.advise(food("CEREAL", "sodiumMg", 140.5), AF).level());
+        assertEquals("CAUTION", DietAdvisor.advise(food("CEREAL", "sodiumMg", 400), AF).level());
+        assertEquals("LIMIT", DietAdvisor.advise(food("CEREAL", "sodiumMg", 401), AF).level());
     }
 
     @Test
     void caffeineSugarAndSaturatedFatFollowTheirBands() {
-        DietAdvice espresso = DietAdvisor.advise(food("BEVERAGE", "sodiumMg", 14, "alcoholG", 0, "caffeineMg", 212), GENERAL);
+        DietAdvice espresso = DietAdvisor.advise(food("BEVERAGE", "sodiumMg", 14, "alcoholG", 0, "caffeineMg", 212), AF);
         assertEquals(List.of("CAFFEINE_CAUTION"), codes(espresso));
 
-        DietAdvice candy = DietAdvisor.advise(food("SWEET", "sodiumMg", 50, "sugarsG", 60, "fatSaturatedG", 1), GENERAL);
+        DietAdvice candy = DietAdvisor.advise(food("SWEET", "sodiumMg", 50, "sugarsG", 60, "fatSaturatedG", 1), AF);
         assertEquals(List.of("SUGARS_LIMIT"), codes(candy));
         assertEquals(List.of("SUGARS_CAUTION"),
-                codes(DietAdvisor.advise(food("CEREAL", "sodiumMg", 50, "sugarsG", 5), GENERAL)));
+                codes(DietAdvisor.advise(food("CEREAL", "sodiumMg", 50, "sugarsG", 5), AF)));
 
         // Đường tự nhiên: trái cây và sữa không bị chấm theo đường tổng
-        assertEquals("OK", DietAdvisor.advise(food("FRUIT", "sodiumMg", 1, "sugarsG", 12), GENERAL).level());
-        assertEquals("OK", DietAdvisor.advise(food("DAIRY", "sodiumMg", 44, "sugarsG", 5, "fatSaturatedG", 0.6), GENERAL).level());
+        assertEquals("OK", DietAdvisor.advise(food("FRUIT", "sodiumMg", 1, "sugarsG", 12), AF).level());
+        assertEquals("OK", DietAdvisor.advise(food("DAIRY", "sodiumMg", 44, "sugarsG", 5, "fatSaturatedG", 0.6), AF).level());
 
         assertEquals(List.of("SATURATED_FAT_LIMIT"),
-                codes(DietAdvisor.advise(food("FAT_OIL", "sodiumMg", 2, "fatSaturatedG", 51), GENERAL)));
+                codes(DietAdvisor.advise(food("FAT_OIL", "sodiumMg", 2, "fatSaturatedG", 51), AF)));
         assertEquals(List.of("SATURATED_FAT_CAUTION"),
-                codes(DietAdvisor.advise(food("EGG", "sodiumMg", 124, "fatSaturatedG", 3.1), GENERAL)));
+                codes(DietAdvisor.advise(food("EGG", "sodiumMg", 124, "fatSaturatedG", 3.1), AF)));
     }
 
     @Test
     void sodiumPotassiumRatioIsRedOnlyWhenAlsoSaltyAndGoodWhenPotassiumWins() {
         // Na/K 4 và natri 800 mg -> đỏ, lý do Na/K (ưu tiên 2) đứng trước natri (ưu tiên 3)
-        DietAdvice salty = DietAdvisor.advise(food("MIXED_DISH", "sodiumMg", 800, "potassiumMg", 200), GENERAL);
+        DietAdvice salty = DietAdvisor.advise(food("MIXED_DISH", "sodiumMg", 800, "potassiumMg", 200), AF);
         assertEquals("LIMIT", salty.level());
         assertEquals(List.of("NA_K_RATIO_LIMIT", "SODIUM_LIMIT"), codes(salty));
 
         // Na/K 3 nhưng natri chỉ 300 mg -> không đỏ theo Na/K, chỉ vàng vì muối
         assertEquals(List.of("SODIUM_CAUTION"),
-                codes(DietAdvisor.advise(food("MIXED_DISH", "sodiumMg", 300, "potassiumMg", 100), GENERAL)));
+                codes(DietAdvisor.advise(food("MIXED_DISH", "sodiumMg", 300, "potassiumMg", 100), AF)));
 
         // Kali nhiều hơn natri, không có điểm xấu -> xanh
-        DietAdvice banana = DietAdvisor.advise(food("TUBER", "sodiumMg", 10, "potassiumMg", 400, "magnesiumMg", 20), GENERAL);
+        DietAdvice banana = DietAdvisor.advise(food("TUBER", "sodiumMg", 10, "potassiumMg", 400, "magnesiumMg", 20), AF);
         assertEquals("GOOD", banana.level());
         assertEquals(List.of("NA_K_RATIO_GOOD"), codes(banana));
 
         // Na/K giữa 1 và 2, không gì khác -> không có lưu ý (OK), không tô xanh
-        DietAdvice neutral = DietAdvisor.advise(food("CEREAL", "sodiumMg", 120, "potassiumMg", 80), GENERAL);
+        DietAdvice neutral = DietAdvisor.advise(food("CEREAL", "sodiumMg", 120, "potassiumMg", 80), AF);
         assertEquals("OK", neutral.level());
         assertTrue(neutral.reasons().isEmpty());
     }
@@ -106,17 +108,17 @@ class DietAdvisorTest {
     @Test
     void magnesiumIsGoodOnlyWhenLowInSaltAndConcernsBeatStrengths() {
         DietAdvice almonds = DietAdvisor.advise(food("LEGUMES_NUTS", "sodiumMg", 1, "potassiumMg", 733,
-                "magnesiumMg", 270, "fatSaturatedG", 1.2), GENERAL);
+                "magnesiumMg", 270, "fatSaturatedG", 1.2), AF);
         assertEquals("GOOD", almonds.level());
         assertEquals(List.of("NA_K_RATIO_GOOD", "MAGNESIUM_GOOD"), codes(almonds));
 
         // Nhiều magie nhưng mặn -> không được điểm magie
         DietAdvice saltedNuts = DietAdvisor.advise(food("LEGUMES_NUTS", "sodiumMg", 300, "potassiumMg", 600,
-                "magnesiumMg", 270), GENERAL);
+                "magnesiumMg", 270), AF);
         assertEquals(List.of("SODIUM_CAUTION"), codes(saltedNuts), "a concern hides the strengths");
 
         // Thiếu số liệu natri: không đoán, không cho điểm magie
-        DietAdvice unknown = DietAdvisor.advise(food("LEGUMES_NUTS", "magnesiumMg", 270), GENERAL);
+        DietAdvice unknown = DietAdvisor.advise(food("LEGUMES_NUTS", "magnesiumMg", 270), AF);
         assertEquals("UNKNOWN", unknown.level());
         assertEquals(List.of("SODIUM_UNKNOWN"), codes(unknown));
     }
@@ -124,7 +126,7 @@ class DietAdvisorTest {
     @Test
     void prescriptionAddsVitaminKAndPersonalizesTheMessages() {
         NutritionFood spinach = food("VEGETABLE", "sodiumMg", 79, "potassiumMg", 558, "magnesiumMg", 79, "vitaminKMcg", 483);
-        assertEquals("GOOD", DietAdvisor.advise(spinach, GENERAL).level());
+        assertEquals("GOOD", DietAdvisor.advise(spinach, AF).level());
 
         DietProfile warfarin = new DietProfile(java.util.Set.of(DietRuleCode.SODIUM, DietRuleCode.VITAMIN_K), true, V28_DEFAULTS);
         DietAdvice onWarfarin = DietAdvisor.advise(spinach, warfarin);
@@ -133,6 +135,19 @@ class DietAdvisorTest {
 
         NutritionFood soup = food("MIXED_DISH", "sodiumMg", 500, "potassiumMg", 400);
         assertTrue(DietAdvisor.advise(soup, warfarin).reasons().getFirst().message().contains("Bác sĩ dặn bạn hạn chế muối"));
-        assertTrue(DietAdvisor.advise(soup, GENERAL).reasons().getFirst().message().contains("Người rung nhĩ nên hạn chế muối"));
+        assertTrue(DietAdvisor.advise(soup, AF).reasons().getFirst().message().contains("Bác sĩ dặn bạn hạn chế muối"));
+    }
+
+    @Test
+    void onlyTheRulesTheDoctorTickedAreRatedAndNoPrescriptionMeansNoRating() {
+        NutritionFood beer = food("BEVERAGE", "sodiumMg", 4, "alcoholG", 4.5, "caffeineMg", 0);
+        assertNull(DietAdvisor.advise(beer, DietProfile.general(V28_DEFAULTS)), "no prescription, no colour");
+        assertNull(DietAdvisor.advise(beer, new DietProfile(java.util.Set.of(), true, V28_DEFAULTS)), "nothing ticked");
+
+        // Chỉ tick muối: bia không bị đỏ vì cồn
+        DietProfile sodiumOnly = new DietProfile(java.util.Set.of(DietRuleCode.SODIUM), true, V28_DEFAULTS);
+        assertEquals("OK", DietAdvisor.advise(beer, sodiumOnly).level());
+        assertEquals(List.of("SODIUM_LIMIT"),
+                codes(DietAdvisor.advise(food("MIXED_DISH", "sodiumMg", 800, "potassiumMg", 200), sodiumOnly)));
     }
 }

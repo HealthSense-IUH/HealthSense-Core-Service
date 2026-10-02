@@ -18,8 +18,8 @@ public record NutritionDietPrescriptionResponse(
         List<Rule> rules) {
 
     /**
-     * {@code enabled}: quy tắc đang áp dụng cho hội viên (bộ quy tắc nền luôn áp dụng; vitamin K khi dùng warfarin);
-     * {@code prescribed}: bác sĩ dặn riêng; {@code overridable}: bác sĩ chỉnh ngưỡng riêng được;
+     * {@code enabled} / {@code prescribed}: bác sĩ tick quy tắc này (chỉ khi đó quy tắc mới có hiệu lực);
+     * {@code overridable}: bác sĩ chỉnh ngưỡng riêng được;
      * {@code default*}: ngưỡng mặc định (admin); {@code limit}/{@code caution}/{@code good}: ngưỡng riêng của hội
      * viên (vắng = dùng mặc định); {@code effective*}: ngưỡng thực sự dùng để chấm màu.
      */

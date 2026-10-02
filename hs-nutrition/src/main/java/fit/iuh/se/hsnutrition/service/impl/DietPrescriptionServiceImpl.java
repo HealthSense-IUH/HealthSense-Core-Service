@@ -141,7 +141,7 @@ public class DietPrescriptionServiceImpl implements DietPrescriptionService {
     private static NutritionDietPrescriptionResponse general(Long memberId, List<DietRuleResponse> definitions) {
         List<Rule> ruleList = definitions.stream().map(d -> {
             DietRuleCode code = DietRuleCode.valueOf(d.code());
-            return new Rule(d.code(), d.name(), d.unit(), code.base(), false, code.overridable(), d.limit(),
+            return new Rule(d.code(), d.name(), d.unit(), false, false, code.overridable(), d.limit(),
                     d.caution(), d.good(), null, null, null, d.limit(), d.caution(), d.good());
         }).toList();
         return new NutritionDietPrescriptionResponse(memberId, false, false, false, false, false, false, false, false,
@@ -158,7 +158,7 @@ public class DietPrescriptionServiceImpl implements DietPrescriptionService {
             Double good = NutrientMapper.amount(override[2]);
             DietThreshold effective = new DietThreshold(d.limit(), d.caution(), d.good()).overriddenBy(limit, caution, good);
             boolean prescribed = p.isEnabled(code);
-            return new Rule(d.code(), d.name(), d.unit(), code.base() || prescribed, prescribed, code.overridable(),
+            return new Rule(d.code(), d.name(), d.unit(), prescribed, prescribed, code.overridable(),
                     d.limit(), d.caution(), d.good(), limit, caution, good, effective.limit(), effective.caution(),
                     effective.good());
         }).toList();

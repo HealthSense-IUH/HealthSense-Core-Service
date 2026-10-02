@@ -78,7 +78,7 @@ public class DietRuleServiceImpl implements DietRuleService {
         DietRuleCode code = rule.getCode();
         return new DietRuleResponse(code.name(), rule.getName(), rule.getUnit(),
                 NutrientMapper.amount(rule.getLimitThreshold()), NutrientMapper.amount(rule.getCautionThreshold()),
-                NutrientMapper.amount(rule.getGoodThreshold()), code.priority(), code.base(), code.overridable(),
+                NutrientMapper.amount(rule.getGoodThreshold()), code.priority(), code.overridable(),
                 rule.getEvidence(), rule.getEvidenceUrl(), rule.getUpdatedAt(), rule.getUpdatedBy());
     }
 }

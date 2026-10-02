@@ -393,9 +393,9 @@ class NutritionHttpTest {
     void onlyAdminsReadAndChangeDefaultThresholds() throws Exception {
         String path = "/api/admin/nutrition/diet-rules";
         DietRuleService rules = context.getBean(DietRuleService.class);
-        var sodium = new DietRuleResponse("SODIUM", "Muối (natri)", "mg", 500.0, 100.0, null, 3, true, true,
+        var sodium = new DietRuleResponse("SODIUM", "Muối (natri)", "mg", 500.0, 100.0, null, 3, true,
                 "Fung TT, et al. Arch Intern Med 2008", "https://pubmed.ncbi.nlm.nih.gov/18413553/", null, null);
-        var ratio = new DietRuleResponse("NA_K_RATIO", "Tỷ lệ natri/kali", "", 2.0, null, 1.0, 2, true, false,
+        var ratio = new DietRuleResponse("NA_K_RATIO", "Tỷ lệ natri/kali", "", 2.0, null, 1.0, 2, false,
                 null, null, null, null);
         when(rules.list()).thenReturn(List.of(sodium, ratio));
         when(rules.update(List.of(new DietThresholdRequest("SODIUM", 500.0, 100.0)))).thenReturn(List.of(sodium));

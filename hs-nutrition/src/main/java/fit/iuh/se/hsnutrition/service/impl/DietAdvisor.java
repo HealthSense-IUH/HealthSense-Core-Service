@@ -14,8 +14,9 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Chấm màu một thực phẩm cho người rung nhĩ, trên số liệu 100 g phần ăn được. Ngưỡng không cố định trong code: admin
- * đặt mặc định (nutrition_diet_rules), bác sĩ chỉnh riêng một số quy tắc cho từng hội viên (xem DietProfile).
+ * Chấm màu một thực phẩm cho người rung nhĩ theo đơn ăn uống, trên số liệu 100 g phần ăn được. Chỉ các quy tắc bác sĩ
+ * tick trong đơn mới được xét; đơn không có quy tắc nào (hoặc chưa có đơn) thì không chấm màu (trả về null). Ngưỡng
+ * không cố định trong code: admin đặt mặc định (nutrition_diet_rules), bác sĩ chỉnh riêng cho từng hội viên.
  * <p>
  * Thứ tự ưu tiên (V28):
  * <ol>
@@ -46,7 +47,9 @@ public final class DietAdvisor {
 
     private DietAdvisor() {}
 
+    /** null khi đơn không có quy tắc nào để xét. */
     public static DietAdvice advise(NutritionFood food, DietProfile profile) {
+        if (!profile.rates()) return null;
         String group = food.getGroup() == null ? null : food.getGroup().getId();
         List<Reason> concerns = new ArrayList<>();
         List<Reason> strengths = new ArrayList<>();
@@ -82,7 +85,7 @@ public final class DietAdvisor {
             return required ? new Reason(code + "_UNKNOWN", UNKNOWN, "Chưa có số liệu " + noun(code) + " của món này.") : null;
         }
         DietThreshold threshold = profile.threshold(code);
-        boolean prescribed = profile.prescribed(code);
+        boolean prescribed = profile.enabled(code);
         if (threshold.limit() != null && value > threshold.limit())
             return new Reason(code + "_LIMIT", LIMIT, limitMessage(code, value, threshold.limit(), prescribed));
         if (threshold.caution() != null && value > threshold.caution())
@@ -102,7 +105,7 @@ public final class DietAdvisor {
             return new Reason("NA_K_RATIO_LIMIT", LIMIT, "Natri cao hơn nhiều so với kali (Na/K " + format(ratio)
                     + ", đỏ khi trên " + format(threshold.limit()) + (saltyFrom == null ? "" : " và natri trên "
                     + format(saltyFrom) + " mg") + "): dễ gây giữ nước, tăng áp lực lên tim và khởi phát rung nhĩ."
-                    + (profile.prescribed(DietRuleCode.NA_K_RATIO) ? " Bác sĩ dặn bạn theo dõi tỷ lệ natri/kali." : ""));
+                    + (profile.enabled(DietRuleCode.NA_K_RATIO) ? " Bác sĩ dặn bạn theo dõi tỷ lệ natri/kali." : ""));
         if (threshold.good() != null && ratio <= threshold.good())
             return new Reason("NA_K_RATIO_GOOD", GOOD, "Kali bằng hoặc nhiều hơn natri (Na/K " + format(ratio)
                     + "): giúp ổn định nhịp tim.");
@@ -118,7 +121,7 @@ public final class DietAdvisor {
         if (magnesium == null || goodFrom == null || magnesium < goodFrom) return null;
         if (lowSaltUpTo != null && (sodium == null || sodium > lowSaltUpTo)) return null;
         return new Reason("MAGNESIUM_GOOD", GOOD, "Giàu magie (" + format(magnesium) + " mg/100 g) và ít muối: "
-                + "hỗ trợ ổn định điện thế cơ tim." + (profile.prescribed(DietRuleCode.MAGNESIUM)
+                + "hỗ trợ ổn định điện thế cơ tim." + (profile.enabled(DietRuleCode.MAGNESIUM)
                 ? " Bác sĩ khuyến khích bạn ăn món giàu magie." : ""));
     }
 
@@ -190,7 +193,7 @@ public final class DietAdvisor {
     }
 
     private static String advisedBy(boolean prescribed, String advice) {
-        return prescribed ? "Bác sĩ dặn bạn " + advice : "Người rung nhĩ nên " + advice;
+        return prescribed ? "Bác sĩ dặn bạn " + advice : "Nên " + advice;
     }
 
     private static String format(double amount) {
