@@ -82,6 +82,8 @@ public class DietPrescriptionServiceImpl implements DietPrescriptionService {
         for (DietThresholdRequest request : thresholds) {
             DietRuleCode code = DietRuleService.parseCode(request.code());
             if (!seen.add(code)) throw AppException.of(ErrorCode.INVALID_PARAMETER, "detail.diet-rule-duplicate", code);
+            if (!code.overridable() || request.good() != null)
+                throw AppException.of(ErrorCode.INVALID_PARAMETER, "detail.diet-rule-not-overridable", code);
             DietThreshold override = new DietThreshold(request.limit(), request.caution()).validated(code.name());
             defaults.getOrDefault(code, new DietThreshold(null, null))
                     .overriddenBy(override.limit(), override.caution()).validated(code.name());
@@ -116,8 +118,8 @@ public class DietPrescriptionServiceImpl implements DietPrescriptionService {
         DietProfile general = DietProfile.general(Map.of());
         List<Rule> ruleList = definitions.stream().map(d -> {
             DietRuleCode code = DietRuleCode.valueOf(d.code());
-            return new Rule(d.code(), d.name(), d.unit(), general.enabled(code), d.limit(), d.caution(), null, null,
-                    d.limit(), d.caution());
+            return new Rule(d.code(), d.name(), d.unit(), general.enabled(code), false, code.overridable(), d.limit(),
+                    d.caution(), null, null, d.limit(), d.caution(), d.good());
         }).toList();
         return new NutritionDietPrescriptionResponse(memberId, false, general.limitSodium(), general.onWarfarin(),
                 general.avoidAlcohol(), general.limitCaffeine(), null, null, null, null, ruleList);
@@ -131,8 +133,9 @@ public class DietPrescriptionServiceImpl implements DietPrescriptionService {
             Double limit = NutrientMapper.amount(override[0]);
             Double caution = NutrientMapper.amount(override[1]);
             DietThreshold effective = new DietThreshold(d.limit(), d.caution()).overriddenBy(limit, caution);
-            return new Rule(d.code(), d.name(), d.unit(), p.isEnabled(code), d.limit(), d.caution(), limit, caution,
-                    effective.limit(), effective.caution());
+            boolean prescribed = p.isEnabled(code);
+            return new Rule(d.code(), d.name(), d.unit(), code.base() || prescribed, prescribed, code.overridable(),
+                    d.limit(), d.caution(), limit, caution, effective.limit(), effective.caution(), d.good());
         }).toList();
         return new NutritionDietPrescriptionResponse(p.getMemberId(), true, p.isLimitSodium(), p.isOnWarfarin(),
                 p.isAvoidAlcohol(), p.isLimitCaffeine(), p.getNote(), p.getPrescribedBy(), p.getConsultationSessionId(),

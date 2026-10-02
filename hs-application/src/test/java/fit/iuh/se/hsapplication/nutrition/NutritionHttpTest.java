@@ -317,8 +317,8 @@ class NutritionHttpTest {
     private static NutritionDietPrescriptionResponse prescription() {
         return new NutritionDietPrescriptionResponse(123L, true, true, true, true, false, "Ăn thêm cá",
                 77L, 555L, java.time.Instant.parse("2026-09-28T01:02:03Z"),
-                List.of(new NutritionDietPrescriptionResponse.Rule("SODIUM", "Muối (natri)", "mg", true, 600.0, 120.0,
-                        400.0, null, 400.0, 120.0)));
+                List.of(new NutritionDietPrescriptionResponse.Rule("SODIUM", "Muối (natri)", "mg", true, true, true, 400.0,
+                        140.0, 300.0, null, 300.0, 140.0, null)));
     }
 
     @Test
@@ -335,10 +335,12 @@ class NutritionHttpTest {
                 .andExpect(jsonPath("$.data.note").value("Ăn thêm cá"))
                 .andExpect(jsonPath("$.data.consultationSessionId").value(555))
                 .andExpect(jsonPath("$.data.rules[0].code").value("SODIUM"))
-                .andExpect(jsonPath("$.data.rules[0].defaultLimit").value(600.0))
-                .andExpect(jsonPath("$.data.rules[0].limit").value(400.0))
+                .andExpect(jsonPath("$.data.rules[0].defaultLimit").value(400.0))
+                .andExpect(jsonPath("$.data.rules[0].limit").value(300.0))
                 .andExpect(jsonPath("$.data.rules[0].caution").doesNotExist())
-                .andExpect(jsonPath("$.data.rules[0].effectiveCaution").value(120.0));
+                .andExpect(jsonPath("$.data.rules[0].effectiveCaution").value(140.0))
+                .andExpect(jsonPath("$.data.rules[0].prescribed").value(true))
+                .andExpect(jsonPath("$.data.rules[0].overridable").value(true));
         mvc.perform(get("/api/nutrition/diet-prescription/me").with(authentication(actor(UserRole.DOCTOR))))
                 .andExpect(status().isForbidden());
     }
@@ -370,8 +372,11 @@ class NutritionHttpTest {
     void onlyAdminsReadAndChangeDefaultThresholds() throws Exception {
         String path = "/api/admin/nutrition/diet-rules";
         DietRuleService rules = context.getBean(DietRuleService.class);
-        var sodium = new DietRuleResponse("SODIUM", "Muối (natri)", "mg", 500.0, 100.0, null, null);
-        when(rules.list()).thenReturn(List.of(sodium));
+        var sodium = new DietRuleResponse("SODIUM", "Muối (natri)", "mg", 500.0, 100.0, null, 3, true, true,
+                "Fung TT, et al. Arch Intern Med 2008", "https://pubmed.ncbi.nlm.nih.gov/18413553/", null, null);
+        var ratio = new DietRuleResponse("NA_K_RATIO", "Tỷ lệ natri/kali", "", 2.0, null, 1.0, 2, true, false,
+                null, null, null, null);
+        when(rules.list()).thenReturn(List.of(sodium, ratio));
         when(rules.update(List.of(new DietThresholdRequest("SODIUM", 500.0, 100.0)))).thenReturn(List.of(sodium));
 
         mvc.perform(get(path)).andExpect(status().isUnauthorized());
@@ -381,7 +386,16 @@ class NutritionHttpTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].code").value("SODIUM"))
                 .andExpect(jsonPath("$.data[0].limit").value(500.0))
-                .andExpect(jsonPath("$.data[0].unit").value("mg"));
+                .andExpect(jsonPath("$.data[0].unit").value("mg"))
+                .andExpect(jsonPath("$.data[0].evidenceUrl").value("https://pubmed.ncbi.nlm.nih.gov/18413553/"))
+                .andExpect(jsonPath("$.data[1].good").value(1.0))
+                .andExpect(jsonPath("$.data[1].caution").doesNotExist())
+                .andExpect(jsonPath("$.data[1].overridable").value(false));
+        mvc.perform(put(path).with(authentication(actor(UserRole.ADMIN))).with(csrf())
+                        .contentType("application/json")
+                        .content("[{\"code\":\"MAGNESIUM\",\"good\":60}]"))
+                .andExpect(status().isOk());
+        verify(rules).update(List.of(new DietThresholdRequest("MAGNESIUM", null, null, 60.0)));
         mvc.perform(put(path).with(authentication(actor(UserRole.SUPER_ADMIN))).with(csrf())
                         .contentType("application/json")
                         .content("[{\"code\":\"SODIUM\",\"limit\":500,\"caution\":100}]"))

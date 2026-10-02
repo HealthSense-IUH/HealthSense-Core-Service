@@ -99,6 +99,7 @@ public class NutritionDietPrescription {
             case ALCOHOL -> avoidAlcohol;
             case CAFFEINE -> limitCaffeine;
             case VITAMIN_K -> onWarfarin;
+            default -> false;
         };
     }
 
@@ -109,6 +110,7 @@ public class NutritionDietPrescription {
             case ALCOHOL -> new BigDecimal[]{alcoholLimit, alcoholCaution};
             case CAFFEINE -> new BigDecimal[]{caffeineLimit, caffeineCaution};
             case VITAMIN_K -> new BigDecimal[]{vitaminKLimit, vitaminKCaution};
+            default -> new BigDecimal[]{null, null};
         };
     }
 
@@ -118,6 +120,10 @@ public class NutritionDietPrescription {
             case ALCOHOL -> { alcoholLimit = limit; alcoholCaution = caution; }
             case CAFFEINE -> { caffeineLimit = limit; caffeineCaution = caution; }
             case VITAMIN_K -> { vitaminKLimit = limit; vitaminKCaution = caution; }
+            default -> {
+                if (limit != null || caution != null)
+                    throw new IllegalArgumentException(code + " has no per-member threshold");
+            }
         }
     }
 }

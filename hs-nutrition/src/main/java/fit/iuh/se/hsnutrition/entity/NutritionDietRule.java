@@ -24,8 +24,9 @@ import java.math.BigDecimal;
 import java.time.Instant;
 
 /**
- * Ngưỡng mặc định của một quy tắc chấm màu (V27), admin sửa được. Trên 100 g phần ăn được, so "từ mức này trở lên":
- * >= limitThreshold là đỏ, >= cautionThreshold là vàng; null = quy tắc không có mức đó.
+ * Ngưỡng mặc định của một quy tắc chấm màu (V27, V28), admin sửa được. Trên 100 g phần ăn được, so "vượt quá mức này":
+ * > limitThreshold là đỏ, > cautionThreshold là vàng; goodThreshold là mức tốt cho nhịp tim (tỷ lệ Na/K: từ mức này
+ * trở xuống; magie: từ mức này trở lên). null = quy tắc không có mức đó. evidence / evidenceUrl: nguồn của quy tắc.
  */
 @Entity
 @Table(name = "nutrition_diet_rules")
@@ -48,6 +49,15 @@ public class NutritionDietRule {
     BigDecimal limitThreshold;
     @Column(name = "caution_threshold", precision = 10, scale = 3)
     BigDecimal cautionThreshold;
+
+    @Column(name = "good_threshold", precision = 10, scale = 3)
+    BigDecimal goodThreshold;
+
+    @Column(columnDefinition = "TEXT")
+    String evidence;
+
+    @Column(name = "evidence_url", length = 500)
+    String evidenceUrl;
     @Column(name = "display_order", nullable = false)
     int displayOrder;
 

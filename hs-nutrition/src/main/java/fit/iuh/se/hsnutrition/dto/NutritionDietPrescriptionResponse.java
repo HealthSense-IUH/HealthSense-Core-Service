@@ -17,11 +17,13 @@ public record NutritionDietPrescriptionResponse(
         List<Rule> rules) {
 
     /**
+     * {@code enabled}: quy tắc đang áp dụng cho hội viên (bộ quy tắc nền luôn áp dụng; vitamin K khi dùng warfarin);
+     * {@code prescribed}: bác sĩ dặn riêng; {@code overridable}: bác sĩ chỉnh ngưỡng riêng được;
      * {@code limit}/{@code caution}: ngưỡng riêng của hội viên (vắng = dùng mặc định);
-     * {@code effectiveLimit}/{@code effectiveCaution}: ngưỡng thực sự dùng để chấm màu.
+     * {@code effectiveLimit}/{@code effectiveCaution}: ngưỡng thực sự dùng để chấm màu; {@code good}: mức tốt.
      */
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    public record Rule(String code, String name, String unit, boolean enabled, Double defaultLimit,
-                       Double defaultCaution, Double limit, Double caution, Double effectiveLimit,
-                       Double effectiveCaution) {}
+    public record Rule(String code, String name, String unit, boolean enabled, boolean prescribed, boolean overridable,
+                       Double defaultLimit, Double defaultCaution, Double limit, Double caution, Double effectiveLimit,
+                       Double effectiveCaution, Double good) {}
 }
