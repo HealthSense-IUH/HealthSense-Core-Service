@@ -32,6 +32,7 @@ import fit.iuh.se.hsuser.entity.enums.UserRole;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import fit.iuh.se.hsnutrition.entity.enums.DietRuleCode;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -252,7 +253,7 @@ class NutritionHttpTest {
         var pho = new NutritionReferenceFoodSummaryResponse("2707124", "USDA_FNDDS", "28310330",
                 "Soup, pho, with meat", "Phở có thịt", "MIXED_DISH", "Món ăn hỗn hợp", 77.0, 5.81, 5.6, null,
                 new DietAdvice("CAUTION", List.of(new DietAdvice.Reason("SODIUM_MEDIUM", "CAUTION", "Muối ở mức vừa")), true));
-        DietProfile diet = new DietProfile(true, true, true, false, true, java.util.Map.of());
+        DietProfile diet = new DietProfile(java.util.Set.of(DietRuleCode.SODIUM), true, java.util.Map.of());
         when(prescriptions.profileOf(123L)).thenReturn(diet);
         when(reference.searchFoods("pho", "MIXED_DISH", "USDA_FNDDS", 2, 10, diet)).thenReturn(
                 new PageResponse<>(new PageImpl<>(List.of(pho), PageRequest.of(1, 10), 11)));
@@ -315,10 +316,12 @@ class NutritionHttpTest {
     // ---------------------------------------------------------------- diet prescription
 
     private static NutritionDietPrescriptionResponse prescription() {
-        return new NutritionDietPrescriptionResponse(123L, true, true, true, true, false, "Ăn thêm cá",
-                77L, 555L, java.time.Instant.parse("2026-09-28T01:02:03Z"),
+        return new NutritionDietPrescriptionResponse(123L, true, true, true, true, false, true, false, false, true,
+                "Ăn thêm cá", 77L, 555L, java.time.Instant.parse("2026-09-28T01:02:03Z"),
                 List.of(new NutritionDietPrescriptionResponse.Rule("SODIUM", "Muối (natri)", "mg", true, true, true, 400.0,
-                        140.0, 300.0, null, 300.0, 140.0, null)));
+                        140.0, null, 300.0, null, null, 300.0, 140.0, null),
+                        new NutritionDietPrescriptionResponse.Rule("MAGNESIUM", "Magie", "mg", true, true, true, null,
+                                null, 50.0, null, null, 70.0, null, null, 70.0)));
     }
 
     @Test
@@ -340,7 +343,13 @@ class NutritionHttpTest {
                 .andExpect(jsonPath("$.data.rules[0].caution").doesNotExist())
                 .andExpect(jsonPath("$.data.rules[0].effectiveCaution").value(140.0))
                 .andExpect(jsonPath("$.data.rules[0].prescribed").value(true))
-                .andExpect(jsonPath("$.data.rules[0].overridable").value(true));
+                .andExpect(jsonPath("$.data.rules[0].overridable").value(true))
+                .andExpect(jsonPath("$.data.limitSugars").value(true))
+                .andExpect(jsonPath("$.data.encourageMagnesium").value(true))
+                .andExpect(jsonPath("$.data.watchSodiumPotassium").value(false))
+                .andExpect(jsonPath("$.data.rules[1].defaultGood").value(50.0))
+                .andExpect(jsonPath("$.data.rules[1].good").value(70.0))
+                .andExpect(jsonPath("$.data.rules[1].effectiveGood").value(70.0));
         mvc.perform(get("/api/nutrition/diet-prescription/me").with(authentication(actor(UserRole.DOCTOR))))
                 .andExpect(status().isForbidden());
     }
@@ -362,6 +371,18 @@ class NutritionHttpTest {
                                 + "\"note\":\"Ăn thêm cá\",\"thresholds\":[{\"code\":\"SODIUM\",\"limit\":400}]}"))
                 .andExpect(status().isOk());
         verify(doctorPrescriptions).update(123L, 555L, body);
+
+        // Các cờ thêm ở V29 và mức tốt riêng (magie)
+        var extended = new UpdateDietPrescriptionRequest(false, false, false, false, true, true, false, true, null,
+                List.of(new DietThresholdRequest("MAGNESIUM", null, null, 70.0)));
+        when(doctorPrescriptions.update(123L, 555L, extended)).thenReturn(prescription());
+        mvc.perform(put(path).with(authentication(actor(UserRole.DOCTOR))).with(csrf())
+                        .contentType("application/json")
+                        .content("{\"limitSodium\":false,\"onWarfarin\":false,\"avoidAlcohol\":false,\"limitCaffeine\":false,"
+                                + "\"limitSugars\":true,\"watchSodiumPotassium\":true,\"encourageMagnesium\":true,"
+                                + "\"thresholds\":[{\"code\":\"MAGNESIUM\",\"good\":70}]}"))
+                .andExpect(status().isOk());
+        verify(doctorPrescriptions).update(123L, 555L, extended);
 
         for (UserRole role : List.of(UserRole.MEMBER, UserRole.ADMIN))
             mvc.perform(get(path).with(authentication(actor(role)))).andExpect(status().isForbidden());

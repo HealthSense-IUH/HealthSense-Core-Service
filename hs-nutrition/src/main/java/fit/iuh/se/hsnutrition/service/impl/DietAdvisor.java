@@ -101,7 +101,8 @@ public final class DietAdvisor {
         if (threshold.limit() != null && ratio > threshold.limit() && (saltyFrom == null || sodium > saltyFrom))
             return new Reason("NA_K_RATIO_LIMIT", LIMIT, "Natri cao hơn nhiều so với kali (Na/K " + format(ratio)
                     + ", đỏ khi trên " + format(threshold.limit()) + (saltyFrom == null ? "" : " và natri trên "
-                    + format(saltyFrom) + " mg") + "): dễ gây giữ nước, tăng áp lực lên tim và khởi phát rung nhĩ.");
+                    + format(saltyFrom) + " mg") + "): dễ gây giữ nước, tăng áp lực lên tim và khởi phát rung nhĩ."
+                    + (profile.prescribed(DietRuleCode.NA_K_RATIO) ? " Bác sĩ dặn bạn theo dõi tỷ lệ natri/kali." : ""));
         if (threshold.good() != null && ratio <= threshold.good())
             return new Reason("NA_K_RATIO_GOOD", GOOD, "Kali bằng hoặc nhiều hơn natri (Na/K " + format(ratio)
                     + "): giúp ổn định nhịp tim.");
@@ -117,7 +118,8 @@ public final class DietAdvisor {
         if (magnesium == null || goodFrom == null || magnesium < goodFrom) return null;
         if (lowSaltUpTo != null && (sodium == null || sodium > lowSaltUpTo)) return null;
         return new Reason("MAGNESIUM_GOOD", GOOD, "Giàu magie (" + format(magnesium) + " mg/100 g) và ít muối: "
-                + "hỗ trợ ổn định điện thế cơ tim.");
+                + "hỗ trợ ổn định điện thế cơ tim." + (profile.prescribed(DietRuleCode.MAGNESIUM)
+                ? " Bác sĩ khuyến khích bạn ăn món giàu magie." : ""));
     }
 
     private static String limitMessage(DietRuleCode code, double value, double limit, boolean prescribed) {
@@ -126,9 +128,10 @@ public final class DietAdvisor {
             case ALCOHOL -> "Có cồn: " + amount + ". " + advisedBy(prescribed, "tránh rượu bia")
                     + "; cồn là yếu tố kích phát cơn rung nhĩ rõ nhất.";
             case CAFFEINE -> "Rất nhiều caffeine: " + amount + ". " + advisedBy(prescribed, "hạn chế caffeine") + ".";
-            case SUGARS -> "Nhiều đường: " + amount + ". Người rung nhĩ nên hạn chế đồ ngọt.";
+            case SUGARS -> "Nhiều đường: " + amount + ". " + advisedBy(prescribed, "hạn chế đồ ngọt") + ".";
             case SODIUM -> "Nhiều muối: " + amount + ". " + advisedBy(prescribed, "hạn chế muối") + ".";
-            case SATURATED_FAT -> "Nhiều chất béo bão hòa: " + amount + ". Nên hạn chế.";
+            case SATURATED_FAT -> "Nhiều chất béo bão hòa: " + amount + ". "
+                    + advisedBy(prescribed, "hạn chế chất béo bão hòa") + ".";
             case VITAMIN_K -> "Rất nhiều vitamin K: " + amount + ". Bạn đang dùng warfarin: hỏi bác sĩ trước khi ăn "
                     + "món này thường xuyên.";
             default -> throw new IllegalStateException("No threshold message for " + code);

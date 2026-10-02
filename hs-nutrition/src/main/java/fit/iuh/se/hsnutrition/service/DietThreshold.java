@@ -25,10 +25,10 @@ public record DietThreshold(Double limit, Double caution, Double good) {
         return this;
     }
 
-    /** Ngưỡng riêng đè lên mặc định theo từng mức; mức nào để trống thì lấy mặc định. Mức tốt không chỉnh riêng. */
-    public DietThreshold overriddenBy(Double overrideLimit, Double overrideCaution) {
+    /** Ngưỡng riêng đè lên mặc định theo từng mức; mức nào để trống thì lấy mặc định. */
+    public DietThreshold overriddenBy(Double overrideLimit, Double overrideCaution, Double overrideGood) {
         return new DietThreshold(overrideLimit != null ? overrideLimit : limit,
-                overrideCaution != null ? overrideCaution : caution, good);
+                overrideCaution != null ? overrideCaution : caution, overrideGood != null ? overrideGood : good);
     }
 
     private static void check(String label, Double value) {

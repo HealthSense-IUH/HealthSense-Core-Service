@@ -47,12 +47,21 @@ public class NutritionDietPrescription {
     boolean avoidAlcohol;
     @Column(name = "limit_caffeine", nullable = false)
     boolean limitCaffeine;
+    /** Bác sĩ dặn riêng các quy tắc thêm ở V29 (quy tắc nền vẫn luôn áp dụng; cờ để nhấn mạnh và chỉnh ngưỡng). */
+    @Column(name = "limit_sugars", nullable = false)
+    boolean limitSugars;
+    @Column(name = "watch_sodium_potassium", nullable = false)
+    boolean watchSodiumPotassium;
+    @Column(name = "limit_saturated_fat", nullable = false)
+    boolean limitSaturatedFat;
+    @Column(name = "encourage_magnesium", nullable = false)
+    boolean encourageMagnesium;
     @Column(length = 1000)
     String note;
 
     /**
-     * Ngưỡng bác sĩ chỉnh riêng cho hội viên này (V27); null = dùng ngưỡng mặc định ở nutrition_diet_rules.
-     * limit = từ mức này là đỏ, caution = từ mức này là vàng, trên 100 g.
+     * Ngưỡng bác sĩ chỉnh riêng cho hội viên này (V27, V29); null = dùng ngưỡng mặc định ở nutrition_diet_rules.
+     * limit = vượt quá là đỏ, caution = vượt quá là vàng, trên 100 g (tỷ lệ Na/K không có đơn vị).
      */
     @Column(name = "sodium_limit", precision = 10, scale = 3)
     BigDecimal sodiumLimit;
@@ -70,6 +79,21 @@ public class NutritionDietPrescription {
     BigDecimal vitaminKLimit;
     @Column(name = "vitamin_k_caution", precision = 10, scale = 3)
     BigDecimal vitaminKCaution;
+    @Column(name = "sugars_limit", precision = 10, scale = 3)
+    BigDecimal sugarsLimit;
+    @Column(name = "sugars_caution", precision = 10, scale = 3)
+    BigDecimal sugarsCaution;
+    @Column(name = "saturated_fat_limit", precision = 10, scale = 3)
+    BigDecimal saturatedFatLimit;
+    @Column(name = "saturated_fat_caution", precision = 10, scale = 3)
+    BigDecimal saturatedFatCaution;
+    @Column(name = "na_k_ratio_limit", precision = 10, scale = 3)
+    BigDecimal naKRatioLimit;
+    /** Mức tốt riêng: tỷ lệ Na/K từ mức này trở xuống; magie từ mức này trở lên. */
+    @Column(name = "na_k_ratio_good", precision = 10, scale = 3)
+    BigDecimal naKRatioGood;
+    @Column(name = "magnesium_good", precision = 10, scale = 3)
+    BigDecimal magnesiumGood;
 
     /** Bác sĩ kê lần gần nhất và phiên tư vấn khi kê. */
     @Column(name = "prescribed_by", nullable = false)
@@ -93,37 +117,45 @@ public class NutritionDietPrescription {
     @Column(name = "updated_by")
     String updatedBy;
 
+    /** Bác sĩ có dặn riêng quy tắc này (với VITAMIN_K: đang dùng warfarin, bật thêm quy tắc vitamin K). */
     public boolean isEnabled(DietRuleCode code) {
         return switch (code) {
-            case SODIUM -> limitSodium;
             case ALCOHOL -> avoidAlcohol;
             case CAFFEINE -> limitCaffeine;
+            case SUGARS -> limitSugars;
+            case NA_K_RATIO -> watchSodiumPotassium;
+            case SODIUM -> limitSodium;
+            case SATURATED_FAT -> limitSaturatedFat;
+            case MAGNESIUM -> encourageMagnesium;
             case VITAMIN_K -> onWarfarin;
-            default -> false;
         };
     }
 
-    /** Ngưỡng riêng {limit, caution} của một quy tắc; phần tử null = dùng mặc định. */
+    /** Ngưỡng riêng {limit, caution, good} của một quy tắc; phần tử null = dùng mặc định (hoặc quy tắc không có mức đó). */
     public BigDecimal[] getOverride(DietRuleCode code) {
         return switch (code) {
-            case SODIUM -> new BigDecimal[]{sodiumLimit, sodiumCaution};
-            case ALCOHOL -> new BigDecimal[]{alcoholLimit, alcoholCaution};
-            case CAFFEINE -> new BigDecimal[]{caffeineLimit, caffeineCaution};
-            case VITAMIN_K -> new BigDecimal[]{vitaminKLimit, vitaminKCaution};
-            default -> new BigDecimal[]{null, null};
+            case ALCOHOL -> new BigDecimal[]{alcoholLimit, alcoholCaution, null};
+            case CAFFEINE -> new BigDecimal[]{caffeineLimit, caffeineCaution, null};
+            case SUGARS -> new BigDecimal[]{sugarsLimit, sugarsCaution, null};
+            case NA_K_RATIO -> new BigDecimal[]{naKRatioLimit, null, naKRatioGood};
+            case SODIUM -> new BigDecimal[]{sodiumLimit, sodiumCaution, null};
+            case SATURATED_FAT -> new BigDecimal[]{saturatedFatLimit, saturatedFatCaution, null};
+            case MAGNESIUM -> new BigDecimal[]{null, null, magnesiumGood};
+            case VITAMIN_K -> new BigDecimal[]{vitaminKLimit, vitaminKCaution, null};
         };
     }
 
-    public void setOverride(DietRuleCode code, BigDecimal limit, BigDecimal caution) {
+    /** Mức không thuộc quy tắc (ví dụ mức vàng của Na/K) phải để trống; service kiểm tra trước khi gọi. */
+    public void setOverride(DietRuleCode code, BigDecimal limit, BigDecimal caution, BigDecimal good) {
         switch (code) {
-            case SODIUM -> { sodiumLimit = limit; sodiumCaution = caution; }
             case ALCOHOL -> { alcoholLimit = limit; alcoholCaution = caution; }
             case CAFFEINE -> { caffeineLimit = limit; caffeineCaution = caution; }
+            case SUGARS -> { sugarsLimit = limit; sugarsCaution = caution; }
+            case NA_K_RATIO -> { naKRatioLimit = limit; naKRatioGood = good; }
+            case SODIUM -> { sodiumLimit = limit; sodiumCaution = caution; }
+            case SATURATED_FAT -> { saturatedFatLimit = limit; saturatedFatCaution = caution; }
+            case MAGNESIUM -> magnesiumGood = good;
             case VITAMIN_K -> { vitaminKLimit = limit; vitaminKCaution = caution; }
-            default -> {
-                if (limit != null || caution != null)
-                    throw new IllegalArgumentException(code + " has no per-member threshold");
-            }
         }
     }
 }

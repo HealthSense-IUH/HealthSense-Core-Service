@@ -126,7 +126,7 @@ class DietAdvisorTest {
         NutritionFood spinach = food("VEGETABLE", "sodiumMg", 79, "potassiumMg", 558, "magnesiumMg", 79, "vitaminKMcg", 483);
         assertEquals("GOOD", DietAdvisor.advise(spinach, GENERAL).level());
 
-        DietProfile warfarin = new DietProfile(true, true, false, false, true, V28_DEFAULTS);
+        DietProfile warfarin = new DietProfile(java.util.Set.of(DietRuleCode.SODIUM, DietRuleCode.VITAMIN_K), true, V28_DEFAULTS);
         DietAdvice onWarfarin = DietAdvisor.advise(spinach, warfarin);
         assertEquals(List.of("VITAMIN_K_CAUTION"), codes(onWarfarin));
         assertTrue(onWarfarin.personalized());

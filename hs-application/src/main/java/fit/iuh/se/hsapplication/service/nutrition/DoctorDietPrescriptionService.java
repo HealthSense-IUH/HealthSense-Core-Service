@@ -19,16 +19,15 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Set;
 
 /**
- * Bác sĩ xem và kê đơn ăn uống cho hội viên của một phiên tư vấn. Quyền theo cùng quy tắc với hồ sơ sức khỏe
- * trong phiên (DoctorActiveCareServiceImpl): bác sĩ phải là bác sĩ của phiên, phiên đã kích hoạt; xem được cả khi
- * phiên đã kết thúc, nhưng chỉ kê/sửa khi phiên đang ACTIVE và tài khoản bác sĩ đang hoạt động.
+ * Bác sĩ xem và kê đơn ăn uống cho hội viên của một phiên tư vấn: bác sĩ phải là bác sĩ của phiên. Xem được ở mọi
+ * trạng thái; kê/sửa khi phiên đã lên lịch (SCHEDULED) hoặc đang diễn ra (ACTIVE) và tài khoản bác sĩ đang hoạt động.
+ * Phiên đã kết thúc (COMPLETED, CANCELLED) chỉ xem.
  */
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class DoctorDietPrescriptionService {
-    static final Set<ConsultationStatus> READABLE = Set.of(
-            ConsultationStatus.ACTIVE, ConsultationStatus.COMPLETED, ConsultationStatus.CANCELLED);
+    static final Set<ConsultationStatus> EDITABLE = Set.of(ConsultationStatus.SCHEDULED, ConsultationStatus.ACTIVE);
 
     ConsultationSessionRepository sessions;
     UserAccountRepository accounts;
@@ -43,7 +42,7 @@ public class DoctorDietPrescriptionService {
     public NutritionDietPrescriptionResponse update(Long doctorId, Long sessionId, UpdateDietPrescriptionRequest request) {
         if (request == null) throw new AppException(ErrorCode.INVALID_REQUEST_BODY);
         ConsultationSession session = readableSession(doctorId, sessionId);
-        if (session.getStatus() != ConsultationStatus.ACTIVE)
+        if (!EDITABLE.contains(session.getStatus()))
             throw AppException.of(ErrorCode.CONSULTATION_NOT_ACTIVE, "detail.diet-prescription-requires-active");
         if (accounts.findById(doctorId).filter(account -> account.getStatus() == AccountStatus.ACTIVE).isEmpty())
             throw new AppException(ErrorCode.ACCOUNT_DISABLED);
@@ -51,10 +50,7 @@ public class DoctorDietPrescriptionService {
     }
 
     private ConsultationSession readableSession(Long doctorId, Long sessionId) {
-        ConsultationSession session = sessions.findByIdAndDoctorId(sessionId, doctorId)
+        return sessions.findByIdAndDoctorId(sessionId, doctorId)
                 .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_ACCESS_DENIED));
-        if (session.getActivatedAt() == null || !READABLE.contains(session.getStatus()))
-            throw new AppException(ErrorCode.CONSULTATION_NOT_ACTIVE);
-        return session;
     }
 }

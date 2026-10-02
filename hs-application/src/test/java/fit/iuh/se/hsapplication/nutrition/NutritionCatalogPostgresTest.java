@@ -83,7 +83,7 @@ class NutritionCatalogPostgresTest {
         flyway.migrate();
         // Chỉ kiểm tra các migration dinh dưỡng; module khác có thể thêm migration vào cùng thư mục quét
         List<String> applied = Arrays.stream(flyway.info().applied()).map(i -> i.getVersion().getVersion()).toList();
-        assertTrue(applied.containsAll(List.of("21", "22", "23", "24", "25", "26", "27", "28")), applied.toString());
+        assertTrue(applied.containsAll(List.of("21", "22", "23", "24", "25", "26", "27", "28", "29")), applied.toString());
         context = new AnnotationConfigApplicationContext();
         context.registerBean(DataSource.class, () -> scoped);
         context.register(TestConfiguration.class);
@@ -509,7 +509,8 @@ class NutritionCatalogPostgresTest {
 
     /** Ngưỡng khởi tạo của V28 (bộ quy tắc rung nhĩ). */
     private static final Map<DietRuleCode, DietThreshold> V28_DEFAULTS = DietAdvisorTest.V28_DEFAULTS;
-    private static final DietProfile WARFARIN = new DietProfile(true, true, true, true, true, V28_DEFAULTS);
+    private static final DietProfile WARFARIN = new DietProfile(java.util.Set.of(DietRuleCode.SODIUM, DietRuleCode.VITAMIN_K, DietRuleCode.ALCOHOL,
+            DietRuleCode.CAFFEINE), true, V28_DEFAULTS);
     private static final DietProfile GENERAL = DietProfile.general(V28_DEFAULTS);
 
     private DietAdvice advice(String id, DietProfile diet) {
@@ -546,7 +547,7 @@ class NutritionCatalogPostgresTest {
         assertEquals("https://pubmed.ncbi.nlm.nih.gov/18413553/", sodium.evidenceUrl());
         assertEquals(3, sodium.priority());
         assertTrue(sodium.overridable());
-        assertFalse(list.get(3).overridable(), "Na/K has no per-member threshold");
+        assertTrue(list.stream().allMatch(DietRuleResponse::overridable), "doctors can tune every rule per member");
         assertFalse(list.get(7).base(), "vitamin K only applies with warfarin");
     }
 
@@ -563,7 +564,7 @@ class NutritionCatalogPostgresTest {
         assertFalse(noneSodium.prescribed());
         assertEquals(400.0, noneSodium.effectiveLimit());
         assertFalse(rule(none, "VITAMIN_K").enabled());
-        assertEquals(1.0, rule(none, "NA_K_RATIO").good());
+        assertEquals(1.0, rule(none, "NA_K_RATIO").effectiveGood());
 
         prescriptions.save(member, 77L, 555L, new UpdateDietPrescriptionRequest(true, true, false, true, "  Ăn thêm cá  ", null));
         NutritionDietPrescriptionResponse saved = prescriptions.get(member);
@@ -573,7 +574,8 @@ class NutritionCatalogPostgresTest {
         assertEquals("Ăn thêm cá", saved.note());
         assertEquals(77L, saved.prescribedBy());
         assertEquals(555L, saved.consultationSessionId());
-        assertEquals(new DietProfile(true, true, false, true, true, V28_DEFAULTS), prescriptions.profileOf(member));
+        assertEquals(new DietProfile(java.util.Set.of(DietRuleCode.SODIUM, DietRuleCode.VITAMIN_K, DietRuleCode.CAFFEINE), true,
+                V28_DEFAULTS), prescriptions.profileOf(member));
         var alcohol = rule(saved, "ALCOHOL");
         assertTrue(alcohol.enabled() && !alcohol.prescribed(), "alcohol stays on as a base rule");
         assertTrue(rule(saved, "VITAMIN_K").enabled());
@@ -720,8 +722,42 @@ class NutritionCatalogPostgresTest {
                 true, false, false, false, null, List.of(new DietThresholdRequest("SODIUM", null, 800.0)))));
         error(ErrorCode.INVALID_PARAMETER, () -> prescriptions.save(member, 77L, 555L, new UpdateDietPrescriptionRequest(
                 true, false, false, false, null, List.of(new DietThresholdRequest("SUGAR", 1.0, null)))));
-        // Quy tắc nền mới không chỉnh riêng được cho từng hội viên
+        // Mức không thuộc quy tắc: đường không có mức tốt, Na/K không có mức vàng; mức tốt Na/K không vượt ngưỡng đỏ
         error(ErrorCode.INVALID_PARAMETER, () -> prescriptions.save(member, 77L, 555L, new UpdateDietPrescriptionRequest(
-                true, false, false, false, null, List.of(new DietThresholdRequest("SUGARS", 5.0, null)))));
+                true, false, false, false, null, List.of(new DietThresholdRequest("SUGARS", null, null, 1.0)))));
+        error(ErrorCode.INVALID_PARAMETER, () -> prescriptions.save(member, 77L, 555L, new UpdateDietPrescriptionRequest(
+                true, false, false, false, null, List.of(new DietThresholdRequest("NA_K_RATIO", null, 1.5)))));
+        error(ErrorCode.INVALID_PARAMETER, () -> prescriptions.save(member, 77L, 555L, new UpdateDietPrescriptionRequest(
+                true, false, false, false, null, List.of(new DietThresholdRequest("NA_K_RATIO", null, null, 2.5)))));
+    }
+
+    @Test
+    void doctorCanPrescribeTheFourV28RulesWithTheirOwnThresholds() {
+        long member = 9_000_004L;
+        var saved = prescriptions.save(member, 77L, 555L, new UpdateDietPrescriptionRequest(false, false, false, false,
+                true, true, true, true, null, List.of(new DietThresholdRequest("SUGARS", 8.0, 2.0),
+                new DietThresholdRequest("NA_K_RATIO", 1.5, null, 0.8),
+                new DietThresholdRequest("SATURATED_FAT", null, 1.0),
+                new DietThresholdRequest("MAGNESIUM", null, null, 80.0))));
+        assertTrue(saved.limitSugars() && saved.watchSodiumPotassium() && saved.limitSaturatedFat()
+                && saved.encourageMagnesium());
+        assertEquals(0.8, rule(saved, "NA_K_RATIO").good());
+        assertEquals(1.0, rule(saved, "NA_K_RATIO").defaultGood());
+        assertEquals(1.5, rule(saved, "NA_K_RATIO").effectiveLimit());
+        assertEquals(5.0, rule(saved, "SATURATED_FAT").effectiveLimit(), "blank red keeps the default");
+        assertEquals(1.0, rule(saved, "SATURATED_FAT").effectiveCaution());
+        assertTrue(rule(saved, "MAGNESIUM").prescribed());
+
+        DietProfile profile = prescriptions.profileOf(member);
+        assertEquals(new DietThreshold(8.0, 2.0), profile.threshold(DietRuleCode.SUGARS));
+        assertEquals(new DietThreshold(1.5, null, 0.8), profile.threshold(DietRuleCode.NA_K_RATIO));
+        assertEquals(new DietThreshold(null, null, 80.0), profile.threshold(DietRuleCode.MAGNESIUM));
+        assertTrue(profile.prescribed(DietRuleCode.SUGARS));
+        assertFalse(profile.prescribed(DietRuleCode.SODIUM));
+
+        // Kẹo nhiều đường: lời nhắn ghi bác sĩ dặn
+        String candy = firstFood("source = 'USDA_FNDDS' and group_id = 'SWEET' and sugars_g > 10");
+        assertTrue(advice(candy, profile).reasons().stream()
+                .anyMatch(r -> r.code().equals("SUGARS_LIMIT") && r.message().contains("Bác sĩ dặn bạn hạn chế đồ ngọt")));
     }
 }

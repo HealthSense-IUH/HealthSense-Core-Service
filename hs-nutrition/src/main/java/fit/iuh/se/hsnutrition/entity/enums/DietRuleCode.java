@@ -7,18 +7,19 @@ package fit.iuh.se.hsnutrition.entity.enums;
  *   <li>{@code priority}: mức ưu tiên 1-4 (1 lọc cứng: cồn, caffeine, đường; 2 điện giải Na/K; 3 ngưỡng tim mạch chung:
  *       natri, chất béo bão hòa; 4 vi chất bảo vệ: magie). Lý do cùng mức màu xếp theo thứ tự này.</li>
  *   <li>{@code base}: áp cho mọi người (bộ quy tắc nền). VITAMIN_K chỉ áp khi đơn ghi đang dùng warfarin.</li>
- *   <li>{@code overridable}: bác sĩ chỉnh ngưỡng riêng cho từng hội viên được (có cột trong nutrition_diet_prescriptions).</li>
+ *   <li>{@code overridable}: bác sĩ dặn riêng và chỉnh ngưỡng riêng cho từng hội viên được (cờ và cột trong
+ *       nutrition_diet_prescriptions, V26, V27, V29). Hiện mọi quy tắc đều chỉnh riêng được.</li>
  * </ul>
  * Thứ tự khai báo là thứ tự hiển thị mặc định.
  */
 public enum DietRuleCode {
     ALCOHOL(1, true, true),
     CAFFEINE(1, true, true),
-    SUGARS(1, true, false),
-    NA_K_RATIO(2, true, false),
+    SUGARS(1, true, true),
+    NA_K_RATIO(2, true, true),
     SODIUM(3, true, true),
-    SATURATED_FAT(3, true, false),
-    MAGNESIUM(4, true, false),
+    SATURATED_FAT(3, true, true),
+    MAGNESIUM(4, true, true),
     VITAMIN_K(5, false, true);
 
     private final int priority;

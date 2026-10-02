@@ -31,7 +31,7 @@ class DoctorDietPrescriptionServiceTest {
     static final long SESSION = 555L;
     static final UpdateDietPrescriptionRequest REQUEST = new UpdateDietPrescriptionRequest(true, true, true, false, null, null);
     static final NutritionDietPrescriptionResponse RESPONSE = new NutritionDietPrescriptionResponse(
-            MEMBER, true, true, true, true, false, null, DOCTOR, SESSION, null, List.of());
+            MEMBER, true, true, true, true, false, false, false, false, false, null, DOCTOR, SESSION, null, List.of());
 
     ConsultationSessionRepository sessions;
     UserAccountRepository accounts;
@@ -59,11 +59,15 @@ class DoctorDietPrescriptionServiceTest {
     }
 
     @Test
-    void activeSessionDoctorReadsAndPrescribesForThatSessionsMember() {
+    void scheduledOrActiveSessionDoctorReadsAndPrescribesForThatSessionsMember() {
         session(ConsultationStatus.ACTIVE, Instant.now());
         assertSame(RESPONSE, service.get(DOCTOR, SESSION));
         assertSame(RESPONSE, service.update(DOCTOR, SESSION, REQUEST));
-        verify(prescriptions).save(MEMBER, DOCTOR, SESSION, REQUEST);
+        // Đã lên lịch, chưa kích hoạt: bác sĩ vẫn xem và kê đơn trước được
+        session(ConsultationStatus.SCHEDULED, null);
+        assertSame(RESPONSE, service.get(DOCTOR, SESSION));
+        assertSame(RESPONSE, service.update(DOCTOR, SESSION, REQUEST));
+        verify(prescriptions, times(2)).save(MEMBER, DOCTOR, SESSION, REQUEST);
     }
 
     @Test
@@ -77,15 +81,10 @@ class DoctorDietPrescriptionServiceTest {
     }
 
     @Test
-    void otherDoctorsSessionsAndNotYetActivatedSessionsAreDenied() {
+    void otherDoctorsSessionsAreDenied() {
         when(sessions.findByIdAndDoctorId(SESSION, DOCTOR)).thenReturn(Optional.empty());
         error(ErrorCode.CONSULTATION_ACCESS_DENIED, () -> service.get(DOCTOR, SESSION));
         error(ErrorCode.CONSULTATION_ACCESS_DENIED, () -> service.update(DOCTOR, SESSION, REQUEST));
-
-        session(ConsultationStatus.SCHEDULED, null);
-        error(ErrorCode.CONSULTATION_NOT_ACTIVE, () -> service.get(DOCTOR, SESSION));
-        session(ConsultationStatus.ACTIVE, null);
-        error(ErrorCode.CONSULTATION_NOT_ACTIVE, () -> service.update(DOCTOR, SESSION, REQUEST));
         verify(prescriptions, never()).get(anyLong());
     }
 
