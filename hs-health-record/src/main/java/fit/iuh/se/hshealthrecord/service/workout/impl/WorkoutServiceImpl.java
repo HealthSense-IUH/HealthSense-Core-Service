@@ -156,6 +156,24 @@ public class WorkoutServiceImpl implements WorkoutService {
     @Override
     @Transactional
     public WorkoutSessionResponse saveWorkoutSession(Long userId, CreateWorkoutSessionRequest request) {
+        // Idempotency: Prevent duplicate workout records within 5 seconds window
+        Instant startedAt = request.getStartedAt();
+        if (startedAt != null) {
+            Instant minStart = startedAt.minusSeconds(5);
+            Instant maxStart = startedAt.plusSeconds(5);
+            List<WorkoutSession> duplicates = sessionRepository.findPotentialDuplicates(
+                    userId, request.getExerciseCode(), minStart, maxStart
+            );
+            if (!duplicates.isEmpty()) {
+                WorkoutSession existing = duplicates.get(0);
+                if (request.getNote() != null && !request.getNote().isBlank()) {
+                    existing.setNote(request.getNote());
+                    sessionRepository.save(existing);
+                }
+                return mapToSessionResponse(existing);
+            }
+        }
+
         WorkoutSession session = WorkoutSession.builder()
                 .userId(userId)
                 .exerciseCode(request.getExerciseCode())
