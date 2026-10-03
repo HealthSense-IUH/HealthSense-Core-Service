@@ -54,6 +54,7 @@ public class SecurityConfig {
 
     static String[] ADMIN_ENDPOINTS = {
             "/api/admin/users/**",
+            "/api/admin/statistics/**",
             "/api/admin/health-records/**",
             "/api/admin/credits/**",
             "/api/admin/nutrition/**",
