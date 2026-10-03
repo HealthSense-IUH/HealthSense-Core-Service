@@ -209,7 +209,22 @@ public class WorkoutServiceImpl implements WorkoutService {
     @Override
     @Transactional(readOnly = true)
     public PageResponse<WorkoutSessionResponse> getWorkoutSessions(Long userId, Pageable pageable) {
-        Page<WorkoutSession> page = sessionRepository.findByUserIdOrderByStartedAtDesc(userId, pageable);
+        return getWorkoutSessions(userId, null, null, pageable);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<WorkoutSessionResponse> getWorkoutSessions(Long userId, Instant from, Instant to, Pageable pageable) {
+        Page<WorkoutSession> page;
+        if (from != null && to != null) {
+            page = sessionRepository.findByUserIdAndStartedAtBetweenOrderByStartedAtDesc(userId, from, to, pageable);
+        } else if (from != null) {
+            page = sessionRepository.findByUserIdAndStartedAtGreaterThanEqualOrderByStartedAtDesc(userId, from, pageable);
+        } else if (to != null) {
+            page = sessionRepository.findByUserIdAndStartedAtLessThanEqualOrderByStartedAtDesc(userId, to, pageable);
+        } else {
+            page = sessionRepository.findByUserIdOrderByStartedAtDesc(userId, pageable);
+        }
         return new PageResponse<>(page.map(this::mapToSessionResponse));
     }
 

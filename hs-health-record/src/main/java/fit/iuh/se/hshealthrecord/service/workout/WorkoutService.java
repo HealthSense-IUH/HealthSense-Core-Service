@@ -5,6 +5,7 @@ import fit.iuh.se.hshealthrecord.entity.workout.enums.ExerciseCategory;
 import fit.iuh.se.hsshared.dto.response.PageResponse;
 import org.springframework.data.domain.Pageable;
 
+import java.time.Instant;
 import java.util.List;
 
 public interface WorkoutService {
@@ -28,6 +29,8 @@ public interface WorkoutService {
     WorkoutSessionResponse saveWorkoutSession(Long userId, CreateWorkoutSessionRequest request);
 
     PageResponse<WorkoutSessionResponse> getWorkoutSessions(Long userId, Pageable pageable);
+
+    PageResponse<WorkoutSessionResponse> getWorkoutSessions(Long userId, Instant from, Instant to, Pageable pageable);
 
     WeeklyWorkoutStatsResponse getWeeklyStats(Long userId, String referenceDate, String timezone);
 

@@ -17,6 +17,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
 import java.util.List;
 
 @Validated
@@ -95,10 +96,12 @@ public class WorkoutController {
     @GetMapping("/sessions")
     public ApiResponse<PageResponse<WorkoutSessionResponse>> getSessions(
             @AuthenticationPrincipal UserAuthentication currentUser,
+            @RequestParam(required = false) Instant from,
+            @RequestParam(required = false) Instant to,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "20") int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("startedAt").descending());
-        return new ApiResponse<>(workoutService.getWorkoutSessions(currentUser.getUserId(), pageable));
+        return new ApiResponse<>(workoutService.getWorkoutSessions(currentUser.getUserId(), from, to, pageable));
     }
 
     @GetMapping("/stats/weekly")
