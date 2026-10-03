@@ -165,7 +165,7 @@ public class WorkoutServiceImpl implements WorkoutService {
                     userId, request.getExerciseCode(), minStart, maxStart
             );
             if (!duplicates.isEmpty()) {
-                WorkoutSession existing = duplicates.get(0);
+                WorkoutSession existing = duplicates.getFirst();
                 if (request.getNote() != null && !request.getNote().isBlank()) {
                     existing.setNote(request.getNote());
                     sessionRepository.save(existing);

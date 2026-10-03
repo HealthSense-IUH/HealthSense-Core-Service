@@ -24,12 +24,6 @@ public interface WorkoutSessionRepository extends JpaRepository<WorkoutSession, 
             @Param("endTime") Instant endTime
     );
 
-    @Query("SELECT s FROM WorkoutSession s WHERE s.userId = :userId AND s.exerciseCode = :exerciseCode ORDER BY s.startedAt DESC")
-    List<WorkoutSession> findByUserIdAndExerciseCode(
-            @Param("userId") Long userId,
-            @Param("exerciseCode") String exerciseCode
-    );
-
     @Query("SELECT s FROM WorkoutSession s WHERE s.userId = :userId AND s.exerciseCode = :exerciseCode AND s.startedAt >= :minStart AND s.startedAt <= :maxStart ORDER BY s.startedAt DESC")
     List<WorkoutSession> findPotentialDuplicates(
             @Param("userId") Long userId,
