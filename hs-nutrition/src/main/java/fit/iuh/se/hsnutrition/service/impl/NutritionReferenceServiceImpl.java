@@ -56,14 +56,16 @@ public class NutritionReferenceServiceImpl implements NutritionReferenceService 
         String groupFilter = resolveGroup(group, allGroups);
 
         Pageable pageable = PageRequest.of(page - 1, size);
+        boolean vietnamese = RequestLanguage.isVietnamese(RequestLanguage.current());
         if (query == null || query.isBlank())
-            return new PageResponse<>(foods.browse(groupFilter, sourceFilter, pageable)
+            return new PageResponse<>(foods.browse(groupFilter, sourceFilter, vietnamese, pageable)
                     .map(food -> toSummary(food, allGroups, diet)));
 
         String tsquery = toPrefixTsQuery(query);
         // Chỉ toàn ký tự đặc biệt: không có gì để tìm, trả trang rỗng thay vì trả về mọi món.
         if (tsquery == null) return new PageResponse<>(new PageImpl<>(List.of(), pageable, 0));
-        return new PageResponse<>(foods.search(tsquery, toPhrasePattern(query), groupFilter, sourceFilter, pageable)
+        return new PageResponse<>(foods.search(tsquery, toPhrasePattern(query), groupFilter, sourceFilter, vietnamese,
+                pageable)
                 .map(food -> toSummary(food, allGroups, diet)));
     }
 

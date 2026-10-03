@@ -803,6 +803,11 @@ class NutritionCatalogPostgresTest {
         assertFalse(rau.sourceCategory().matches(vietnameseLetters), rau.sourceCategory());
         var usda = reference.searchFoods("pho", null, "USDA_FNDDS", 1, 5, null).getContent();
         assertTrue(usda.stream().allMatch(f -> f.localName() == null), usda.toString());
+        // Xem tiếng Anh: món Việt Nam sắp theo tên tiếng Anh (khớp displayName), không theo tên tiếng Việt
+        var vegetables = reference.searchFoods(null, "VEGETABLE", "VN_FCT", 1, 50, null).getContent();
+        List<String> shown = vegetables.stream().map(NutritionReferenceFoodSummaryResponse::displayName).toList();
+        assertEquals(jdbc.queryForList("select name from nutrition_foods where source = 'VN_FCT' and group_id = 'VEGETABLE' "
+                + "order by name, id limit 50", String.class), shown);
 
         DietAdvice spinach = advice("900004083", WARFARIN);
         assertTrue(spinach.reasons().stream().noneMatch(r -> r.message().matches(vietnameseLetters)), spinach.toString());
