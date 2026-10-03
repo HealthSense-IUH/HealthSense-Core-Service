@@ -236,10 +236,10 @@ public class QueueConsultationSessionServiceImpl implements QueueConsultationSes
         String key = "queue-session:" + session.getId() + ":activated";
         return List.of(
                 new NotificationIntent(session.getMemberId(), UserRole.MEMBER, NotificationType.CARE_ACTIVATED,
-                        "Phiên tư vấn đã bắt đầu", "Phiên tư vấn của bạn đã sẵn sàng.",
+                        "Consultation started", "Your consultation is ready.",
                         BusinessDomainType.SESSION, session.getId(), key + ":member"),
                 new NotificationIntent(session.getDoctorId(), UserRole.DOCTOR, NotificationType.CARE_ACTIVATED,
-                        "Phiên tư vấn đã bắt đầu", "Phiên tư vấn đã được kích hoạt.",
+                        "Consultation started", "The consultation has been activated.",
                         BusinessDomainType.SESSION, session.getId(), key + ":doctor"));
     }
 

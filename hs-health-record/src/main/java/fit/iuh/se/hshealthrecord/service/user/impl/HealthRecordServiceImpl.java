@@ -113,7 +113,7 @@ public class HealthRecordServiceImpl implements HealthRecordService {
     public HealthRecordResponse uploadDirectAndProcess(Long userId, MultipartFile file) {
         log.info("Direct upload and process for user {} with file {}", userId, file != null ? file.getOriginalFilename() : "null");
         if (file == null || file.isEmpty()) {
-            throw new IllegalArgumentException("File upload không được để trống");
+            throw AppException.of(ErrorCode.INVALID_ARGUMENT, "detail.upload-file-empty");
         }
         String fileName = file.getOriginalFilename() != null ? file.getOriginalFilename() : "health_record.csv";
         String s3Key = s3Service.generateObjectKey(S3Service.FOLDER_RECORDS, userId, fileName);
@@ -163,7 +163,7 @@ public class HealthRecordServiceImpl implements HealthRecordService {
                 .orElseThrow(() -> new AppException(ErrorCode.HEALTH_RECORD_NOT_FOUND));
 
         if (record.getS3FileKey() == null || record.getS3FileKey().isBlank()) {
-            throw new RuntimeException("Bản ghi không có file đính kèm");
+            throw AppException.of(ErrorCode.ENTITY_NOT_FOUND, "detail.health-record-file-missing");
         }
 
         String downloadUrl = s3Service.generatePresignedDownloadUrl(record.getS3FileKey());
@@ -448,7 +448,7 @@ public class HealthRecordServiceImpl implements HealthRecordService {
         try {
             localDate = LocalDate.parse(date);
         } catch (Exception e) {
-            throw new IllegalArgumentException("Invalid date format. Expected YYYY-MM-DD");
+            throw AppException.of(ErrorCode.INVALID_ARGUMENT, "detail.date-format-invalid");
         }
 
         LocalDate today = LocalDate.now(zoneId);

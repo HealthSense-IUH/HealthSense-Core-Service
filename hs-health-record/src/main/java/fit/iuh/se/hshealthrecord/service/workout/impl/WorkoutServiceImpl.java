@@ -6,6 +6,8 @@ import fit.iuh.se.hshealthrecord.entity.workout.enums.ExerciseCategory;
 import fit.iuh.se.hshealthrecord.repository.workout.*;
 import fit.iuh.se.hshealthrecord.service.workout.WorkoutService;
 import fit.iuh.se.hsshared.dto.response.PageResponse;
+import fit.iuh.se.hsshared.advice.entity.AppException;
+import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -41,7 +43,10 @@ public class WorkoutServiceImpl implements WorkoutService {
         if (searchQuery != null && !searchQuery.isBlank()) {
             String queryLower = searchQuery.toLowerCase().trim();
             list = list.stream()
-                    .filter(e -> e.getName().toLowerCase().contains(queryLower) || e.getCode().toLowerCase().contains(queryLower))
+                    // Tìm theo cả tên đang hiển thị (tiếng Anh với bài hệ thống khi xem tiếng Anh)
+                    .filter(e -> e.getName().toLowerCase().contains(queryLower) || e.getCode().toLowerCase().contains(queryLower)
+                            || WorkoutText.exerciseName(e.getCode(), Boolean.TRUE.equals(e.getIsSystem()), e.getName())
+                            .toLowerCase().contains(queryLower))
                     .toList();
         }
 
@@ -78,10 +83,10 @@ public class WorkoutServiceImpl implements WorkoutService {
     @Transactional
     public void deleteCustomExercise(Long userId, Long exerciseId) {
         ExerciseEntity exercise = exerciseRepository.findById(exerciseId)
-                .orElseThrow(() -> new IllegalArgumentException("Bài tập không tồn tại"));
+                .orElseThrow(() -> AppException.of(ErrorCode.INVALID_ARGUMENT, "detail.workout-exercise-not-found"));
 
         if (Boolean.TRUE.equals(exercise.getIsSystem()) || !userId.equals(exercise.getUserId())) {
-            throw new IllegalArgumentException("Bạn không có quyền xóa bài tập hệ thống này");
+            throw AppException.of(ErrorCode.INVALID_ARGUMENT, "detail.workout-system-exercise-delete");
         }
 
         favoriteRepository.deleteByUserIdAndExerciseCode(userId, exercise.getCode());
@@ -108,7 +113,7 @@ public class WorkoutServiceImpl implements WorkoutService {
 
         long currentCount = favoriteRepository.countByUserId(userId);
         if (currentCount >= 3) {
-            throw new IllegalArgumentException("Không thể đặt nhiều hơn 3 bài tập làm mục yêu thích.");
+            throw AppException.of(ErrorCode.INVALID_ARGUMENT, "detail.workout-favorite-limit", 3);
         }
 
         UserFavoriteExercise fav = UserFavoriteExercise.builder()
@@ -149,7 +154,7 @@ public class WorkoutServiceImpl implements WorkoutService {
     @Transactional
     public void deleteRoutine(Long userId, Long routineId) {
         WorkoutRoutine routine = routineRepository.findByIdAndUserId(routineId, userId)
-                .orElseThrow(() -> new IllegalArgumentException("Lịch trình không tồn tại hoặc không thuộc quyền sở hữu"));
+                .orElseThrow(() -> AppException.of(ErrorCode.INVALID_ARGUMENT, "detail.workout-routine-not-found"));
         routineRepository.delete(routine);
     }
 
@@ -214,7 +219,6 @@ public class WorkoutServiceImpl implements WorkoutService {
         int totalDuration = weekSessions.stream().mapToInt(WorkoutSession::getDurationSeconds).sum();
         int totalCalories = weekSessions.stream().mapToInt(WorkoutSession::getCaloriesBurned).sum();
 
-        String[] dayLabels = {"2", "3", "4", "5", "6", "7", "CN"};
         List<WeeklyWorkoutStatsResponse.DailyDistributionItem> distribution = new ArrayList<>();
 
         for (int i = 0; i < 7; i++) {
@@ -231,7 +235,7 @@ public class WorkoutServiceImpl implements WorkoutService {
 
             distribution.add(WeeklyWorkoutStatsResponse.DailyDistributionItem.builder()
                     .dayNumber(i + 2)
-                    .dayLabel(dayLabels[i])
+                    .dayLabel(WorkoutText.dayLabel(i))
                     .dateStr(d.toString())
                     .durationSeconds(dDur)
                     .calories(dCal)
@@ -239,7 +243,7 @@ public class WorkoutServiceImpl implements WorkoutService {
                     .build());
         }
 
-        String label = "Ngày " + monday.getDayOfMonth() + " - Ngày " + sunday.getDayOfMonth() + " tháng " + sunday.getMonthValue();
+        String label = WorkoutText.weekRange(monday, sunday);
 
         return WeeklyWorkoutStatsResponse.builder()
                 .weekRangeLabel(label)
@@ -291,14 +295,15 @@ public class WorkoutServiceImpl implements WorkoutService {
         return ExerciseResponse.builder()
                 .id(e.getId())
                 .code(e.getCode())
-                .name(e.getName())
+                .name(WorkoutText.exerciseName(e.getCode(), Boolean.TRUE.equals(e.getIsSystem()), e.getName()))
                 .category(e.getCategory())
                 .trackingType(e.getTrackingType())
                 .metRate(e.getMetRate())
                 .iconName(e.getIconName())
                 .isSystem(e.getIsSystem())
                 .isFavorite(isFav)
-                .description(e.getDescription())
+                .description(WorkoutText.exerciseDescription(e.getCode(), Boolean.TRUE.equals(e.getIsSystem()),
+                        e.getDescription()))
                 .createdAt(e.getCreatedAt())
                 .build();
     }
@@ -320,7 +325,7 @@ public class WorkoutServiceImpl implements WorkoutService {
     @Transactional(readOnly = true)
     public byte[] generateGpxFile(Long userId, Long sessionId) {
         WorkoutSession session = sessionRepository.findByIdAndUserId(sessionId, userId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiên tập luyện với ID: " + sessionId));
+                .orElseThrow(() -> AppException.of(ErrorCode.INVALID_ARGUMENT, "detail.workout-session-not-found", sessionId));
 
         String name = session.getExerciseName() != null ? session.getExerciseName() : "HealthSense Workout Session";
         String startTimeIso = session.getStartedAt() != null ? session.getStartedAt().toString() : Instant.now().toString();
@@ -360,7 +365,7 @@ public class WorkoutServiceImpl implements WorkoutService {
         return WorkoutSessionResponse.builder()
                 .id(s.getId())
                 .exerciseCode(s.getExerciseCode())
-                .exerciseName(s.getExerciseName())
+                .exerciseName(WorkoutText.sessionExerciseName(s.getExerciseCode(), s.getExerciseName()))
                 .category(s.getCategory())
                 .trackingType(s.getTrackingType())
                 .iconName(s.getIconName())
