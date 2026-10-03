@@ -83,7 +83,7 @@ class NutritionCatalogPostgresTest {
         flyway.migrate();
         // Chỉ kiểm tra các migration dinh dưỡng; module khác có thể thêm migration vào cùng thư mục quét
         List<String> applied = Arrays.stream(flyway.info().applied()).map(i -> i.getVersion().getVersion()).toList();
-        assertTrue(applied.containsAll(List.of("21", "22", "23", "24", "25", "26", "27", "28", "29")), applied.toString());
+        assertTrue(applied.containsAll(List.of("21", "22", "23", "24", "25", "26", "27", "28", "29", "30")), applied.toString());
         context = new AnnotationConfigApplicationContext();
         context.registerBean(DataSource.class, () -> scoped);
         context.register(TestConfiguration.class);
@@ -100,6 +100,17 @@ class NutritionCatalogPostgresTest {
         ds.setUsername(System.getenv("NUTRITION_TEST_JDBC_USER"));
         ds.setPassword(System.getenv("NUTRITION_TEST_JDBC_PASSWORD"));
         return ds;
+    }
+
+    /** Các test kiểm nội dung tiếng Việt: giả request tiếng Việt (ngoài request thì mặc định tiếng Anh). */
+    @BeforeEach
+    void vietnameseRequest() {
+        RequestLanguageScope.use("vi");
+    }
+
+    @AfterEach
+    void clearRequest() {
+        RequestLanguageScope.clear();
     }
 
     @AfterAll
@@ -763,5 +774,38 @@ class NutritionCatalogPostgresTest {
         String candy = firstFood("source = 'USDA_FNDDS' and group_id = 'SWEET' and sugars_g > 10");
         assertTrue(advice(candy, profile).reasons().stream()
                 .anyMatch(r -> r.code().equals("SUGARS_LIMIT") && r.message().contains("Bác sĩ dặn bạn hạn chế đồ ngọt")));
+    }
+
+    @Test
+    void englishRequestsGetEnglishContent() {
+        // V30 dịch đủ: mọi nhóm, món có khuyến nghị, quy tắc và phân loại của bảng Việt Nam đều có bản tiếng Anh
+        assertEquals(0, jdbc.queryForObject("select count(*) from nutrition_food_groups where name_en is null", Long.class));
+        assertEquals(0, jdbc.queryForObject("select count(*) from nutrition_guidance_foods where food_name_en is null "
+                + "or food_name_specific_en is null or guidance_title_en is null or guidance_reason_en is null", Long.class));
+        assertEquals(0, jdbc.queryForObject("select count(*) from nutrition_diet_rules where name_en is null", Long.class));
+        assertEquals(0, jdbc.queryForObject("select count(*) from nutrition_foods where source = 'VN_FCT' "
+                + "and category_en is null", Long.class));
+
+        RequestLanguageScope.use("en");
+        String vietnameseLetters = ".*[àáảãạăâđèéẻẽẹêìíỉĩịòóỏõọôơùúủũụưỳýỷỹỵ].*";
+        assertTrue(catalog.getGroups().stream().noneMatch(g -> g.name().matches(vietnameseLetters)),
+                catalog.getGroups().toString());
+        NutritionFoodResponse milk = catalog.getGroupFoods("dairy").getFirst();
+        assertFalse(milk.groupName().matches(vietnameseLetters), milk.groupName());
+        assertFalse(milk.foodNameSpecific().matches(vietnameseLetters), milk.foodNameSpecific());
+        assertFalse(milk.guidanceReason().matches(vietnameseLetters), milk.guidanceReason());
+        assertTrue(milk.nutrients().stream().noneMatch(n -> n.name().matches(vietnameseLetters)), milk.nutrients().toString());
+
+        // Món Việt Nam hiện tên tiếng Anh của sách, tên tiếng Việt giữ ở localName; món USDA không cần localName
+        var rau = reference.getFood("900004083", null);
+        assertFalse(rau.displayName().matches(vietnameseLetters), rau.displayName());
+        assertEquals("Rau muống", rau.localName());
+        assertFalse(rau.sourceCategory().matches(vietnameseLetters), rau.sourceCategory());
+        var usda = reference.searchFoods("pho", null, "USDA_FNDDS", 1, 5, null).getContent();
+        assertTrue(usda.stream().allMatch(f -> f.localName() == null), usda.toString());
+
+        DietAdvice spinach = advice("900004083", WARFARIN);
+        assertTrue(spinach.reasons().stream().noneMatch(r -> r.message().matches(vietnameseLetters)), spinach.toString());
+        assertTrue(rules.list().stream().noneMatch(r -> r.name().matches(vietnameseLetters)));
     }
 }

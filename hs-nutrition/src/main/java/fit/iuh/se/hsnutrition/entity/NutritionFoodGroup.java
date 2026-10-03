@@ -30,6 +30,11 @@ public class NutritionFoodGroup {
     String name;
     @Column(length = 500)
     String description;
+    // Bản tiếng Anh (V30), trả khi request tiếng Anh; NULL thì dùng bản tiếng Việt
+    @Column(name = "name_en", length = 120)
+    String nameEn;
+    @Column(name = "description_en", length = 500)
+    String descriptionEn;
     /**
      * Tên icon lucide-react mà Frontend hiển thị.
      */

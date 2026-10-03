@@ -49,6 +49,23 @@ public class NutritionGuidanceFood {
     String afContext;
     @Column(name = "medication_context", length = 1000)
     String medicationContext;
+    // Bản tiếng Anh (V30), trả khi request tiếng Anh; NULL thì dùng bản tiếng Việt
+    @Column(name = "food_name_en", length = 120)
+    String foodNameEn;
+    @Column(name = "food_name_specific_en", length = 160)
+    String foodNameSpecificEn;
+    @Column(name = "description_en", length = 1000)
+    String descriptionEn;
+    @Column(name = "guidance_title_en", length = 200)
+    String guidanceTitleEn;
+    @Column(name = "guidance_reason_en", length = 1000)
+    String guidanceReasonEn;
+    @Column(name = "cardiovascular_context_en", length = 1000)
+    String cardiovascularContextEn;
+    @Column(name = "af_context_en", length = 1000)
+    String afContextEn;
+    @Column(name = "medication_context_en", length = 1000)
+    String medicationContextEn;
     /**
      * Mã chất dinh dưỡng nổi bật, cách nhau bằng dấu phẩy, theo thứ tự hiển thị.
      */

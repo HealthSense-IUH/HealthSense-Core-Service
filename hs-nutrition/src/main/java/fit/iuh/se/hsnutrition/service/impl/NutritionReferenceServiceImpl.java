@@ -13,6 +13,8 @@ import fit.iuh.se.hsnutrition.service.NutritionReferenceService;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsshared.dto.response.PageResponse;
+import fit.iuh.se.hsshared.i18n.LocalizedText;
+import fit.iuh.se.hsshared.i18n.RequestLanguage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -75,7 +77,8 @@ public class NutritionReferenceServiceImpl implements NutritionReferenceService 
                 .toList();
         NutritionFoodGroup group = food.getGroup();
         return new NutritionReferenceFoodResponse(String.valueOf(food.getId()), food.getSourceFoodCode(),
-                displayName(food), food.getNameVi(), group.getId(), group.getName(), food.getCategory(),
+                displayName(food), localName(food), group.getId(), groupName(group),
+                LocalizedText.pick(food.getCategory(), food.getCategoryEn()),
                 food.getSource(), food.getSourceVersion(), NutrientMapper.amount(food.getWastePct()),
                 NutrientMapper.of(food), foodPortions, diet == null ? null : DietAdvisor.advise(food, diet));
     }
@@ -119,9 +122,28 @@ public class NutritionReferenceServiceImpl implements NutritionReferenceService 
     /**
      * Tên hiển thị theo nguồn: thực phẩm Việt Nam hiện tên tiếng Việt; thực phẩm USDA giữ tên gốc tiếng Anh,
      * còn tên dịch (name_vi) trả riêng ở localName. Phải khớp với sắp xếp trong NutritionFoodRepository.
+     * Request tiếng Anh thì mọi món hiện tên tiếng Anh (name; bảng Việt Nam có sẵn tên tiếng Anh trong sách).
      */
     static String displayName(NutritionFood food) {
-        return SOURCE_VIETNAM.equals(food.getSource()) && food.getNameVi() != null ? food.getNameVi() : food.getName();
+        return displayName(food, RequestLanguage.current());
+    }
+
+    static String displayName(NutritionFood food, Locale locale) {
+        boolean vietnameseName = SOURCE_VIETNAM.equals(food.getSource()) && RequestLanguage.isVietnamese(locale);
+        return vietnameseName && food.getNameVi() != null ? food.getNameVi() : food.getName();
+    }
+
+    /**
+     * Tên phụ dưới tên hiển thị: tiếng Việt luôn là name_vi; tiếng Anh chỉ giữ tên gốc tiếng Việt của món Việt Nam
+     * (món USDA không cần bản dịch tiếng Việt khi đang xem tiếng Anh).
+     */
+    static String localName(NutritionFood food) {
+        if (RequestLanguage.isVietnamese(RequestLanguage.current())) return food.getNameVi();
+        return SOURCE_VIETNAM.equals(food.getSource()) ? food.getNameVi() : null;
+    }
+
+    private static String groupName(NutritionFoodGroup group) {
+        return LocalizedText.pick(group.getName(), group.getNameEn());
     }
 
     private static Long parseId(String id) {
@@ -137,7 +159,7 @@ public class NutritionReferenceServiceImpl implements NutritionReferenceService 
         // getId() của proxy lazy không truy vấn thêm; tên nhóm lấy từ danh sách nhóm đã nạp
         NutritionFoodGroup group = allGroups.get(food.getGroup().getId());
         return new NutritionReferenceFoodSummaryResponse(String.valueOf(food.getId()), food.getSource(),
-                food.getSourceFoodCode(), displayName(food), food.getNameVi(), group.getId(), group.getName(),
+                food.getSourceFoodCode(), displayName(food), localName(food), group.getId(), groupName(group),
                 NutrientMapper.amount(food.getEnergyKcal()),
                 NutrientMapper.amount(food.getProteinG()), NutrientMapper.amount(food.getCarbohydrateG()),
                 NutrientMapper.amount(food.getFatTotalG()),
