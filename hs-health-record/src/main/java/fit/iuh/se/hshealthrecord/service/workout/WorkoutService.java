@@ -37,4 +37,12 @@ public interface WorkoutService {
     DailyActivityResponse getDailyActivity(Long userId, String date, String timezone);
 
     byte[] generateGpxFile(Long userId, Long sessionId);
+
+    DailyStepDetailResponse syncStepData(Long userId, SyncStepDataRequest request);
+
+    DailyStepDetailResponse getDailyStepDetail(Long userId, String date, String timezone);
+
+    StepHistoryResponse getStepHistory(Long userId, Integer dayOffset, String timezone);
+
+    void updateStepGoal(Long userId, Integer targetSteps);
 }

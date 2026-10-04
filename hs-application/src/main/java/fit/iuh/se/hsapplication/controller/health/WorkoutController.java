@@ -129,4 +129,35 @@ public class WorkoutController {
                 .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"workout_session_" + id + ".gpx\"")
                 .body(gpxBytes);
     }
+
+    @PostMapping("/steps/sync")
+    public ApiResponse<DailyStepDetailResponse> syncStepData(
+            @AuthenticationPrincipal UserAuthentication currentUser,
+            @Valid @RequestBody SyncStepDataRequest request) {
+        return new ApiResponse<>(workoutService.syncStepData(currentUser.getUserId(), request));
+    }
+
+    @GetMapping("/steps/daily")
+    public ApiResponse<DailyStepDetailResponse> getDailyStepDetail(
+            @AuthenticationPrincipal UserAuthentication currentUser,
+            @RequestParam(value = "date", required = false) String date,
+            @RequestParam(value = "timezone", required = false) String timezone) {
+        return new ApiResponse<>(workoutService.getDailyStepDetail(currentUser.getUserId(), date, timezone));
+    }
+
+    @GetMapping("/steps/history")
+    public ApiResponse<StepHistoryResponse> getStepHistory(
+            @AuthenticationPrincipal UserAuthentication currentUser,
+            @RequestParam(value = "offset", defaultValue = "0") Integer dayOffset,
+            @RequestParam(value = "timezone", required = false) String timezone) {
+        return new ApiResponse<>(workoutService.getStepHistory(currentUser.getUserId(), dayOffset, timezone));
+    }
+
+    @PutMapping("/steps/goal")
+    public ApiResponse<Void> updateStepGoal(
+            @AuthenticationPrincipal UserAuthentication currentUser,
+            @Valid @RequestBody UpdateStepGoalRequest request) {
+        workoutService.updateStepGoal(currentUser.getUserId(), request.getTargetSteps());
+        return new ApiResponse<>();
+    }
 }
