@@ -17,6 +17,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
 import java.util.List;
 
 @Validated
@@ -95,10 +96,12 @@ public class WorkoutController {
     @GetMapping("/sessions")
     public ApiResponse<PageResponse<WorkoutSessionResponse>> getSessions(
             @AuthenticationPrincipal UserAuthentication currentUser,
+            @RequestParam(required = false) Instant from,
+            @RequestParam(required = false) Instant to,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "20") int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("startedAt").descending());
-        return new ApiResponse<>(workoutService.getWorkoutSessions(currentUser.getUserId(), pageable));
+        return new ApiResponse<>(workoutService.getWorkoutSessions(currentUser.getUserId(), from, to, pageable));
     }
 
     @GetMapping("/stats/weekly")
@@ -125,5 +128,36 @@ public class WorkoutController {
         return org.springframework.http.ResponseEntity.ok()
                 .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"workout_session_" + id + ".gpx\"")
                 .body(gpxBytes);
+    }
+
+    @PostMapping("/steps/sync")
+    public ApiResponse<DailyStepDetailResponse> syncStepData(
+            @AuthenticationPrincipal UserAuthentication currentUser,
+            @Valid @RequestBody SyncStepDataRequest request) {
+        return new ApiResponse<>(workoutService.syncStepData(currentUser.getUserId(), request));
+    }
+
+    @GetMapping("/steps/daily")
+    public ApiResponse<DailyStepDetailResponse> getDailyStepDetail(
+            @AuthenticationPrincipal UserAuthentication currentUser,
+            @RequestParam(value = "date", required = false) String date,
+            @RequestParam(value = "timezone", required = false) String timezone) {
+        return new ApiResponse<>(workoutService.getDailyStepDetail(currentUser.getUserId(), date, timezone));
+    }
+
+    @GetMapping("/steps/history")
+    public ApiResponse<StepHistoryResponse> getStepHistory(
+            @AuthenticationPrincipal UserAuthentication currentUser,
+            @RequestParam(value = "offset", defaultValue = "0") Integer dayOffset,
+            @RequestParam(value = "timezone", required = false) String timezone) {
+        return new ApiResponse<>(workoutService.getStepHistory(currentUser.getUserId(), dayOffset, timezone));
+    }
+
+    @PutMapping("/steps/goal")
+    public ApiResponse<Void> updateStepGoal(
+            @AuthenticationPrincipal UserAuthentication currentUser,
+            @Valid @RequestBody UpdateStepGoalRequest request) {
+        workoutService.updateStepGoal(currentUser.getUserId(), request.getTargetSteps());
+        return new ApiResponse<>();
     }
 }

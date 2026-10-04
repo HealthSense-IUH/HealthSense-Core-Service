@@ -5,6 +5,7 @@ import fit.iuh.se.hshealthrecord.entity.workout.enums.ExerciseCategory;
 import fit.iuh.se.hsshared.dto.response.PageResponse;
 import org.springframework.data.domain.Pageable;
 
+import java.time.Instant;
 import java.util.List;
 
 public interface WorkoutService {
@@ -29,9 +30,19 @@ public interface WorkoutService {
 
     PageResponse<WorkoutSessionResponse> getWorkoutSessions(Long userId, Pageable pageable);
 
+    PageResponse<WorkoutSessionResponse> getWorkoutSessions(Long userId, Instant from, Instant to, Pageable pageable);
+
     WeeklyWorkoutStatsResponse getWeeklyStats(Long userId, String referenceDate, String timezone);
 
     DailyActivityResponse getDailyActivity(Long userId, String date, String timezone);
 
     byte[] generateGpxFile(Long userId, Long sessionId);
+
+    DailyStepDetailResponse syncStepData(Long userId, SyncStepDataRequest request);
+
+    DailyStepDetailResponse getDailyStepDetail(Long userId, String date, String timezone);
+
+    StepHistoryResponse getStepHistory(Long userId, Integer dayOffset, String timezone);
+
+    void updateStepGoal(Long userId, Integer targetSteps);
 }

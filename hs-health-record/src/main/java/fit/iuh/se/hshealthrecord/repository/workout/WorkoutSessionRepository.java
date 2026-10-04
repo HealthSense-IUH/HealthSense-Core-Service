@@ -17,6 +17,18 @@ public interface WorkoutSessionRepository extends JpaRepository<WorkoutSession, 
 
     Page<WorkoutSession> findByUserIdOrderByStartedAtDesc(Long userId, Pageable pageable);
 
+    Page<WorkoutSession> findByUserIdAndStartedAtBetweenOrderByStartedAtDesc(
+            Long userId, Instant startTime, Instant endTime, Pageable pageable
+    );
+
+    Page<WorkoutSession> findByUserIdAndStartedAtGreaterThanEqualOrderByStartedAtDesc(
+            Long userId, Instant startTime, Pageable pageable
+    );
+
+    Page<WorkoutSession> findByUserIdAndStartedAtLessThanEqualOrderByStartedAtDesc(
+            Long userId, Instant endTime, Pageable pageable
+    );
+
     @Query("SELECT s FROM WorkoutSession s WHERE s.userId = :userId AND s.startedAt >= :startTime AND s.startedAt <= :endTime ORDER BY s.startedAt ASC")
     List<WorkoutSession> findByUserIdAndDateRange(
             @Param("userId") Long userId,
@@ -24,13 +36,13 @@ public interface WorkoutSessionRepository extends JpaRepository<WorkoutSession, 
             @Param("endTime") Instant endTime
     );
 
-    @Query("SELECT s FROM WorkoutSession s WHERE s.userId = :userId AND s.exerciseCode = :exerciseCode ORDER BY s.startedAt DESC")
-    List<WorkoutSession> findByUserIdAndExerciseCode(
+    @Query("SELECT s FROM WorkoutSession s WHERE s.userId = :userId AND s.exerciseCode = :exerciseCode AND s.startedAt >= :minStart AND s.startedAt <= :maxStart ORDER BY s.startedAt DESC")
+    List<WorkoutSession> findPotentialDuplicates(
             @Param("userId") Long userId,
-            @Param("exerciseCode") String exerciseCode
+            @Param("exerciseCode") String exerciseCode,
+            @Param("minStart") Instant minStart,
+            @Param("maxStart") Instant maxStart
     );
 
     Optional<WorkoutSession> findByIdAndUserId(Long id, Long userId);
-
-    long countByUserId(Long userId);
 }
