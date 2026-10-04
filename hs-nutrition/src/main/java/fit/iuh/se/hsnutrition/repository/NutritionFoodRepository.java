@@ -23,6 +23,13 @@ public interface NutritionFoodRepository extends JpaRepository<NutritionFood, Lo
             + VI_LOWER + "')), '[^" + WORD_CHARS + "]+', ' ', 'g') || ' ')";
     String NAME_WORDS = "(' ' || regexp_replace(lower(f.name), '[^" + WORD_CHARS + "]+', ' ', 'g') || ' ')";
 
+    /**
+     * Sắp theo tên hiển thị, khớp displayName ở service: tiếng Việt thì món VN_FCT theo tên Việt, còn lại (và mọi món
+     * khi xem tiếng Anh) theo tên gốc.
+     */
+    String DISPLAY_NAME_ORDER = "case when f.source = 'VN_FCT' and cast(:vietnamese as boolean) "
+            + "then coalesce(f.name_vi, f.name) else f.name end, f.id";
+
     String SEARCH_FILTER = """
             where (cast(:groupId as text) is null or f.group_id = cast(:groupId as text))
               and (cast(:source as text) is null or f.source = cast(:source as text))
@@ -35,7 +42,7 @@ public interface NutritionFoodRepository extends JpaRepository<NutritionFood, Lo
      * (full-text 'simple' trên cột search_vi, index của V23). Biểu thức phải giữ đúng như index để dùng được.
      * Vì so khớp bỏ dấu ("pho" khớp cả "phở" lẫn "phô mai"), món có đúng các từ người dùng gõ, kể cả dấu
      * ({@code phrase} dạng "% phở %", xem {@link #NAME_VI_WORDS}), xếp trước; sau đó theo độ khớp, rồi theo tên hiển thị
-     * (tên Việt cho nguồn VN_FCT, tên gốc cho USDA, khớp displayName ở service).
+     * (xem {@link #DISPLAY_NAME_ORDER}).
      * {@code tsquery} do service dựng từ các token đã lọc, không nhận chuỗi người dùng trực tiếp.
      */
     @Query(value = "select f.* from nutrition_foods f " + SEARCH_FILTER
@@ -44,26 +51,27 @@ public interface NutritionFoodRepository extends JpaRepository<NutritionFood, Lo
                      greatest(
                          ts_rank(to_tsvector('english', f.name), to_tsquery('english', cast(:tsquery as text))),
                          ts_rank(to_tsvector('simple', coalesce(f.search_vi, '')), to_tsquery('simple', cast(:tsquery as text)))) desc,
-                     case when f.source = 'VN_FCT' then coalesce(f.name_vi, f.name) else f.name end, f.id
-            """,
+                     """ + DISPLAY_NAME_ORDER,
             countQuery = "select count(*) from nutrition_foods f " + SEARCH_FILTER,
             nativeQuery = true)
     Page<NutritionFood> search(@Param("tsquery") String tsquery, @Param("phrase") String phrase,
-                               @Param("groupId") String groupId, @Param("source") String source, Pageable pageable);
+                               @Param("groupId") String groupId, @Param("source") String source,
+                               @Param("vietnamese") boolean vietnamese, Pageable pageable);
 
     @Query(value = """
             select f.* from nutrition_foods f
             where (cast(:groupId as text) is null or f.group_id = cast(:groupId as text))
               and (cast(:source as text) is null or f.source = cast(:source as text))
-            order by case when f.source = 'VN_FCT' then coalesce(f.name_vi, f.name) else f.name end, f.id
-            """,
+            order by
+            """ + DISPLAY_NAME_ORDER,
             countQuery = """
             select count(*) from nutrition_foods f
             where (cast(:groupId as text) is null or f.group_id = cast(:groupId as text))
               and (cast(:source as text) is null or f.source = cast(:source as text))
             """,
             nativeQuery = true)
-    Page<NutritionFood> browse(@Param("groupId") String groupId, @Param("source") String source, Pageable pageable);
+    Page<NutritionFood> browse(@Param("groupId") String groupId, @Param("source") String source,
+                               @Param("vietnamese") boolean vietnamese, Pageable pageable);
 
     /** Mỗi dòng: group id, source, số thực phẩm. Nguồn Việt Nam đứng trước trong từng nhóm. */
     @Query("""

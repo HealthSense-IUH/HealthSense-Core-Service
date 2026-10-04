@@ -15,6 +15,7 @@ import fit.iuh.se.hsnutrition.repository.NutritionGuidanceFoodRepository;
 import fit.iuh.se.hsnutrition.service.NutritionCatalogService;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
+import fit.iuh.se.hsshared.i18n.LocalizedText;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -108,7 +109,9 @@ public class NutritionCatalogServiceImpl implements NutritionCatalogService {
     private NutritionFoodGroupResponse toResponse(NutritionFoodGroup group, GroupCounts counts) {
         Map<String, Long> sources = counts.bySource().getOrDefault(group.getId(), Map.of());
         long total = sources.values().stream().mapToLong(Long::longValue).sum();
-        return new NutritionFoodGroupResponse(group.getId(), group.getSlug(), group.getName(), group.getDescription(),
+        return new NutritionFoodGroupResponse(group.getId(), group.getSlug(),
+                LocalizedText.pick(group.getName(), group.getNameEn()),
+                LocalizedText.pick(group.getDescription(), group.getDescriptionEn()),
                 group.getIcon(), group.getImageUrl(), total, sources, counts.guidance().getOrDefault(group.getId(), 0L));
     }
 
@@ -121,16 +124,23 @@ public class NutritionCatalogServiceImpl implements NutritionCatalogService {
                 .filter(code -> !code.isEmpty())
                 .toList();
         List<EvidenceSource> evidence = item.getEvidenceSources().stream().map(this::toResponse).toList();
-        return new NutritionFoodResponse(item.getId(), group.getId(), group.getName(),
-                item.getFoodName(), item.getFoodNameSpecific(), item.getDescription(), item.getGuidance().name(),
-                item.getGuidanceTitle(), item.getGuidanceReason(), item.getCardiovascularContext(),
-                item.getAfContext(), item.getMedicationContext(), food.getSourceFoodCode(), food.getName(),
+        return new NutritionFoodResponse(item.getId(), group.getId(),
+                LocalizedText.pick(group.getName(), group.getNameEn()),
+                LocalizedText.pick(item.getFoodName(), item.getFoodNameEn()),
+                LocalizedText.pick(item.getFoodNameSpecific(), item.getFoodNameSpecificEn()),
+                LocalizedText.pick(item.getDescription(), item.getDescriptionEn()), item.getGuidance().name(),
+                LocalizedText.pick(item.getGuidanceTitle(), item.getGuidanceTitleEn()),
+                LocalizedText.pick(item.getGuidanceReason(), item.getGuidanceReasonEn()),
+                LocalizedText.pick(item.getCardiovascularContext(), item.getCardiovascularContextEn()),
+                LocalizedText.pick(item.getAfContext(), item.getAfContextEn()),
+                LocalizedText.pick(item.getMedicationContext(), item.getMedicationContextEn()),
+                food.getSourceFoodCode(), food.getName(),
                 PER_100_GRAMS, nutrients, highlights, evidence, item.getImageUrl());
     }
 
     private EvidenceSource toResponse(NutritionEvidenceSource source) {
         return new EvidenceSource(source.getId(), source.getTitle(), source.getSourceType().name(),
                 source.getAuthors(), source.getJournal(), source.getPublicationYear(), source.getUrl(),
-                source.getSummary());
+                LocalizedText.pick(source.getSummary(), source.getSummaryEn()));
     }
 }

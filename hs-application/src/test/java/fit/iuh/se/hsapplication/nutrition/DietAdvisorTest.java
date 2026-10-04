@@ -7,10 +7,13 @@ import fit.iuh.se.hsnutrition.entity.enums.DietRuleCode;
 import fit.iuh.se.hsnutrition.service.DietProfile;
 import fit.iuh.se.hsnutrition.service.DietThreshold;
 import fit.iuh.se.hsnutrition.service.impl.DietAdvisor;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
+import java.util.Locale;
 import java.util.List;
 import java.util.Map;
 
@@ -43,6 +46,17 @@ class DietAdvisorTest {
         for (int i = 0; i < fields.length; i += 2)
             ReflectionTestUtils.setField(food, (String) fields[i], new BigDecimal(fields[i + 1].toString()));
         return food;
+    }
+
+    /** Các test cũ kiểm câu tiếng Việt: giả request tiếng Việt (ngoài request thì mặc định tiếng Anh). */
+    @BeforeEach
+    void vietnameseRequest() {
+        RequestLanguageScope.use("vi");
+    }
+
+    @AfterEach
+    void clearRequest() {
+        RequestLanguageScope.clear();
     }
 
     private static List<String> codes(DietAdvice advice) {
@@ -149,5 +163,44 @@ class DietAdvisorTest {
         assertEquals("OK", DietAdvisor.advise(beer, sodiumOnly).level());
         assertEquals(List.of("SODIUM_LIMIT"),
                 codes(DietAdvisor.advise(food("MIXED_DISH", "sodiumMg", 800, "potassiumMg", 200), sodiumOnly)));
+    }
+
+    @Test
+    void reasonsFollowTheRequestLanguage() {
+        NutritionFood soup = food("MIXED_DISH", "sodiumMg", 482.9, "potassiumMg", 100);
+        DietAdvice english = DietAdvisor.advise(soup, AF, Locale.ENGLISH);
+        DietAdvice vietnamese = DietAdvisor.advise(soup, AF, Locale.forLanguageTag("vi"));
+        assertEquals(codes(vietnamese), codes(english));
+        String sodiumEn = english.reasons().stream().filter(r -> r.code().equals("SODIUM_LIMIT")).findFirst()
+                .orElseThrow().message();
+        assertEquals("High in salt: 482.9 mg sodium/100 g (red above 400 mg sodium/100 g). "
+                + "Your doctor asks you to limit salt.", sodiumEn);
+        String sodiumVi = vietnamese.reasons().stream().filter(r -> r.code().equals("SODIUM_LIMIT")).findFirst()
+                .orElseThrow().message();
+        assertEquals("Nhiều muối: 482,9 mg natri/100 g (đỏ khi trên 400 mg natri/100 g). "
+                + "Bác sĩ dặn bạn hạn chế muối.", sodiumVi);
+        assertTrue(english.reasons().stream().map(DietAdvice.Reason::message)
+                .noneMatch(m -> m.matches(".*[àáảãạăâđèéẻẽẹêìíỉĩịòóỏõọôơùúủũụưỳýỷỹỵ].*")), english.toString());
+
+        // Không truyền ngôn ngữ: theo request đang xử lý (ở đây là tiếng Việt)
+        assertEquals(vietnamese, DietAdvisor.advise(soup, AF));
+    }
+
+    @Test
+    void adviceBundlesHaveTheSameKeys() throws java.io.IOException {
+        java.util.Properties english = properties("i18n/diet_advice.properties");
+        java.util.Properties vietnamese = properties("i18n/diet_advice_vi.properties");
+        assertEquals(english.stringPropertyNames(), vietnamese.stringPropertyNames());
+        for (String key : vietnamese.stringPropertyNames())
+            assertFalse(vietnamese.getProperty(key).isBlank(), key);
+    }
+
+    private static java.util.Properties properties(String resource) throws java.io.IOException {
+        java.util.Properties properties = new java.util.Properties();
+        try (var in = DietAdvisorTest.class.getClassLoader().getResourceAsStream(resource)) {
+            assertNotNull(in, resource);
+            properties.load(new java.io.InputStreamReader(in, java.nio.charset.StandardCharsets.UTF_8));
+        }
+        return properties;
     }
 }

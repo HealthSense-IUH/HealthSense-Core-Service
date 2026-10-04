@@ -33,4 +33,7 @@ public class NutritionEvidenceSource {
     String url;
     @Column(length = 1000)
     String summary;
+    // Bản tiếng Anh (V30), trả khi request tiếng Anh; NULL thì dùng bản tiếng Việt
+    @Column(name = "summary_en", length = 1000)
+    String summaryEn;
 }

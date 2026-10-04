@@ -100,8 +100,8 @@ public class DoctorOfferServiceImpl implements DoctorOfferService {
         auditOffer(offer, BusinessEventType.DOCTOR_OFFERED, null,
                 ConsultationQueueStatus.WAITING, ConsultationQueueStatus.OFFERING_DOCTOR,
                 List.of(new NotificationIntent(doctor.getDoctorId(), UserRole.DOCTOR,
-                        NotificationType.DOCTOR_OFFER_AVAILABLE, "Lượt tư vấn mới",
-                        "Có một lượt tư vấn mới. Vui lòng xác nhận trong 5 phút.",
+                        NotificationType.DOCTOR_OFFER_AVAILABLE, "New consultation offer",
+                        "A new consultation is waiting. Please confirm within 5 minutes.",
                         BusinessDomainType.REQUEST, offer.requestId(), "offer:" + offer.offerId() + ":doctor")));
         return true;
     }
@@ -171,8 +171,8 @@ public class DoctorOfferServiceImpl implements DoctorOfferService {
             auditOffer(accepted, BusinessEventType.MEMBER_CONFIRMATION_STARTED, doctorId,
                     ConsultationQueueStatus.OFFERING_DOCTOR, ConsultationQueueStatus.WAITING_MEMBER_CONFIRMATION,
                     List.of(new NotificationIntent(accepted.memberId(), UserRole.MEMBER,
-                            NotificationType.MEMBER_CONFIRMATION_REQUIRED, "Bác sĩ đã sẵn sàng tư vấn",
-                            "Bác sĩ đã sẵn sàng tư vấn. Vui lòng xác nhận tham gia trong 15 phút.",
+                            NotificationType.MEMBER_CONFIRMATION_REQUIRED, "A doctor is ready for your consultation",
+                            "A doctor is ready for your consultation. Please confirm within 15 minutes.",
                             BusinessDomainType.REQUEST, accepted.requestId(),
                             "offer:" + accepted.offerId() + ":member-confirmation")));
         }
@@ -264,8 +264,8 @@ public class DoctorOfferServiceImpl implements DoctorOfferService {
         auditOffer(offer, BusinessEventType.MEMBER_CONFIRMATION_TIMEOUT, null,
                 ConsultationQueueStatus.WAITING_MEMBER_CONFIRMATION, ConsultationQueueStatus.TIMED_OUT,
                 List.of(new NotificationIntent(offer.memberId(), UserRole.MEMBER,
-                        NotificationType.MEMBER_CONFIRMATION_EXPIRED, "Lượt tư vấn đã hết hạn",
-                        "Thời gian xác nhận tham gia tư vấn đã hết. Vui lòng tạo yêu cầu mới khi cần.",
+                        NotificationType.MEMBER_CONFIRMATION_EXPIRED, "Consultation offer expired",
+                        "The time to confirm the consultation has passed. Please create a new request when needed.",
                         BusinessDomainType.REQUEST, offer.requestId(), "offer:" + offer.offerId() + ":expired")));
         applicationEvents.publishEvent(new DispatchRequested("member-confirmation-timeout"));
     }

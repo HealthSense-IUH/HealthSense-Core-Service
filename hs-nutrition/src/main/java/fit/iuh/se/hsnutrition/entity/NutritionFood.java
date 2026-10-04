@@ -43,6 +43,9 @@ public class NutritionFood {
      */
     @Column(length = 160)
     String category;
+    /** Tên phân loại tiếng Anh cho nguồn Việt Nam (V30); USDA để NULL vì category đã là tiếng Anh. */
+    @Column(name = "category_en", length = 160)
+    String categoryEn;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "group_id", nullable = false)

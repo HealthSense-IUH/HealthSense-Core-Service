@@ -55,6 +55,11 @@ public class NutritionDietRule {
 
     @Column(columnDefinition = "TEXT")
     String evidence;
+    // Bản tiếng Anh (V30), trả khi request tiếng Anh; NULL thì dùng bản tiếng Việt
+    @Column(name = "name_en", length = 120)
+    String nameEn;
+    @Column(name = "evidence_en", columnDefinition = "TEXT")
+    String evidenceEn;
 
     @Column(name = "evidence_url", length = 500)
     String evidenceUrl;
