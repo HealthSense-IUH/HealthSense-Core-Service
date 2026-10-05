@@ -314,10 +314,10 @@ public class WorkoutServiceImpl implements WorkoutService {
         String cardioLoadStatus = (weeklyMinutes < 45) ? "RECOVERY" : (weeklyMinutes <= 150 ? "OPTIMAL" : "OVERTRAINING");
 
         Optional<UserDailyStep> dailyStepOpt = dailyStepRepository.findByUserIdAndStepDate(userId, targetDate);
-        int finalSteps = dailyStepOpt.map(UserDailyStep::getTotalSteps).filter(st -> st > 0).orElse(Math.max(steps, 1616));
+        int finalSteps = dailyStepOpt.map(UserDailyStep::getTotalSteps).orElse(steps);
         int finalTargetSteps = dailyStepOpt.map(UserDailyStep::getTargetSteps).filter(tg -> tg > 0).orElse(6000);
-        int finalCalories = Math.max(caloriesBurned, dailyStepOpt.map(UserDailyStep::getCaloriesBurned).orElse(57));
-        int finalActiveMinutes = Math.max(activeMinutes, dailyStepOpt.map(UserDailyStep::getActiveMinutes).orElse(18));
+        int finalCalories = Math.max(caloriesBurned, dailyStepOpt.map(UserDailyStep::getCaloriesBurned).orElse(0));
+        int finalActiveMinutes = Math.max(activeMinutes, dailyStepOpt.map(UserDailyStep::getActiveMinutes).orElse(0));
 
         return DailyActivityResponse.builder()
                 .date(targetDate.toString())
@@ -491,25 +491,19 @@ public class WorkoutServiceImpl implements WorkoutService {
             return mapToDailyStepDetailResponse(opt.get());
         }
 
-        boolean isToday = targetDate.equals(LocalDate.now(zone));
-        int baseTotal = isToday ? 340 : 1850;
-        List<HourlyStepDto> fallbackHourly = new ArrayList<>();
+        List<HourlyStepDto> emptyHourly = new ArrayList<>();
         for (int h = 0; h < 24; h++) {
-            int steps = 0;
-            if (h == 16) steps = (int) Math.round(baseTotal * 0.35);
-            else if (h == 17) steps = (int) Math.round(baseTotal * 0.52);
-            else if (h == 18) steps = Math.max(0, baseTotal - (int) Math.round(baseTotal * 0.87));
-            fallbackHourly.add(new HourlyStepDto(h, steps));
+            emptyHourly.add(new HourlyStepDto(h, 0));
         }
 
         return DailyStepDetailResponse.builder()
                 .date(targetDate.toString())
-                .totalSteps(baseTotal)
-                .distanceKm(Double.parseDouble(String.format(Locale.US, "%.2f", baseTotal * 0.00076)))
-                .caloriesBurned((int) Math.round(baseTotal * 0.033))
+                .totalSteps(0)
+                .distanceKm(0.0)
+                .caloriesBurned(0)
                 .targetSteps(6000)
-                .activePeriodStr("Khoảng thời gian năng động nhất: 16:30 - 17:00")
-                .hourlyData(fallbackHourly)
+                .activePeriodStr("")
+                .hourlyData(emptyHourly)
                 .deviceSource("MOBILE")
                 .build();
     }
@@ -527,14 +521,13 @@ public class WorkoutServiceImpl implements WorkoutService {
         Map<LocalDate, UserDailyStep> map = stepsList.stream()
                 .collect(Collectors.toMap(UserDailyStep::getStepDate, s -> s, (a, b) -> a));
 
-        int[] sampleFallback = {420, 1280, 2150, 2480, 560, 3420, 340};
         List<DayStepItemDto> items = new ArrayList<>();
         int totalSum = 0;
 
         for (int i = 0; i < 7; i++) {
             LocalDate d = startDate.plusDays(i);
             UserDailyStep record = map.get(d);
-            int stepCount = (record != null) ? record.getTotalSteps() : sampleFallback[i];
+            int stepCount = (record != null) ? record.getTotalSteps() : 0;
             totalSum += stepCount;
 
             items.add(DayStepItemDto.builder()
@@ -548,11 +541,24 @@ public class WorkoutServiceImpl implements WorkoutService {
 
         int avgSteps = Math.round((float) totalSum / 7);
 
+        Double commAvg = dailyStepRepository.getCommunityAverageSteps(startDate);
+        int comparisonPercentile = 0;
+        int activeWeeklyTrendPercent = 0;
+        if (avgSteps > 0) {
+            if (commAvg != null && commAvg > 0) {
+                double ratio = (double) avgSteps / commAvg;
+                comparisonPercentile = (int) Math.min(99, Math.max(1, Math.round(ratio * 50.0)));
+                activeWeeklyTrendPercent = (int) Math.round((ratio - 1.0) * 100.0);
+            } else {
+                comparisonPercentile = Math.min(99, Math.max(1, (int) Math.round((avgSteps / 6000.0) * 70.0)));
+            }
+        }
+
         return StepHistoryResponse.builder()
                 .items(items)
-                .avgSteps(avgSteps > 0 ? avgSteps : 1788)
-                .comparisonPercentile(68)
-                .activeWeeklyTrendPercent(14)
+                .avgSteps(avgSteps)
+                .comparisonPercentile(comparisonPercentile)
+                .activeWeeklyTrendPercent(activeWeeklyTrendPercent)
                 .build();
     }
 
@@ -592,7 +598,7 @@ public class WorkoutServiceImpl implements WorkoutService {
             }
         }
 
-        int peakHour = 16;
+        int peakHour = -1;
         int maxSteps = 0;
         for (HourlyStepDto h : hourly) {
             if (h.getSteps() > maxSteps) {
@@ -600,8 +606,8 @@ public class WorkoutServiceImpl implements WorkoutService {
                 peakHour = h.getHour();
             }
         }
-        String activePeriodStr = (maxSteps == 0 || peakHour == 16 || peakHour == 17)
-                ? "Khoảng thời gian năng động nhất: 16:30 - 17:00"
+        String activePeriodStr = (maxSteps == 0 || peakHour == -1)
+                ? ""
                 : String.format(Locale.US, "Khoảng thời gian năng động nhất: %02d:00 - %02d:00", peakHour, peakHour + 1);
 
         double distKm = step.getDistanceMeters() != null
