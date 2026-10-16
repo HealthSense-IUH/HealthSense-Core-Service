@@ -1,5 +1,6 @@
 package fit.iuh.se.hsauth.service.auth;
 
+import fit.iuh.se.hsauth.dto.request.ChangePasswordRequest;
 import fit.iuh.se.hsauth.dto.request.LoginRequest;
 import fit.iuh.se.hsauth.dto.request.MobileLogoutRequest;
 import fit.iuh.se.hsauth.dto.request.MobileRefreshRequest;
@@ -9,6 +10,8 @@ import fit.iuh.se.hsauth.dto.response.RegisterResponse;
 import fit.iuh.se.hsauth.dto.token.AuthenticationResult;
 
 public interface AuthService {
+
+    void changePassword(Long userId, ChangePasswordRequest request);
 
     RegisterResponse register(RegisterRequest request);
 
