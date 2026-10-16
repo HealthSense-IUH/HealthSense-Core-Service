@@ -38,15 +38,40 @@ public class ConsultationStatisticsQueryRepository {
              ORDER BY status
             """;
 
+    private static final String MEMBER_SUMMARY_SQL = """
+            SELECT COUNT(*) AS total_consultations,
+                   COUNT(*) FILTER (
+                       WHERE created_at >= :from AND created_at < :to
+                   ) AS consultations_in_period,
+                   COUNT(*) FILTER (
+                       WHERE created_at >= :from AND created_at < :to AND status = 'COMPLETED'
+                   ) AS completed_in_period,
+                   COUNT(*) FILTER (
+                       WHERE created_at >= :from AND created_at < :to AND status = 'CANCELLED'
+                   ) AS cancelled_in_period
+              FROM consultation_sessions
+             WHERE member_id = :memberId
+            """;
+
+    private static final String MEMBER_STATUS_DISTRIBUTION_SQL = """
+            SELECT status AS category_key, COUNT(*) AS category_count
+              FROM consultation_sessions
+             WHERE member_id = :memberId
+               AND created_at >= :from AND created_at < :to
+             GROUP BY status
+             ORDER BY status
+            """;
+
     private final NamedParameterJdbcTemplate jdbc;
 
     public ConsultationStatisticsSummary summarize(Instant from, Instant to) {
         return jdbc.queryForObject(SUMMARY_SQL, rangeParameters(from, to), (resultSet, rowNumber) ->
-                new ConsultationStatisticsSummary(
-                        resultSet.getLong("total_consultations"),
-                        resultSet.getLong("consultations_in_period"),
-                        resultSet.getLong("completed_in_period"),
-                        resultSet.getLong("cancelled_in_period")));
+                summary(resultSet));
+    }
+
+    public ConsultationStatisticsSummary summarizeForMember(Long memberId, Instant from, Instant to) {
+        return jdbc.queryForObject(MEMBER_SUMMARY_SQL, memberRangeParameters(memberId, from, to),
+                (resultSet, rowNumber) -> summary(resultSet));
     }
 
     public List<ConsultationStatisticsBucket> consultationTrend(
@@ -69,6 +94,28 @@ public class ConsultationStatisticsQueryRepository {
                         resultSet.getLong("bucket_count")));
     }
 
+    public List<ConsultationStatisticsBucket> consultationTrendForMember(
+            Long memberId,
+            Instant from,
+            Instant to,
+            StatisticsGroupBy groupBy,
+            String timezone) {
+        String sql = """
+                SELECT CAST(date_trunc('%s', created_at AT TIME ZONE :timezone) AS date) AS bucket_start,
+                       COUNT(*) AS bucket_count
+                  FROM consultation_sessions
+                 WHERE member_id = :memberId
+                   AND created_at >= :from AND created_at < :to
+                 GROUP BY 1
+                 ORDER BY 1
+                """.formatted(groupBy.sqlUnit());
+        var parameters = memberRangeParameters(memberId, from, to).addValue("timezone", timezone);
+        return jdbc.query(sql, parameters, (resultSet, rowNumber) ->
+                new ConsultationStatisticsBucket(
+                        resultSet.getObject("bucket_start", LocalDate.class),
+                        resultSet.getLong("bucket_count")));
+    }
+
     public List<ConsultationStatisticsCategoryCount> statusDistribution(Instant from, Instant to) {
         return jdbc.query(STATUS_DISTRIBUTION_SQL, rangeParameters(from, to), (resultSet, rowNumber) ->
                 new ConsultationStatisticsCategoryCount(
@@ -76,9 +123,31 @@ public class ConsultationStatisticsQueryRepository {
                         resultSet.getLong("category_count")));
     }
 
+    public List<ConsultationStatisticsCategoryCount> statusDistributionForMember(
+            Long memberId,
+            Instant from,
+            Instant to) {
+        return jdbc.query(MEMBER_STATUS_DISTRIBUTION_SQL, memberRangeParameters(memberId, from, to),
+                (resultSet, rowNumber) -> new ConsultationStatisticsCategoryCount(
+                        resultSet.getString("category_key"),
+                        resultSet.getLong("category_count")));
+    }
+
+    private ConsultationStatisticsSummary summary(java.sql.ResultSet resultSet) throws java.sql.SQLException {
+        return new ConsultationStatisticsSummary(
+                resultSet.getLong("total_consultations"),
+                resultSet.getLong("consultations_in_period"),
+                resultSet.getLong("completed_in_period"),
+                resultSet.getLong("cancelled_in_period"));
+    }
+
     static MapSqlParameterSource rangeParameters(Instant from, Instant to) {
         return new MapSqlParameterSource()
                 .addValue("from", from.atOffset(ZoneOffset.UTC), Types.TIMESTAMP_WITH_TIMEZONE)
                 .addValue("to", to.atOffset(ZoneOffset.UTC), Types.TIMESTAMP_WITH_TIMEZONE);
+    }
+
+    static MapSqlParameterSource memberRangeParameters(Long memberId, Instant from, Instant to) {
+        return rangeParameters(from, to).addValue("memberId", memberId, Types.BIGINT);
     }
 }
