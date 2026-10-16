@@ -29,6 +29,8 @@ public enum ErrorCode {
     SESSION_NOT_FOUND(1005, "Session was not found", HttpStatus.UNAUTHORIZED),
     REFRESH_TOKEN_REUSED(1006, "Refresh token was already used", HttpStatus.UNAUTHORIZED),
     INVALID_TOKEN(1007, "Token is invalid or expired", HttpStatus.UNAUTHORIZED),
+    CURRENT_PASSWORD_INCORRECT(1008, "Current password is incorrect", HttpStatus.BAD_REQUEST),
+    NEW_PASSWORD_SAME_AS_CURRENT(1009, "New password must be different from current password", HttpStatus.BAD_REQUEST),
 
     // Data & persistence
     ENTITY_NOT_FOUND(3000, "Entity was not found", HttpStatus.NOT_FOUND),
