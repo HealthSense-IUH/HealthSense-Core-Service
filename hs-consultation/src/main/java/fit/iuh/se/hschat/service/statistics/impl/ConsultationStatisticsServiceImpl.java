@@ -65,6 +65,36 @@ public class ConsultationStatisticsServiceImpl implements ConsultationStatistics
                 statuses);
     }
 
+    @Override
+    public ConsultationStatisticsResponse getMemberStatistics(
+            Long memberId,
+            Instant from,
+            Instant to,
+            StatisticsGroupBy groupBy,
+            String timezone) {
+        if (memberId == null || memberId <= 0)
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        ZoneId zoneId = validate(from, to, groupBy, timezone);
+        var summary = repository.summarizeForMember(memberId, from, to);
+        var trend = fillMissingBuckets(
+                from,
+                to,
+                zoneId,
+                groupBy,
+                repository.consultationTrendForMember(memberId, from, to, groupBy, zoneId.getId()));
+        var statuses = fillStatusDistribution(repository.statusDistributionForMember(memberId, from, to));
+
+        return new ConsultationStatisticsResponse(
+                new StatisticsPeriodResponse(from, to, zoneId.getId(), groupBy),
+                new ConsultationStatisticsResponse.Summary(
+                        summary.totalConsultations(),
+                        summary.consultationsInPeriod(),
+                        summary.completedInPeriod(),
+                        summary.cancelledInPeriod()),
+                trend,
+                statuses);
+    }
+
     private ZoneId validate(Instant from, Instant to, StatisticsGroupBy groupBy, String timezone) {
         if (from == null)
             throw AppException.of(ErrorCode.INVALID_PARAMETER, "detail.statistics-from-required");
