@@ -14,4 +14,6 @@ public interface AuthSessionService {
     void updateRefreshTokenHash(Long userId, String sessionId, String refreshTokenHash, Duration ttl);
 
     void revoke(Long userId, String sessionId);
+
+    void revokeAll(Long userId);
 }

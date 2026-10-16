@@ -42,6 +42,47 @@ public class HealthRecordStatisticsQueryRepository {
              ORDER BY prediction_label
             """;
 
+    private static final String MEMBER_SUMMARY_SQL = """
+            SELECT COUNT(*) AS total_records,
+                   COUNT(*) FILTER (
+                       WHERE created_at >= :from AND created_at < :to
+                   ) AS records_in_period,
+                   COUNT(*) FILTER (
+                       WHERE created_at >= :from AND created_at < :to AND status = 'COMPLETED'
+                   ) AS completed_in_period,
+                   COUNT(*) FILTER (
+                       WHERE created_at >= :from AND created_at < :to AND status = 'FAILED'
+                   ) AS failed_in_period,
+                   COUNT(*) FILTER (
+                       WHERE created_at >= :from AND created_at < :to
+                         AND status = 'COMPLETED'
+                         AND prediction_label IN ('AFIB', 'AFIB_SUSPECTED')
+                   ) AS af_detected_or_suspected_in_period,
+                   MAX(created_at) AS latest_record_at
+              FROM health_records
+             WHERE user_id = :memberId
+            """;
+
+    private static final String MEMBER_RESULT_DISTRIBUTION_SQL = """
+            SELECT prediction_label AS category_key, COUNT(*) AS category_count
+              FROM health_records
+             WHERE user_id = :memberId
+               AND created_at >= :from AND created_at < :to
+               AND status = 'COMPLETED'
+               AND prediction_label IS NOT NULL
+             GROUP BY prediction_label
+             ORDER BY prediction_label
+            """;
+
+    private static final String MEMBER_STATUS_DISTRIBUTION_SQL = """
+            SELECT status AS category_key, COUNT(*) AS category_count
+              FROM health_records
+             WHERE user_id = :memberId
+               AND created_at >= :from AND created_at < :to
+             GROUP BY status
+             ORDER BY status
+            """;
+
     private final NamedParameterJdbcTemplate jdbc;
 
     public HealthRecordStatisticsSummary summarize(Instant from, Instant to) {
@@ -51,6 +92,20 @@ public class HealthRecordStatisticsQueryRepository {
                         resultSet.getLong("records_in_period"),
                         resultSet.getLong("unique_users_in_period"),
                         resultSet.getLong("af_detected_or_suspected_in_period")));
+    }
+
+    public MemberHealthRecordStatisticsSummary summarizeForMember(Long memberId, Instant from, Instant to) {
+        return jdbc.queryForObject(MEMBER_SUMMARY_SQL, memberRangeParameters(memberId, from, to),
+                (resultSet, rowNumber) -> {
+                    var latest = resultSet.getObject("latest_record_at", java.time.OffsetDateTime.class);
+                    return new MemberHealthRecordStatisticsSummary(
+                            resultSet.getLong("total_records"),
+                            resultSet.getLong("records_in_period"),
+                            resultSet.getLong("completed_in_period"),
+                            resultSet.getLong("failed_in_period"),
+                            resultSet.getLong("af_detected_or_suspected_in_period"),
+                            latest == null ? null : latest.toInstant());
+                });
     }
 
     public List<HealthRecordStatisticsBucket> recordTrend(
@@ -73,9 +128,51 @@ public class HealthRecordStatisticsQueryRepository {
                         resultSet.getLong("bucket_count")));
     }
 
+    public List<HealthRecordStatisticsBucket> recordTrendForMember(
+            Long memberId,
+            Instant from,
+            Instant to,
+            StatisticsGroupBy groupBy,
+            String timezone) {
+        String sql = """
+                SELECT CAST(date_trunc('%s', created_at AT TIME ZONE :timezone) AS date) AS bucket_start,
+                       COUNT(*) AS bucket_count
+                  FROM health_records
+                 WHERE user_id = :memberId
+                   AND created_at >= :from AND created_at < :to
+                 GROUP BY 1
+                 ORDER BY 1
+                """.formatted(groupBy.sqlUnit());
+        var parameters = memberRangeParameters(memberId, from, to).addValue("timezone", timezone);
+        return jdbc.query(sql, parameters, (resultSet, rowNumber) ->
+                new HealthRecordStatisticsBucket(
+                        resultSet.getObject("bucket_start", LocalDate.class),
+                        resultSet.getLong("bucket_count")));
+    }
+
     public List<HealthRecordStatisticsCategoryCount> resultDistribution(Instant from, Instant to) {
         return jdbc.query(RESULT_DISTRIBUTION_SQL, rangeParameters(from, to), (resultSet, rowNumber) ->
                 new HealthRecordStatisticsCategoryCount(
+                        resultSet.getString("category_key"),
+                        resultSet.getLong("category_count")));
+    }
+
+    public List<HealthRecordStatisticsCategoryCount> resultDistributionForMember(
+            Long memberId,
+            Instant from,
+            Instant to) {
+        return jdbc.query(MEMBER_RESULT_DISTRIBUTION_SQL, memberRangeParameters(memberId, from, to),
+                (resultSet, rowNumber) -> new HealthRecordStatisticsCategoryCount(
+                        resultSet.getString("category_key"),
+                        resultSet.getLong("category_count")));
+    }
+
+    public List<HealthRecordStatisticsCategoryCount> statusDistributionForMember(
+            Long memberId,
+            Instant from,
+            Instant to) {
+        return jdbc.query(MEMBER_STATUS_DISTRIBUTION_SQL, memberRangeParameters(memberId, from, to),
+                (resultSet, rowNumber) -> new HealthRecordStatisticsCategoryCount(
                         resultSet.getString("category_key"),
                         resultSet.getLong("category_count")));
     }
@@ -99,9 +196,34 @@ public class HealthRecordStatisticsQueryRepository {
                         resultSet.getLong("hour_count")));
     }
 
+    public List<HealthRecordStatisticsHourCount> recordedHourDistributionForMember(
+            Long memberId,
+            Instant from,
+            Instant to,
+            String timezone) {
+        String sql = """
+                SELECT CAST(EXTRACT(HOUR FROM created_at AT TIME ZONE :timezone) AS integer) AS recorded_hour,
+                       COUNT(*) AS hour_count
+                  FROM health_records
+                 WHERE user_id = :memberId
+                   AND created_at >= :from AND created_at < :to
+                 GROUP BY 1
+                 ORDER BY 1
+                """;
+        var parameters = memberRangeParameters(memberId, from, to).addValue("timezone", timezone);
+        return jdbc.query(sql, parameters, (resultSet, rowNumber) ->
+                new HealthRecordStatisticsHourCount(
+                        resultSet.getInt("recorded_hour"),
+                        resultSet.getLong("hour_count")));
+    }
+
     static MapSqlParameterSource rangeParameters(Instant from, Instant to) {
         return new MapSqlParameterSource()
                 .addValue("from", from.atOffset(ZoneOffset.UTC), Types.TIMESTAMP_WITH_TIMEZONE)
                 .addValue("to", to.atOffset(ZoneOffset.UTC), Types.TIMESTAMP_WITH_TIMEZONE);
+    }
+
+    static MapSqlParameterSource memberRangeParameters(Long memberId, Instant from, Instant to) {
+        return rangeParameters(from, to).addValue("memberId", memberId, Types.BIGINT);
     }
 }

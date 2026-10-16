@@ -1,5 +1,6 @@
 package fit.iuh.se.hsauth.service.auth.impl;
 
+import fit.iuh.se.hsauth.dto.request.ChangePasswordRequest;
 import fit.iuh.se.hsauth.dto.request.LoginRequest;
 import fit.iuh.se.hsauth.dto.request.MobileLogoutRequest;
 import fit.iuh.se.hsauth.dto.request.MobileRefreshRequest;
@@ -66,6 +67,24 @@ public class AuthServiceImpl implements AuthService {
     @NonFinal
     @Value("${app.dev.default-login-password:Test123@}")
     String defaultLoginPassword;
+
+    @Override
+    @Transactional
+    public void changePassword(Long userId, ChangePasswordRequest request) {
+        UserAccount userAccount = userAccountRepository.findByIdForUpdate(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        validateActiveAccount(userAccount);
+
+        if (!passwordEncoder.matches(request.getCurrentPassword(), userAccount.getPasswordHash()))
+            throw new AppException(ErrorCode.CURRENT_PASSWORD_INCORRECT);
+
+        if (passwordEncoder.matches(request.getNewPassword(), userAccount.getPasswordHash()))
+            throw new AppException(ErrorCode.NEW_PASSWORD_SAME_AS_CURRENT);
+
+        userAccount.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        userAccountRepository.save(userAccount);
+        authSessionService.revokeAll(userId);
+    }
 
     @Override
     @Transactional

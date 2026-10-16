@@ -26,4 +26,17 @@ class HealthRecordStatisticsQueryRepositoryTest {
         assertEquals(from.atOffset(ZoneOffset.UTC), parameters.getValue("from"));
         assertEquals(to.atOffset(ZoneOffset.UTC), parameters.getValue("to"));
     }
+
+    @Test
+    void bindsMemberIdentityWithBigintType() {
+        Instant from = Instant.parse("2026-09-30T17:00:00Z");
+        Instant to = Instant.parse("2026-10-07T17:00:00Z");
+
+        var parameters = HealthRecordStatisticsQueryRepository.memberRangeParameters(123L, from, to);
+
+        assertEquals(Types.BIGINT, parameters.getSqlType("memberId"));
+        assertEquals(123L, parameters.getValue("memberId"));
+        assertEquals(Types.TIMESTAMP_WITH_TIMEZONE, parameters.getSqlType("from"));
+        assertEquals(Types.TIMESTAMP_WITH_TIMEZONE, parameters.getSqlType("to"));
+    }
 }

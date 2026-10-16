@@ -82,6 +82,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
                 .requestMatchers("/api/credits/**").hasRole("MEMBER")
+                .requestMatchers("/api/member/**").hasRole("MEMBER")
+                .requestMatchers("/api/doctor/**").hasRole("DOCTOR")
                 .requestMatchers(ADMIN_ENDPOINTS).hasAnyRole("SUPER_ADMIN", "ADMIN")
                 .requestMatchers(CONSULTATION_MANAGEMENT_ENDPOINTS).hasAnyRole("SUPER_ADMIN", "ADMIN", "CARE_COORDINATOR")
                 .anyRequest().authenticated()

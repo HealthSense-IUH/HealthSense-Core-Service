@@ -102,7 +102,20 @@ public class CreditPurchaseCompletionService {
                         "Consultation credits added", order.getCreditQuantity() + " consultation credits were added to your wallet.",
                         BusinessDomainType.CONSULTATION_CREDIT, orderId, "credit-purchase:notification:" + orderId)))
                 .build());
-        var event = new CreditPurchaseCompleted(orderId, order.getMemberId(), order.getCreditQuantity(), attempt.getProvider());
+        var event = new CreditPurchaseCompleted(
+                orderId,
+                order.getMemberId(),
+                order.getPackageCode(),
+                order.getPackageName(),
+                order.getCreditQuantity(),
+                order.getAmountVnd(),
+                order.getCurrency(),
+                attempt.getProvider(),
+                now,
+                wallet.balance(),
+                wallet.reserved(),
+                wallet.available()
+        );
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
