@@ -1,7 +1,9 @@
 package fit.iuh.se.hshealthrecord.service.statistics.impl;
 
 import fit.iuh.se.hshealthrecord.dto.response.statistics.HealthRecordStatisticsResponse;
+import fit.iuh.se.hshealthrecord.dto.response.statistics.MemberHealthRecordStatisticsResponse;
 import fit.iuh.se.hshealthrecord.entity.enums.PredictionLabel;
+import fit.iuh.se.hshealthrecord.entity.enums.RecordStatus;
 import fit.iuh.se.hshealthrecord.repository.statistics.HealthRecordStatisticsBucket;
 import fit.iuh.se.hshealthrecord.repository.statistics.HealthRecordStatisticsQueryRepository;
 import fit.iuh.se.hshealthrecord.service.statistics.HealthRecordStatisticsService;
@@ -63,6 +65,39 @@ public class HealthRecordStatisticsServiceImpl implements HealthRecordStatistics
                 trend,
                 fillResultDistribution(repository.resultDistribution(from, to)),
                 fillHourDistribution(repository.recordedHourDistribution(from, to, zoneId.getId())));
+    }
+
+    @Override
+    public MemberHealthRecordStatisticsResponse getMemberStatistics(
+            Long memberId,
+            Instant from,
+            Instant to,
+            StatisticsGroupBy groupBy,
+            String timezone) {
+        if (memberId == null || memberId <= 0) throw new AppException(ErrorCode.UNAUTHORIZED);
+        ZoneId zoneId = validate(from, to, groupBy, timezone);
+        var summary = repository.summarizeForMember(memberId, from, to);
+        var trend = fillMissingBuckets(
+                from,
+                to,
+                zoneId,
+                groupBy,
+                repository.recordTrendForMember(memberId, from, to, groupBy, zoneId.getId()));
+
+        return new MemberHealthRecordStatisticsResponse(
+                new StatisticsPeriodResponse(from, to, zoneId.getId(), groupBy),
+                new MemberHealthRecordStatisticsResponse.Summary(
+                        summary.totalRecords(),
+                        summary.recordsInPeriod(),
+                        summary.completedInPeriod(),
+                        summary.failedInPeriod(),
+                        summary.afDetectedOrSuspectedInPeriod(),
+                        summary.latestRecordAt()),
+                trend,
+                fillMemberResultDistribution(repository.resultDistributionForMember(memberId, from, to)),
+                fillMemberStatusDistribution(repository.statusDistributionForMember(memberId, from, to)),
+                fillMemberHourDistribution(
+                        repository.recordedHourDistributionForMember(memberId, from, to, zoneId.getId())));
     }
 
     private ZoneId validate(Instant from, Instant to, StatisticsGroupBy groupBy, String timezone) {
@@ -138,6 +173,38 @@ public class HealthRecordStatisticsServiceImpl implements HealthRecordStatistics
         values.forEach(value -> counts.put(value.hour(), value.count()));
         return counts.entrySet().stream()
                 .map(entry -> new HealthRecordStatisticsResponse.HourCount(entry.getKey(), entry.getValue()))
+                .toList();
+    }
+
+    private List<MemberHealthRecordStatisticsResponse.CategoryCount> fillMemberResultDistribution(
+            List<fit.iuh.se.hshealthrecord.repository.statistics.HealthRecordStatisticsCategoryCount> values) {
+        EnumMap<PredictionLabel, Long> counts = new EnumMap<>(PredictionLabel.class);
+        Arrays.stream(PredictionLabel.values()).forEach(label -> counts.put(label, 0L));
+        values.forEach(value -> counts.put(PredictionLabel.valueOf(value.key()), value.count()));
+        return counts.entrySet().stream()
+                .map(entry -> new MemberHealthRecordStatisticsResponse.CategoryCount(
+                        entry.getKey().name(), entry.getValue()))
+                .toList();
+    }
+
+    private List<MemberHealthRecordStatisticsResponse.CategoryCount> fillMemberStatusDistribution(
+            List<fit.iuh.se.hshealthrecord.repository.statistics.HealthRecordStatisticsCategoryCount> values) {
+        EnumMap<RecordStatus, Long> counts = new EnumMap<>(RecordStatus.class);
+        Arrays.stream(RecordStatus.values()).forEach(status -> counts.put(status, 0L));
+        values.forEach(value -> counts.put(RecordStatus.valueOf(value.key()), value.count()));
+        return counts.entrySet().stream()
+                .map(entry -> new MemberHealthRecordStatisticsResponse.CategoryCount(
+                        entry.getKey().name(), entry.getValue()))
+                .toList();
+    }
+
+    private List<MemberHealthRecordStatisticsResponse.HourCount> fillMemberHourDistribution(
+            List<fit.iuh.se.hshealthrecord.repository.statistics.HealthRecordStatisticsHourCount> values) {
+        Map<Integer, Long> counts = new LinkedHashMap<>();
+        IntStream.range(0, 24).forEach(hour -> counts.put(hour, 0L));
+        values.forEach(value -> counts.put(value.hour(), value.count()));
+        return counts.entrySet().stream()
+                .map(entry -> new MemberHealthRecordStatisticsResponse.HourCount(entry.getKey(), entry.getValue()))
                 .toList();
     }
 }
