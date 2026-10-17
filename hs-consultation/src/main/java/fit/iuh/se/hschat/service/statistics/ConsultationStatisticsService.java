@@ -12,4 +12,11 @@ public interface ConsultationStatisticsService {
             Instant to,
             StatisticsGroupBy groupBy,
             String timezone);
+
+    ConsultationStatisticsResponse getMemberStatistics(
+            Long memberId,
+            Instant from,
+            Instant to,
+            StatisticsGroupBy groupBy,
+            String timezone);
 }

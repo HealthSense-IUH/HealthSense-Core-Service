@@ -20,6 +20,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -109,6 +110,42 @@ class ConsultationStatisticsServiceImplTest {
 
         assertThrows(AppException.class,
                 () -> service.getStatistics(from, to, StatisticsGroupBy.DAY, "Mars/Olympus"));
+
+        verifyNoInteractions(repository);
+    }
+
+    @Test
+    void returnsStatisticsRestrictedToAuthenticatedMember() {
+        Instant from = Instant.parse("2026-09-30T17:00:00Z");
+        Instant to = Instant.parse("2026-10-03T17:00:00Z");
+        when(repository.summarizeForMember(123L, from, to))
+                .thenReturn(new ConsultationStatisticsSummary(12, 3, 2, 1));
+        when(repository.consultationTrendForMember(
+                123L, from, to, StatisticsGroupBy.DAY, "Asia/Ho_Chi_Minh"))
+                .thenReturn(List.of(new ConsultationStatisticsBucket(LocalDate.parse("2026-10-02"), 3)));
+        when(repository.statusDistributionForMember(123L, from, to)).thenReturn(List.of(
+                new ConsultationStatisticsCategoryCount("COMPLETED", 2),
+                new ConsultationStatisticsCategoryCount("CANCELLED", 1)));
+
+        var result = service.getMemberStatistics(
+                123L, from, to, StatisticsGroupBy.DAY, "Asia/Ho_Chi_Minh");
+
+        assertEquals(12, result.summary().totalConsultations());
+        assertEquals(3, result.summary().consultationsInPeriod());
+        assertEquals(2, result.summary().completedInPeriod());
+        assertEquals(1, result.summary().cancelledInPeriod());
+        assertEquals(3, result.consultationTrend().size());
+        assertEquals(3, result.consultationTrend().get(1).count());
+        verify(repository).summarizeForMember(123L, from, to);
+    }
+
+    @Test
+    void rejectsMissingMemberIdentityBeforeQueryingRepository() {
+        Instant from = Instant.parse("2026-09-01T00:00:00Z");
+        Instant to = Instant.parse("2026-10-01T00:00:00Z");
+
+        assertThrows(AppException.class,
+                () -> service.getMemberStatistics(null, from, to, StatisticsGroupBy.DAY, "Asia/Ho_Chi_Minh"));
 
         verifyNoInteractions(repository);
     }

@@ -1,5 +1,6 @@
 package fit.iuh.se.hsapplication.controller.auth;
 
+import fit.iuh.se.hsauth.dto.request.ChangePasswordRequest;
 import fit.iuh.se.hsauth.dto.request.LoginRequest;
 import fit.iuh.se.hsauth.dto.response.LoginResponse;
 import fit.iuh.se.hsauth.dto.token.AuthenticationResult;
@@ -7,6 +8,7 @@ import fit.iuh.se.hsauth.entity.enums.CookieType;
 import fit.iuh.se.hsauth.service.auth.AuthService;
 import fit.iuh.se.hsauth.service.cookie.AuthCookieService;
 import fit.iuh.se.hsshared.dto.response.ApiResponse;
+import fit.iuh.se.hsapplication.dto.auth.UserAuthentication;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -15,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -28,6 +31,17 @@ public class DefaultAuthController {
 
     AuthService authService;
     AuthCookieService authCookieService;
+
+    @PostMapping("/change-password")
+    public ApiResponse<Void> changePassword(
+            @AuthenticationPrincipal UserAuthentication currentUser,
+            @Valid @RequestBody ChangePasswordRequest request,
+            HttpServletResponse response) {
+        authService.changePassword(currentUser.getUserId(), request);
+        response.addHeader(HttpHeaders.SET_COOKIE, authCookieService.clearRefreshTokenCookie().toString());
+        response.addHeader(HttpHeaders.SET_COOKIE, authCookieService.clearSessionIdCookie().toString());
+        return new ApiResponse<>(1000, "Password changed successfully");
+    }
 
     @PostMapping("/login")
     public ApiResponse<LoginResponse> login(

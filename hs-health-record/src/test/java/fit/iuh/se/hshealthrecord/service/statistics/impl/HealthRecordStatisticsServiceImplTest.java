@@ -5,6 +5,7 @@ import fit.iuh.se.hshealthrecord.repository.statistics.HealthRecordStatisticsCat
 import fit.iuh.se.hshealthrecord.repository.statistics.HealthRecordStatisticsHourCount;
 import fit.iuh.se.hshealthrecord.repository.statistics.HealthRecordStatisticsQueryRepository;
 import fit.iuh.se.hshealthrecord.repository.statistics.HealthRecordStatisticsSummary;
+import fit.iuh.se.hshealthrecord.repository.statistics.MemberHealthRecordStatisticsSummary;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.statistics.StatisticsCountBucketResponse;
 import fit.iuh.se.hsshared.statistics.StatisticsGroupBy;
@@ -21,6 +22,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -112,6 +114,39 @@ class HealthRecordStatisticsServiceImplTest {
                 () -> service.getStatistics(from, to, StatisticsGroupBy.DAY, "Mars/Olympus"));
 
         verifyNoInteractions(repository);
+    }
+
+    @Test
+    void returnsHealthStatisticsRestrictedToMember() {
+        Instant from = Instant.parse("2026-09-30T17:00:00Z");
+        Instant to = Instant.parse("2026-10-03T17:00:00Z");
+        Instant latest = Instant.parse("2026-10-02T02:00:00Z");
+        when(repository.summarizeForMember(123L, from, to))
+                .thenReturn(new MemberHealthRecordStatisticsSummary(8, 3, 2, 1, 1, latest));
+        when(repository.recordTrendForMember(123L, from, to, StatisticsGroupBy.DAY, "Asia/Ho_Chi_Minh"))
+                .thenReturn(List.of(new HealthRecordStatisticsBucket(LocalDate.parse("2026-10-02"), 3)));
+        when(repository.resultDistributionForMember(123L, from, to)).thenReturn(List.of(
+                new HealthRecordStatisticsCategoryCount("NORMAL", 1),
+                new HealthRecordStatisticsCategoryCount("AFIB_SUSPECTED", 1)));
+        when(repository.statusDistributionForMember(123L, from, to)).thenReturn(List.of(
+                new HealthRecordStatisticsCategoryCount("COMPLETED", 2),
+                new HealthRecordStatisticsCategoryCount("FAILED", 1)));
+        when(repository.recordedHourDistributionForMember(123L, from, to, "Asia/Ho_Chi_Minh"))
+                .thenReturn(List.of(new HealthRecordStatisticsHourCount(9, 3)));
+
+        var result = service.getMemberStatistics(
+                123L, from, to, StatisticsGroupBy.DAY, "Asia/Ho_Chi_Minh");
+
+        assertEquals(8, result.summary().totalRecords());
+        assertEquals(3, result.summary().recordsInPeriod());
+        assertEquals(1, result.summary().afDetectedOrSuspectedInPeriod());
+        assertEquals(latest, result.summary().latestRecordAt());
+        assertEquals(3, result.recordTrend().size());
+        assertEquals(4, result.resultDistribution().size());
+        assertEquals(4, result.statusDistribution().size());
+        assertEquals(24, result.recordedHourDistribution().size());
+        assertEquals(3, result.recordedHourDistribution().get(9).count());
+        verify(repository).summarizeForMember(123L, from, to);
     }
 
     private void stubEmptyRepository(

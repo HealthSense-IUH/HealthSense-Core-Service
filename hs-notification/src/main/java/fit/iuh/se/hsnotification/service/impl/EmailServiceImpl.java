@@ -1,5 +1,6 @@
 package fit.iuh.se.hsnotification.service.impl;
 
+import fit.iuh.se.hsnotification.dto.command.CreditPurchaseReceiptMailCommand;
 import fit.iuh.se.hsnotification.service.EmailService;
 import jakarta.mail.internet.MimeMessage;
 import lombok.AccessLevel;
@@ -17,12 +18,19 @@ import org.thymeleaf.spring6.SpringTemplateEngine;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class EmailServiceImpl implements EmailService {
+
+    private static final DateTimeFormatter RECEIPT_TIME_FORMATTER = DateTimeFormatter
+            .ofPattern("HH:mm:ss dd/MM/yyyy")
+            .withZone(ZoneId.of("Asia/Ho_Chi_Minh"));
 
     JavaMailSender mailSender;
     SpringTemplateEngine templateEngine;
@@ -90,6 +98,46 @@ public class EmailServiceImpl implements EmailService {
             mailSender.send(message);
         } catch (Exception exception) {
             log.warn("Failed to send temporary password email to {}", email, exception);
+        }
+    }
+
+    @Async
+    @Override
+    public void sendCreditPurchaseReceiptAsync(CreditPurchaseReceiptMailCommand command) {
+        try {
+            String safeName = command.displayName() == null || command.displayName().isBlank()
+                    ? command.recipientEmail()
+                    : command.displayName().trim();
+            Context context = new Context(Locale.forLanguageTag("vi-VN"));
+            context.setVariable("displayName", safeName);
+            context.setVariable("orderId", command.orderId().toString());
+            context.setVariable("packageCode", command.packageCode());
+            context.setVariable("packageName", command.packageName());
+            context.setVariable("creditQuantity", String.format(Locale.US, "%,d", command.creditQuantity()));
+            context.setVariable("amount", String.format(Locale.US, "%,d", command.amountVnd()).replace(',', '.'));
+            context.setVariable("currency", command.currency());
+            context.setVariable("provider", command.provider());
+            context.setVariable("paidAt", RECEIPT_TIME_FORMATTER.format(command.paidAt()));
+            context.setVariable("walletBalance", String.format(Locale.US, "%,d", command.walletBalance()));
+            context.setVariable("walletReserved", String.format(Locale.US, "%,d", command.walletReserved()));
+            context.setVariable("walletAvailable", String.format(Locale.US, "%,d", command.walletAvailable()));
+            String html = templateEngine.process("mail/credit-purchase-receipt", context);
+
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(
+                    message,
+                    MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED,
+                    StandardCharsets.UTF_8.name()
+            );
+            helper.setFrom(from);
+            helper.setTo(command.recipientEmail());
+            helper.setSubject("Thanh toán mua token thành công - HealthSense");
+            helper.setText(html, true);
+
+            mailSender.send(message);
+        } catch (Exception exception) {
+            log.warn("Failed to send credit purchase receipt email for order {} to {}",
+                    command.orderId(), command.recipientEmail(), exception);
         }
     }
 }
