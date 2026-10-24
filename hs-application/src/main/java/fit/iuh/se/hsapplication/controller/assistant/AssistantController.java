@@ -36,7 +36,7 @@ import java.util.Map;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class AssistantController {
 
-	static final long STREAM_TIMEOUT_MS = 120_000L;
+	static final long STREAM_TIMEOUT_MS = 180_000L;
 
 	AssistantConversationService conversationService;
 	AssistantChatService chatService;

@@ -8,6 +8,7 @@ import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
@@ -199,6 +200,22 @@ public class S3Service {
         } catch (Exception e) {
             log.warn("Failed to delete file from S3 (key: {}): {}", objectKey, e.getMessage());
             // Không ném ngoại lệ để tránh rollback transaction chính trong Database
+        }
+    }
+
+    /**
+     * Tải toàn bộ nội dung một object về bộ nhớ (file tài liệu cỡ nhỏ, ví dụ ingest kho tri thức).
+     */
+    public byte[] downloadFile(String objectKey) {
+        log.info("Downloading file from S3 bucket: {}, key: {}", s3Config.getBucketName(), objectKey);
+        try {
+            return s3Client.getObjectAsBytes(GetObjectRequest.builder()
+                    .bucket(s3Config.getBucketName())
+                    .key(objectKey)
+                    .build()).asByteArray();
+        } catch (Exception e) {
+            log.error("Failed to download file from S3 for key {}: {}", objectKey, e.getMessage(), e);
+            throw new RuntimeException("Không thể tải file từ hệ thống lưu trữ S3: " + e.getMessage(), e);
         }
     }
 
