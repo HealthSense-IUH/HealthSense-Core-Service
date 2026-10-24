@@ -28,6 +28,7 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Quản lý tài liệu tri thức (admin): tải lên MinIO/S3, lưu metadata, rồi đẩy message để worker ingest
@@ -132,11 +133,13 @@ public class KnowledgeDocumentService {
 		repository.delete(doc);
 		s3Service.deleteFile(doc.getObjectKey());
 		// vector ở Qdrant do worker cloud xoá; không gửi được thì chỉ cảnh báo (vector mồ côi không ảnh hưởng tra cứu vì bản ghi đã mất)
-		try {
-			publish(id, KnowledgeIngestMessage.Action.DELETE);
-		} catch (Exception e) {
-			log.warn("Không gửi được yêu cầu xoá vector cho tài liệu {}: {}", id, e.toString());
-		}
+		CompletableFuture.runAsync(() -> {
+			try {
+				publish(id, KnowledgeIngestMessage.Action.DELETE);
+			} catch (Exception e) {
+				log.warn("Không gửi được yêu cầu xoá vector cho tài liệu {}: {}", id, e.toString());
+			}
+		});
 		log.info("Knowledge document {} deleted, vector cleanup requested", id);
 	}
 
@@ -145,17 +148,25 @@ public class KnowledgeDocumentService {
 				.orElseThrow(() -> AppException.of(ErrorCode.ENTITY_NOT_FOUND, "detail.knowledge-document-not-found"));
 	}
 
-	/** Gửi yêu cầu ingest; RabbitMQ không tới được thì đánh dấu FAILED kèm lý do để admin bấm "Ingest lại" sau. */
+	/**
+	 * Gửi yêu cầu ingest ở luồng nền để API trả về ngay (kết nối broker có thể mất cả phút khi không tới được).
+	 * RabbitMQ không tới được thì đánh dấu FAILED kèm lý do; trang quản trị tự làm mới nên admin thấy và bấm "Ingest lại" sau.
+	 */
 	private void requestIngest(KnowledgeDocument doc) {
-		try {
-			publish(doc.getId(), KnowledgeIngestMessage.Action.INGEST);
-		} catch (Exception e) {
-			log.error("Không gửi được yêu cầu ingest cho tài liệu {}: {}", doc.getId(), e.toString());
-			doc.setStatus(KnowledgeDocumentStatus.FAILED);
-			doc.setErrorMessage("Không gửi được yêu cầu ingest tới RabbitMQ: " + abbreviate(e.getMessage(), 300));
-			doc.setUpdatedAt(Instant.now());
-			repository.save(doc);
-		}
+		String id = doc.getId();
+		CompletableFuture.runAsync(() -> {
+			try {
+				publish(id, KnowledgeIngestMessage.Action.INGEST);
+			} catch (Exception e) {
+				log.error("Không gửi được yêu cầu ingest cho tài liệu {}: {}", id, e.toString());
+				repository.findById(id).ifPresent(d -> {
+					d.setStatus(KnowledgeDocumentStatus.FAILED);
+					d.setErrorMessage("Không gửi được yêu cầu ingest tới RabbitMQ: " + abbreviate(e.getMessage(), 300));
+					d.setUpdatedAt(Instant.now());
+					repository.save(d);
+				});
+			}
+		});
 	}
 
 	private void publish(String documentId, KnowledgeIngestMessage.Action action) {
