@@ -42,16 +42,31 @@
         <module>hs-consultation</module>
         <module>hs-notification</module>
         <module>hs-health-record</module>
+        <module>hs-assistant</module>
         <module>hs-application</module>
     </modules>
 
     <properties>
         <java.version>21</java.version>
         <maven.compiler.release>${java.version}</maven.compiler.release>
+        <spring-ai.version>2.0.1</spring-ai.version>
     </properties>
 
     <dependencies>
     </dependencies>
+
+    <!-- Spring AI (trợ lý AI trong hs-assistant): quản lý phiên bản chung cho mọi module -->
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-bom</artifactId>
+                <version>${spring-ai.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <build>
         <pluginManagement>

@@ -1,5 +1,6 @@
 package fit.iuh.se.hsapplication.config.security;
 
+import jakarta.servlet.DispatcherType;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -79,6 +80,10 @@ public class SecurityConfig {
                         .authenticationEntryPoint(restAuthenticationEntryPoint)
                         .accessDeniedHandler(restAccessDeniedHandler));
         httpSecurity.authorizeHttpRequests(request -> request
+                // Lượt dispatch ASYNC chỉ do container tạo ra sau khi request gốc đã được xác thực
+                // (SseEmitter/DeferredResult hoàn tất). JWT filter không chạy lại ở lượt này nên phải cho qua,
+                // nếu không AuthorizationFilter sẽ chặn và cắt ngang luồng SSE đang trả về.
+                .dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
                 .requestMatchers("/api/credits/**").hasRole("MEMBER")

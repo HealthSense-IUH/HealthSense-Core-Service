@@ -17,7 +17,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
         "fit.iuh.se.hsnutrition.repository",
         "fit.iuh.se.hsoperations.repository",
         "fit.iuh.se.hshealthrecord.repository",
-        "fit.iuh.se.hschat.repository"
+        "fit.iuh.se.hschat.repository",
+        "fit.iuh.se.hsassistant.repository"
 })
 @EnableMongoRepositories(basePackages = {
         "fit.iuh.se.hschat.repository",

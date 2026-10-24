@@ -76,6 +76,11 @@
             <artifactId>hs-consultation</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>fit.iuh.se</groupId>
+            <artifactId>hs-assistant</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <!-- spring web -->
         <dependency>
