@@ -120,16 +120,6 @@ public class WorkoutController {
         return new ApiResponse<>(workoutService.getDailyActivity(currentUser.getUserId(), date, timezone));
     }
 
-    @GetMapping(value = "/sessions/{id}/gpx", produces = "application/gpx+xml")
-    public org.springframework.http.ResponseEntity<byte[]> exportGpx(
-            @AuthenticationPrincipal UserAuthentication currentUser,
-            @PathVariable Long id) {
-        byte[] gpxBytes = workoutService.generateGpxFile(currentUser.getUserId(), id);
-        return org.springframework.http.ResponseEntity.ok()
-                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"workout_session_" + id + ".gpx\"")
-                .body(gpxBytes);
-    }
-
     @PostMapping("/steps/sync")
     public ApiResponse<DailyStepDetailResponse> syncStepData(
             @AuthenticationPrincipal UserAuthentication currentUser,

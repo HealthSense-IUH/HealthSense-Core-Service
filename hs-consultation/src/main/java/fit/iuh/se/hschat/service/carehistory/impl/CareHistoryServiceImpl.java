@@ -56,18 +56,6 @@ public class CareHistoryServiceImpl implements CareHistoryService {
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public CareHistoryEpisodeResponse getMemberEpisode(Long memberId, Long sessionId) {
-        ConsultationSession session = sessionRepository.findById(sessionId)
-                .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_NOT_FOUND));
-        if (!session.getMemberId().equals(memberId))
-            throw new AppException(ErrorCode.CONSULTATION_ACCESS_DENIED);
-        if (session.getActivatedAt() == null)
-            throw AppException.of(ErrorCode.CONSULTATION_NOT_ACTIVE, "detail.care-history-requires-activation");
-        return toMemberEpisode(session);
-    }
-
-    @Override
     @Transactional
     public List<CareContinuitySummaryResponse> getContinuitySummaries(
             Long doctorId, Long currentSessionId) {

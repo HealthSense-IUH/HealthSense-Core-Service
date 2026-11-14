@@ -35,11 +35,4 @@ public class CareHistoryController {
         return new ApiResponse<>(careHistoryService.getMemberHistory(currentUser.getUserId(), pageable));
     }
 
-    @GetMapping("/{sessionId}")
-    public ApiResponse<CareHistoryEpisodeResponse> getEpisode(
-            @AuthenticationPrincipal UserAuthentication currentUser,
-            @PathVariable Long sessionId) {
-        return new ApiResponse<>(careHistoryService.getMemberEpisode(
-                currentUser.getUserId(), sessionId));
-    }
 }

@@ -84,10 +84,4 @@ public class ConsultationRequestController {
         return new ApiResponse<>(consultationRequestService.submitMoreInfo(currentUser.getUserId(), requestId, request));
     }
 
-    @GetMapping("/{requestId}")
-    public ApiResponse<ConsultationRequestResponse> getMyRequestById(
-            @AuthenticationPrincipal UserAuthentication currentUser,
-            @PathVariable Long requestId) {
-        return new ApiResponse<>(consultationRequestService.getMyRequestById(currentUser.getUserId(), requestId));
-    }
 }

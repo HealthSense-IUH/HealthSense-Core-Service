@@ -1,3 +1,4 @@
+/* Removed with the unused care-service-package administration API.
 package fit.iuh.se.hschat.service.packageinfo.impl;
 
 import fit.iuh.se.hschat.dto.request.UpdateCareServicePackageRequest;
@@ -248,4 +249,14 @@ class CareServicePackageServiceImplTest {
         request.setTermsPolicyReference("terms:v2");
         return request;
     }
+}
+*/
+
+package fit.iuh.se.hschat.service.packageinfo.impl;
+
+/**
+ * The administration behavior previously covered here was removed because
+ * neither the Web nor Mobile client exposes that API surface.
+ */
+class CareServicePackageServiceImplTest {
 }
