@@ -15,5 +15,6 @@ public class PresignedUrlResponse {
     @JsonSerialize(using = ToStringSerializer.class)
     Long recordId;
     String uploadUrl;
+    String downloadUrl;
     String s3Key;
 }

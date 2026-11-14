@@ -149,8 +149,7 @@ public class AdminHealthRecordServiceImpl implements AdminHealthRecordService {
                 String pattern = "%" + keyword.toLowerCase() + "%";
                 predicates.add(criteriaBuilder.or(
                         criteriaBuilder.like(criteriaBuilder.lower(root.get("fileName")), pattern),
-                        criteriaBuilder.like(criteriaBuilder.lower(root.get("s3FileKey")), pattern),
-                        criteriaBuilder.like(criteriaBuilder.lower(root.get("hrvFeaturesJson")), pattern)
+                        criteriaBuilder.like(criteriaBuilder.lower(root.get("s3FileKey")), pattern)
                 ));
             }
             return criteriaBuilder.and(predicates.toArray(Predicate[]::new));

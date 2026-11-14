@@ -88,6 +88,22 @@ class HealthRecordAttentionEventHandlerTest {
         verifyNoInteractions(healthRecordRepository, sessionRepository, authorizationRepository, attentionRepository);
     }
 
+    @Test
+    void temporalAfAlertTriggersAttentionEvenWhenMeanLabelIsUncertain() {
+        HealthRecord record = record();
+        ConsultationSession session = session();
+        when(healthRecordRepository.findByIdAndUserId(200L, 1L)).thenReturn(Optional.of(record));
+        when(sessionRepository.findAllByMemberIdAndStatus(1L, ConsultationStatus.ACTIVE)).thenReturn(List.of(session));
+        when(authorizationRepository.existsBySessionIdAndHealthRecordId(100L, 200L)).thenReturn(true);
+        when(attentionRepository.existsBySessionIdAndHealthRecordId(100L, 200L)).thenReturn(false);
+
+        handler.onHealthRecordAnalyzed(HealthRecordAnalyzedEvent.builder()
+                .recordId(200L).userId(1L).predictionLabel(PredictionLabel.UNCERTAIN).confidence(0.42)
+                .afAlert(true).analyzedAt(Instant.now()).build());
+
+        verify(attentionRepository).save(any(ConsultationHealthRecordAttention.class));
+    }
+
     private HealthRecordAnalyzedEvent event(PredictionLabel label) {
         return HealthRecordAnalyzedEvent.builder()
                 .recordId(200L).userId(1L).predictionLabel(label).confidence(0.95)

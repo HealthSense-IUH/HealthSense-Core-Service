@@ -1,6 +1,7 @@
 package fit.iuh.se.hshealthrecord.repository;
 
 import fit.iuh.se.hshealthrecord.entity.HealthRecord;
+import fit.iuh.se.hshealthrecord.entity.enums.RecordStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -23,6 +24,8 @@ public interface HealthRecordRepository extends JpaRepository<HealthRecord, Long
     Optional<HealthRecord> findByIdAndUserId(Long id, Long userId);
 
     List<HealthRecord> findByUserIdAndCreatedAtBetweenOrderByCreatedAtDesc(Long userId, Instant from, Instant to);
+
+    List<HealthRecord> findTop50ByStatusAndUpdatedAtBeforeOrderByUpdatedAtAsc(RecordStatus status, Instant cutoff);
 
     long countByUserId(Long userId);
 

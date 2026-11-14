@@ -8,6 +8,7 @@ import fit.iuh.se.hshealthrecord.dto.response.HealthStatItemResponse;
 import fit.iuh.se.hshealthrecord.dto.response.HealthStatisticsResponse;
 import fit.iuh.se.hshealthrecord.dto.response.PresignedUrlResponse;
 import fit.iuh.se.hshealthrecord.entity.HealthRecord;
+import fit.iuh.se.hshealthrecord.entity.enums.PredictionLabel;
 import fit.iuh.se.hshealthrecord.entity.enums.RecordStatus;
 import fit.iuh.se.hshealthrecord.event.HealthRecordAnalyzedEvent;
 import fit.iuh.se.hshealthrecord.event.HealthRecordAvailableForCareEvent;
@@ -18,6 +19,7 @@ import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsshared.dto.response.PageResponse;
 import fit.iuh.se.hsshared.service.s3.S3Service;
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -25,11 +27,15 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.time.DateTimeException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -91,18 +97,22 @@ public class HealthRecordServiceImpl implements HealthRecordService {
         HealthRecord record = repository.findByIdAndUserId(recordId, userId)
                 .orElseThrow(() -> new AppException(ErrorCode.HEALTH_RECORD_NOT_FOUND));
 
+        if (record.getStatus() != RecordStatus.PENDING_UPLOAD) {
+            log.info("Record {} already in status {}, returning existing state (idempotent confirm)", recordId, record.getStatus());
+            return mapper.toResponse(record);
+        }
+
         record.setStatus(RecordStatus.PROCESSING);
         record = repository.save(record);
 
-        log.info("Record {} status updated to PROCESSING. Triggering RabbitMQ event...", recordId);
+        log.info("Record {} status updated to PROCESSING. Scheduling RabbitMQ event after commit...", recordId);
         RecordProcessingMessage message = RecordProcessingMessage.builder()
                 .recordId(record.getId())
                 .s3Key(record.getS3FileKey())
                 .userId(record.getUserId())
                 .fileName(record.getFileName())
                 .build();
-        rabbitTemplate.convertAndSend(exchange, routingKey, message);
-        log.info("Sent RecordProcessingMessage to exchange '{}' with routingKey '{}': {}", exchange, routingKey, message);
+        sendProcessingMessageAfterCommit(message);
         publishAvailableForCare(record);
 
         return mapper.toResponse(record);
@@ -133,18 +143,34 @@ public class HealthRecordServiceImpl implements HealthRecordService {
                 .build();
         record = repository.save(record);
 
-        log.info("Record {} saved via direct upload. Triggering RabbitMQ event...", record.getId());
+        log.info("Record {} saved via direct upload. Scheduling RabbitMQ event after commit...", record.getId());
         RecordProcessingMessage message = RecordProcessingMessage.builder()
                 .recordId(record.getId())
                 .s3Key(record.getS3FileKey())
                 .userId(record.getUserId())
                 .fileName(record.getFileName())
                 .build();
-        rabbitTemplate.convertAndSend(exchange, routingKey, message);
-        log.info("Sent RecordProcessingMessage to exchange '{}' with routingKey '{}': {}", exchange, routingKey, message);
+        sendProcessingMessageAfterCommit(message);
         publishAvailableForCare(record);
 
         return mapper.toResponse(record);
+    }
+
+    private void sendProcessingMessageAfterCommit(RecordProcessingMessage message) {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    rabbitTemplate.convertAndSend(exchange, routingKey, message);
+                    log.info("Sent RecordProcessingMessage after commit to exchange '{}' with routingKey '{}': recordId={}",
+                            exchange, routingKey, message.getRecordId());
+                }
+            });
+        } else {
+            rabbitTemplate.convertAndSend(exchange, routingKey, message);
+            log.info("Sent RecordProcessingMessage to exchange '{}' with routingKey '{}': recordId={}",
+                    exchange, routingKey, message.getRecordId());
+        }
     }
 
     @Override
@@ -170,7 +196,8 @@ public class HealthRecordServiceImpl implements HealthRecordService {
 
         return PresignedUrlResponse.builder()
                 .recordId(record.getId())
-                .uploadUrl(downloadUrl) // Using uploadUrl field for download URL temporarily or ideally add a downloadUrl field to PresignedUrlResponse
+                .uploadUrl(downloadUrl) // Giữ uploadUrl để tương thích ngược với client hiện tại
+                .downloadUrl(downloadUrl)
                 .s3Key(record.getS3FileKey())
                 .build();
     }
@@ -179,7 +206,44 @@ public class HealthRecordServiceImpl implements HealthRecordService {
     @Transactional(readOnly = true)
     public PageResponse<HealthRecordResponse> getMyRecords(Long userId, Pageable pageable) {
         Page<HealthRecordResponse> page = repository.findByUserIdOrderByCreatedAtDesc(userId, pageable)
-                .map(mapper::toResponse);
+                .map(mapper::toListResponse);
+        return new PageResponse<>(page);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<HealthRecordResponse> getMyRecords(Long userId, String keyword, String filter, Pageable pageable) {
+        String normalizedKw = keyword != null ? keyword.trim() : "";
+        String normalizedFilter = filter != null ? filter.trim().toLowerCase() : "";
+        boolean hasFilter = !normalizedKw.isEmpty()
+                || (!normalizedFilter.isEmpty() && !"all".equals(normalizedFilter));
+
+        if (!hasFilter) {
+            return getMyRecords(userId, pageable);
+        }
+
+        Specification<HealthRecord> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(cb.equal(root.get("userId"), userId));
+            if (!normalizedKw.isEmpty()) {
+                predicates.add(cb.like(cb.lower(root.get("fileName")), "%" + normalizedKw.toLowerCase() + "%"));
+            }
+            switch (normalizedFilter) {
+                case "normal" -> predicates.add(cb.equal(root.get("predictionLabel"), PredictionLabel.NORMAL));
+                case "warning" -> predicates.add(cb.or(
+                        cb.equal(root.get("predictionLabel"), PredictionLabel.AFIB),
+                        cb.equal(root.get("predictionLabel"), PredictionLabel.AFIB_SUSPECTED),
+                        cb.isTrue(root.get("afAlert"))));
+                case "processing" -> predicates.add(cb.or(
+                        cb.equal(root.get("status"), RecordStatus.PROCESSING),
+                        cb.equal(root.get("status"), RecordStatus.PENDING_UPLOAD)));
+                default -> {
+                }
+            }
+            return cb.and(predicates.toArray(Predicate[]::new));
+        };
+
+        Page<HealthRecordResponse> page = repository.findAll(spec, pageable).map(mapper::toListResponse);
         return new PageResponse<>(page);
     }
 
@@ -203,28 +267,60 @@ public class HealthRecordServiceImpl implements HealthRecordService {
         HealthRecord record = repository.findById(request.getRecordId())
                 .orElseThrow(() -> new AppException(ErrorCode.HEALTH_RECORD_NOT_FOUND));
 
+        if (record.getStatus() == RecordStatus.COMPLETED) {
+            log.info("Record {} already COMPLETED, ignoring duplicate AI callback", record.getId());
+            return mapper.toResponse(record);
+        }
+
+        Boolean afAlert = request.getAfAlert() != null
+                ? request.getAfAlert()
+                : extractAfAlertFromJson(request.getHrvFeaturesJson());
+
         record.setPredictionLabel(request.getPredictionLabel());
         record.setConfidence(request.getConfidence());
         record.setHrvFeaturesJson(request.getHrvFeaturesJson());
+        record.setAfAlert(afAlert);
+        if (request.getModelVersion() != null && !request.getModelVersion().isBlank()) {
+            record.setModelVersion(request.getModelVersion().trim());
+        }
         record.setStatus(RecordStatus.COMPLETED);
         record = repository.save(record);
 
         try {
-            redisTemplate.delete("history:dates:" + record.getUserId());
+            bumpUserCacheVersion(record.getUserId());
         } catch (Exception e) {
             log.warn("Lỗi xoá cache lịch sử ngày: {}", e.getMessage());
         }
 
-        log.info("Record {} completed AI analysis with result: {}", record.getId(), record.getPredictionLabel());
+        log.info("Record {} completed AI analysis with result: {}, afAlert: {}", record.getId(), record.getPredictionLabel(), afAlert);
         eventPublisher.publishEvent(HealthRecordAnalyzedEvent.builder()
                 .recordId(record.getId())
                 .userId(record.getUserId())
                 .predictionLabel(record.getPredictionLabel())
                 .confidence(record.getConfidence())
+                .afAlert(afAlert)
                 .analyzedAt(record.getUpdatedAt())
                 .build());
 
         return mapper.toResponse(record);
+    }
+
+    private Boolean extractAfAlertFromJson(String hrvFeaturesJson) {
+        if (hrvFeaturesJson == null || hrvFeaturesJson.isBlank()) {
+            return null;
+        }
+        try {
+            var node = objectMapper.readTree(hrvFeaturesJson);
+            if (node != null && node.has("afAlert") && !node.get("afAlert").isNull()) {
+                return node.get("afAlert").asBoolean();
+            }
+            if (node != null && node.has("windowAnalysis") && node.get("windowAnalysis").has("alert")) {
+                return node.get("windowAnalysis").get("alert").asBoolean();
+            }
+        } catch (Exception e) {
+            log.debug("Không trích xuất được afAlert từ hrvFeaturesJson: {}", e.getMessage());
+        }
+        return null;
     }
 
     @Override
@@ -234,10 +330,20 @@ public class HealthRecordServiceImpl implements HealthRecordService {
         HealthRecord record = repository.findById(request.getRecordId())
                 .orElseThrow(() -> new AppException(ErrorCode.HEALTH_RECORD_NOT_FOUND));
 
+        if (record.getStatus() == RecordStatus.COMPLETED || record.getStatus() == RecordStatus.FAILED) {
+            log.info("Record {} already in terminal status {}, ignoring fail callback", record.getId(), record.getStatus());
+            return mapper.toResponse(record);
+        }
+
         record.setStatus(RecordStatus.FAILED);
         record.setErrorMessage(request.getErrorReason());
 
         record = repository.save(record);
+        try {
+            bumpUserCacheVersion(record.getUserId());
+        } catch (Exception e) {
+            log.warn("Lỗi cập nhật cache version khi bản ghi thất bại: {}", e.getMessage());
+        }
         log.info("Record {} failed AI analysis with reason: {}", record.getId(), record.getErrorMessage());
 
         return mapper.toResponse(record);
@@ -254,7 +360,7 @@ public class HealthRecordServiceImpl implements HealthRecordService {
     @Override
     @Transactional(readOnly = true)
     public HealthStatisticsResponse getHealthStatistics(Long userId, String period, String referenceDate, String timezone) {
-        ZoneId zoneId = (timezone != null && !timezone.isEmpty()) ? ZoneId.of(timezone) : ZoneId.of("UTC");
+        ZoneId zoneId = resolveZoneId(timezone);
 
         // Parse reference date, default to now if not provided
         ZonedDateTime refZoned;
@@ -329,7 +435,9 @@ public class HealthRecordServiceImpl implements HealthRecordService {
         }
 
         boolean isPastPeriod = endZoned.isBefore(ZonedDateTime.now(zoneId));
-        String cacheKey = String.format("stats:%d:%s:%s", userId, period.toUpperCase(), startZoned.toLocalDate().toString());
+        long cacheVersion = getUserCacheVersion(userId);
+        String cacheKey = String.format("stats:v%d:%d:%s:%s:%s",
+                cacheVersion, userId, zoneId.getId(), period.toUpperCase(), startZoned.toLocalDate().toString());
 
         if (isPastPeriod) {
             try {
@@ -411,8 +519,10 @@ public class HealthRecordServiceImpl implements HealthRecordService {
     @Override
     @Transactional(readOnly = true)
     public List<String> getAvailableHistoryDates(Long userId, String timezone) {
-        String pgTimezone = (timezone != null && !timezone.isEmpty()) ? timezone : "UTC";
-        String cacheKey = "history:dates:" + userId;
+        ZoneId zoneId = resolveZoneId(timezone);
+        String pgTimezone = zoneId.getId();
+        long cacheVersion = getUserCacheVersion(userId);
+        String cacheKey = String.format("history:dates:v%d:%d:%s", cacheVersion, userId, pgTimezone);
 
         try {
             String cachedData = redisTemplate.opsForValue().get(cacheKey);
@@ -442,7 +552,7 @@ public class HealthRecordServiceImpl implements HealthRecordService {
     @Override
     @Transactional(readOnly = true)
     public List<HealthRecordResponse> getRecordsByDate(Long userId, String date, String timezone) {
-        ZoneId zoneId = (timezone != null && !timezone.isEmpty()) ? ZoneId.of(timezone) : ZoneId.of("UTC");
+        ZoneId zoneId = resolveZoneId(timezone);
 
         LocalDate localDate;
         try {
@@ -453,7 +563,8 @@ public class HealthRecordServiceImpl implements HealthRecordService {
 
         LocalDate today = LocalDate.now(zoneId);
         boolean isPastDate = localDate.isBefore(today);
-        String cacheKey = "history:daily:" + userId + ":" + date;
+        long cacheVersion = getUserCacheVersion(userId);
+        String cacheKey = String.format("history:daily:v%d:%d:%s:%s", cacheVersion, userId, zoneId.getId(), date);
 
         if (isPastDate) {
             try {
@@ -473,11 +584,15 @@ public class HealthRecordServiceImpl implements HealthRecordService {
         List<HealthRecord> records = repository.findByUserIdAndCreatedAtBetweenOrderByCreatedAtDesc(userId, startOfDay, endOfDay);
 
         List<HealthRecordResponse> responses = new ArrayList<>();
+        boolean allTerminal = true;
         for (HealthRecord record : records) {
-            responses.add(mapper.toResponse(record));
+            if (record.getStatus() != RecordStatus.COMPLETED && record.getStatus() != RecordStatus.FAILED) {
+                allTerminal = false;
+            }
+            responses.add(mapper.toListResponse(record));
         }
 
-        if (isPastDate && !responses.isEmpty()) {
+        if (isPastDate && !responses.isEmpty() && allTerminal) {
             try {
                 redisTemplate.opsForValue().set(cacheKey, objectMapper.writeValueAsString(responses), java.time.Duration.ofDays(30));
             } catch (Exception e) {
@@ -486,5 +601,30 @@ public class HealthRecordServiceImpl implements HealthRecordService {
         }
 
         return responses;
+    }
+
+    private long getUserCacheVersion(Long userId) {
+        try {
+            String val = redisTemplate.opsForValue().get("hr:ver:" + userId);
+            return val != null ? Long.parseLong(val) : 0L;
+        } catch (Exception e) {
+            return 0L;
+        }
+    }
+
+    private void bumpUserCacheVersion(Long userId) {
+        redisTemplate.opsForValue().increment("hr:ver:" + userId);
+        redisTemplate.delete("history:dates:" + userId);
+    }
+
+    private ZoneId resolveZoneId(String timezone) {
+        if (timezone == null || timezone.isBlank()) {
+            return ZoneId.of("UTC");
+        }
+        try {
+            return ZoneId.of(timezone.trim());
+        } catch (DateTimeException e) {
+            throw AppException.of(ErrorCode.INVALID_PARAMETER, "detail.statistics-timezone-invalid", timezone);
+        }
     }
 }

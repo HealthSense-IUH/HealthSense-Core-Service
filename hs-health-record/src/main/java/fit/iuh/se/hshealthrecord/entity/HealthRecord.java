@@ -17,7 +17,8 @@ import lombok.experimental.FieldDefaults;
 @Entity
 @Table(name = "health_records", indexes = {
     @Index(name = "idx_health_record_user", columnList = "user_id"),
-    @Index(name = "idx_health_record_user_status_date", columnList = "user_id, status, created_at")
+    @Index(name = "idx_health_record_user_status_date", columnList = "user_id, status, created_at"),
+    @Index(name = "idx_health_record_user_created_desc", columnList = "user_id, created_at DESC")
 })
 public class HealthRecord extends BaseEntity {
     @Id
@@ -47,6 +48,12 @@ public class HealthRecord extends BaseEntity {
 
     @Column(name = "confidence")
     Double confidence;
+
+    @Column(name = "af_alert")
+    Boolean afAlert;
+
+    @Column(name = "model_version", length = 50)
+    String modelVersion;
 
     @Column(name = "hrv_features_json", columnDefinition = "TEXT")
     String hrvFeaturesJson;

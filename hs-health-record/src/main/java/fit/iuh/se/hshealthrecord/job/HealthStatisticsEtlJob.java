@@ -31,17 +31,16 @@ public class HealthStatisticsEtlJob {
                     INSERT INTO health_statistics_daily (user_id, stat_date, total_records, total_normal, total_afib, total_uncertain, total_afib_suspected)
                     SELECT
                         hr.user_id,
-                        DATE_TRUNC('day', hr.created_at AT TIME ZONE 'UTC' AT TIME ZONE COALESCE(up.timezone, 'Asia/Ho_Chi_Minh')) AS stat_date,
+                        DATE_TRUNC('day', hr.created_at AT TIME ZONE 'Asia/Ho_Chi_Minh') AT TIME ZONE 'Asia/Ho_Chi_Minh' AS stat_date,
                         COUNT(*) AS total_records,
                         CAST(SUM(CASE WHEN hr.prediction_label = 'NORMAL' THEN 1 ELSE 0 END) AS INTEGER) AS total_normal,
                         CAST(SUM(CASE WHEN hr.prediction_label = 'AFIB' THEN 1 ELSE 0 END) AS INTEGER) AS total_afib,
                         CAST(SUM(CASE WHEN hr.prediction_label = 'UNCERTAIN' THEN 1 ELSE 0 END) AS INTEGER) AS total_uncertain,
                         CAST(SUM(CASE WHEN hr.prediction_label = 'AFIB_SUSPECTED' THEN 1 ELSE 0 END) AS INTEGER) AS total_afib_suspected
                     FROM health_records hr
-                    LEFT JOIN user_profiles up ON hr.user_id = up.user_id
                     WHERE hr.status = 'COMPLETED'
-                      -- Rolling window: Chỉ quét record tạo trong hôm nay và hôm qua
-                      AND hr.created_at >= (CURRENT_DATE - INTERVAL '1 day')
+                      -- Rolling window 7 ngày theo cả created_at và updated_at để không bỏ sót bản ghi hoàn tất muộn
+                      AND COALESCE(hr.updated_at, hr.created_at) >= (CURRENT_TIMESTAMP - INTERVAL '7 days')
                     GROUP BY 1, 2
                     ON CONFLICT (user_id, stat_date) DO UPDATE SET
                         total_records = EXCLUDED.total_records,

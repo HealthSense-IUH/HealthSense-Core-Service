@@ -20,6 +20,9 @@ public interface HealthRecordMapper {
     @Mapping(target = "hrvFeatures", source = "hrvFeaturesJson", qualifiedByName = "toHrvFeatures")
     HealthRecordResponse toResponse(HealthRecord healthRecord);
 
+    @Mapping(target = "hrvFeatures", source = "hrvFeaturesJson", qualifiedByName = "toListHrvFeatures")
+    HealthRecordResponse toListResponse(HealthRecord healthRecord);
+
     @Named("toHrvFeatures")
     default Map<String, Object> toHrvFeatures(String hrvFeaturesJson) {
         if (hrvFeaturesJson == null || hrvFeaturesJson.trim().isEmpty())
@@ -29,5 +32,16 @@ public interface HealthRecordMapper {
         } catch (Exception exception) {
             return null;
         }
+    }
+
+    @Named("toListHrvFeatures")
+    default Map<String, Object> toListHrvFeatures(String hrvFeaturesJson) {
+        Map<String, Object> features = toHrvFeatures(hrvFeaturesJson);
+        if (features != null) {
+            features.remove("chartData");
+            features.remove("windowAnalysis");
+            features.remove("nnIntervals");
+        }
+        return features;
     }
 }
