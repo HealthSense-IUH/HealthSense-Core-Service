@@ -28,7 +28,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-
 import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -417,7 +416,7 @@ public class HealthRecordServiceImpl implements HealthRecordService {
         try {
             String cachedData = redisTemplate.opsForValue().get(cacheKey);
             if (cachedData != null) {
-                return objectMapper.readValue(cachedData, new tools.jackson.core.type.TypeReference<List<String>>() {
+                return objectMapper.readValue(cachedData, new tools.jackson.core.type.TypeReference<>() {
                 });
             }
         } catch (Exception e) {

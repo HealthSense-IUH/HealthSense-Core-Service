@@ -15,7 +15,6 @@ import fit.iuh.se.hsshared.statistics.StatisticsPeriodResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.time.DateTimeException;
 import java.time.DayOfWeek;
 import java.time.Duration;
