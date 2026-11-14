@@ -1,9 +1,7 @@
 package fit.iuh.se.hsapplication.controller.admin;
 
 import fit.iuh.se.hsapplication.dto.auth.UserAuthentication;
-import fit.iuh.se.hschat.dto.request.AdminCreateConsultationSessionRequest;
 import fit.iuh.se.hschat.dto.request.CloseConsultationRequest;
-import fit.iuh.se.hschat.dto.request.ExtendConsultationRequest;
 import fit.iuh.se.hschat.dto.response.ConsultationFinalSummaryResponse;
 import fit.iuh.se.hschat.dto.response.ConsultationSessionResponse;
 import fit.iuh.se.hschat.service.finalsummary.ConsultationFinalSummaryService;
@@ -32,13 +30,6 @@ public class AdminConsultationSessionController {
     ConsultationSessionService consultationSessionService;
     ConsultationFinalSummaryService finalSummaryService;
 
-    @PostMapping
-    public ApiResponse<ConsultationSessionResponse> createSessionByAdmin(
-            @AuthenticationPrincipal UserAuthentication currentUser,
-            @RequestBody @Valid AdminCreateConsultationSessionRequest request) {
-        return new ApiResponse<>(consultationSessionService.createSessionByAdmin(currentUser.getUserId(), currentUser.getRole(), request));
-    }
-
     @GetMapping
     public ApiResponse<PageResponse<ConsultationSessionResponse>> getSessionsForAdmin(
             @AuthenticationPrincipal UserAuthentication currentUser,
@@ -46,14 +37,6 @@ public class AdminConsultationSessionController {
             @RequestParam(name = "size", defaultValue = "10") @Min(1) int size) {
         Pageable pageable = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         return new ApiResponse<>(consultationSessionService.getSessionsForAdmin(currentUser.getRole(), pageable));
-    }
-
-    @PatchMapping("/{sessionId}/extend")
-    public ApiResponse<ConsultationSessionResponse> extendSession(
-            @AuthenticationPrincipal UserAuthentication currentUser,
-            @PathVariable Long sessionId,
-            @RequestBody @Valid ExtendConsultationRequest request) {
-        return new ApiResponse<>(consultationSessionService.extendSession(currentUser.getUserId(), currentUser.getRole(), sessionId, request));
     }
 
     @PatchMapping("/{sessionId}/close")
@@ -85,10 +68,4 @@ public class AdminConsultationSessionController {
         return new ApiResponse<>();
     }
 
-    @PostMapping("/flag-disabled-participants")
-    public ApiResponse<Void> flagDisabledParticipants(
-            @AuthenticationPrincipal UserAuthentication currentUser) {
-        consultationSessionService.flagDisabledActiveParticipantsForReview(currentUser.getRole());
-        return new ApiResponse<>();
-    }
 }

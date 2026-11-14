@@ -7,9 +7,6 @@ import fit.iuh.se.hsbilling.entity.enums.CreditOrderStatus;
 import fit.iuh.se.hsbilling.entity.enums.CreditPaymentProvider;
 import fit.iuh.se.hsbilling.entity.enums.CreditSourceType;
 import fit.iuh.se.hsbilling.service.CreditAdministrationService;
-import fit.iuh.se.hschat.dto.response.CreditRecoveryResponse;
-import fit.iuh.se.hschat.service.recovery.ConsultationCreditRecoveryService;
-import fit.iuh.se.hschat.service.refund.ConsultationCreditRefundService;
 import fit.iuh.se.hsshared.advice.entity.AppException;
 import fit.iuh.se.hsshared.advice.entity.enums.ErrorCode;
 import fit.iuh.se.hsshared.dto.response.ApiResponse;
@@ -30,8 +27,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AdminCreditController {
     private final CreditAdministrationService admin;
-    private final ConsultationCreditRefundService refunds;
-    private final ConsultationCreditRecoveryService recovery;
 
     @PostMapping("/packages")
     public ApiResponse<AdminCreditPackageResponse> createPackage(@AuthenticationPrincipal UserAuthentication actor,
@@ -116,29 +111,6 @@ public class AdminCreditController {
         require(actor);
         if (request == null || request.delta() == null) throw new AppException(ErrorCode.INVALID_PARAMETER);
         return new ApiResponse<>(admin.adjust(actor.getUserId(), actor.getRole(), memberId, request.delta(), request.reason(), key));
-    }
-
-    @PostMapping("/session-refunds")
-    public ApiResponse<CreditMutationResponse> refund(@AuthenticationPrincipal UserAuthentication actor,
-                                                      @RequestHeader(value = "Idempotency-Key", required = false) String key,
-                                                      @RequestBody SessionCreditRefundRequest request) {
-        require(actor);
-        if (request == null) throw new AppException(ErrorCode.INVALID_PARAMETER);
-        return new ApiResponse<>(refunds.refund(actor.getUserId(), actor.getRole(), request.sessionId(), request.reason(), key));
-    }
-
-    @GetMapping("/reconciliation/wallets/{memberId}")
-    public ApiResponse<CreditWalletReconciliationResponse> reconcile(@AuthenticationPrincipal UserAuthentication actor,
-                                                                     @PathVariable Long memberId) {
-        require(actor);
-        return new ApiResponse<>(admin.reconcile(actor.getRole(), memberId));
-    }
-
-    @PostMapping("/recovery")
-    public ApiResponse<CreditRecoveryResponse> recover(@AuthenticationPrincipal UserAuthentication actor,
-                                                       @RequestParam(defaultValue = "50") int limit) {
-        require(actor);
-        return new ApiResponse<>(recovery.recover(actor.getUserId(), actor.getRole(), limit));
     }
 
     private PageRequest page(int page, int size) {

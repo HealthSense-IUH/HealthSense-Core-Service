@@ -11,7 +11,5 @@ public interface CareHistoryService {
 
     PageResponse<CareHistoryEpisodeResponse> getMemberHistory(Long memberId, Pageable pageable);
 
-    CareHistoryEpisodeResponse getMemberEpisode(Long memberId, Long sessionId);
-
     List<CareContinuitySummaryResponse> getContinuitySummaries(Long doctorId, Long currentSessionId);
 }

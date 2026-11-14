@@ -120,15 +120,6 @@ class CareHistoryServiceImplTest {
         verify(summaryRepository, never()).findBySessionIdInAndStatus(any(), any());
     }
 
-    @Test
-    void memberCareHistoryCannotExposeAnotherMembersEpisode() {
-        ConsultationSession otherMember = session(100L, 2L, 10L, ConsultationStatus.COMPLETED);
-        when(sessionRepository.findById(100L)).thenReturn(Optional.of(otherMember));
-
-        assertThrows(AppException.class, () -> service.getMemberEpisode(1L, 100L));
-        verifyNoInteractions(summaryRepository, authorizationService);
-    }
-
     private ConsultationSession session(Long id, Long memberId, Long doctorId, ConsultationStatus status) {
         return ConsultationSession.builder()
                 .id(id).memberId(memberId).doctorId(doctorId).status(status)
