@@ -24,6 +24,10 @@ public interface HealthRecordService {
 
     PageResponse<HealthRecordResponse> getMyRecords(Long userId, Pageable pageable);
 
+    default PageResponse<HealthRecordResponse> getMyRecords(Long userId, String keyword, String filter, Pageable pageable) {
+        return getMyRecords(userId, pageable);
+    }
+
     Optional<HealthRecordResponse> getLatestRecord(Long userId);
 
     long countRecords(Long userId);

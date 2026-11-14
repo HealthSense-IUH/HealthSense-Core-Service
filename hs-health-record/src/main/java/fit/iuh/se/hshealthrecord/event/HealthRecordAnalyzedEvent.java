@@ -13,5 +13,6 @@ public class HealthRecordAnalyzedEvent {
     Long userId;
     PredictionLabel predictionLabel;
     Double confidence;
+    Boolean afAlert;
     Instant analyzedAt;
 }

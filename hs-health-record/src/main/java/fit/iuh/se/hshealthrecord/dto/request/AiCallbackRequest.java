@@ -21,4 +21,8 @@ public class AiCallbackRequest {
     Double confidence;
 
     String hrvFeaturesJson;
+
+    Boolean afAlert;
+
+    String modelVersion;
 }

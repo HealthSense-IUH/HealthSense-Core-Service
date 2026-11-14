@@ -26,6 +26,8 @@ public class HealthRecordResponse {
     RecordStatus status;
     PredictionLabel predictionLabel;
     Double confidence;
+    Boolean afAlert;
+    String modelVersion;
     Map<String, Object> hrvFeatures;
     Instant createdAt;
     Instant updatedAt;
