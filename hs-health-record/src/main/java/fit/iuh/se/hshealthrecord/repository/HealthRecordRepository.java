@@ -34,53 +34,38 @@ public interface HealthRecordRepository extends JpaRepository<HealthRecord, Long
             "ORDER BY 1 DESC", nativeQuery = true)
     List<String> findDistinctDatesByUserId(@Param("userId") Long userId, @Param("timezone") String timezone);
 
-    @Query(value = "SELECT EXTRACT(HOUR FROM (created_at AT TIME ZONE :timezone)) AS statGroup, " +
+    String STATS_COLUMNS_AND_FILTER =
             "CAST(SUM(CASE WHEN prediction_label = 'NORMAL' THEN 1 ELSE 0 END) AS INTEGER) AS normalCount, " +
             "CAST(SUM(CASE WHEN prediction_label = 'AFIB' THEN 1 ELSE 0 END) AS INTEGER) AS afibRiskCount, " +
             "CAST(SUM(CASE WHEN prediction_label = 'UNCERTAIN' THEN 1 ELSE 0 END) AS INTEGER) AS uncertainCount, " +
             "CAST(SUM(CASE WHEN prediction_label = 'AFIB_SUSPECTED' THEN 1 ELSE 0 END) AS INTEGER) AS afibSuspectedCount " +
             "FROM health_records " +
-            "WHERE user_id = :userId AND status = 'COMPLETED' AND created_at BETWEEN :from AND :to " +
-            "GROUP BY 1", nativeQuery = true)
+            "WHERE user_id = :userId AND status = 'COMPLETED' AND created_at >= :from AND created_at < :to " +
+            "GROUP BY 1";
+
+    @Query(value = "SELECT EXTRACT(HOUR FROM (created_at AT TIME ZONE :timezone)) AS statGroup, " +
+            STATS_COLUMNS_AND_FILTER, nativeQuery = true)
     List<HealthStatProjection> getStatsByDay(@Param("userId") Long userId,
                                              @Param("from") Instant from,
                                              @Param("to") Instant to,
                                              @Param("timezone") String timezone);
 
     @Query(value = "SELECT EXTRACT(ISODOW FROM (created_at AT TIME ZONE :timezone)) AS statGroup, " +
-            "CAST(SUM(CASE WHEN prediction_label = 'NORMAL' THEN 1 ELSE 0 END) AS INTEGER) AS normalCount, " +
-            "CAST(SUM(CASE WHEN prediction_label = 'AFIB' THEN 1 ELSE 0 END) AS INTEGER) AS afibRiskCount, " +
-            "CAST(SUM(CASE WHEN prediction_label = 'UNCERTAIN' THEN 1 ELSE 0 END) AS INTEGER) AS uncertainCount, " +
-            "CAST(SUM(CASE WHEN prediction_label = 'AFIB_SUSPECTED' THEN 1 ELSE 0 END) AS INTEGER) AS afibSuspectedCount " +
-            "FROM health_records " +
-            "WHERE user_id = :userId AND status = 'COMPLETED' AND created_at BETWEEN :from AND :to " +
-            "GROUP BY 1", nativeQuery = true)
+            STATS_COLUMNS_AND_FILTER, nativeQuery = true)
     List<HealthStatProjection> getStatsByWeek(@Param("userId") Long userId,
                                               @Param("from") Instant from,
                                               @Param("to") Instant to,
                                               @Param("timezone") String timezone);
 
     @Query(value = "SELECT EXTRACT(DAY FROM (created_at AT TIME ZONE :timezone)) AS statGroup, " +
-            "CAST(SUM(CASE WHEN prediction_label = 'NORMAL' THEN 1 ELSE 0 END) AS INTEGER) AS normalCount, " +
-            "CAST(SUM(CASE WHEN prediction_label = 'AFIB' THEN 1 ELSE 0 END) AS INTEGER) AS afibRiskCount, " +
-            "CAST(SUM(CASE WHEN prediction_label = 'UNCERTAIN' THEN 1 ELSE 0 END) AS INTEGER) AS uncertainCount, " +
-            "CAST(SUM(CASE WHEN prediction_label = 'AFIB_SUSPECTED' THEN 1 ELSE 0 END) AS INTEGER) AS afibSuspectedCount " +
-            "FROM health_records " +
-            "WHERE user_id = :userId AND status = 'COMPLETED' AND created_at BETWEEN :from AND :to " +
-            "GROUP BY 1", nativeQuery = true)
+            STATS_COLUMNS_AND_FILTER, nativeQuery = true)
     List<HealthStatProjection> getStatsByMonth(@Param("userId") Long userId,
                                                @Param("from") Instant from,
                                                @Param("to") Instant to,
                                                @Param("timezone") String timezone);
 
     @Query(value = "SELECT EXTRACT(MONTH FROM (created_at AT TIME ZONE :timezone)) AS statGroup, " +
-            "CAST(SUM(CASE WHEN prediction_label = 'NORMAL' THEN 1 ELSE 0 END) AS INTEGER) AS normalCount, " +
-            "CAST(SUM(CASE WHEN prediction_label = 'AFIB' THEN 1 ELSE 0 END) AS INTEGER) AS afibRiskCount, " +
-            "CAST(SUM(CASE WHEN prediction_label = 'UNCERTAIN' THEN 1 ELSE 0 END) AS INTEGER) AS uncertainCount, " +
-            "CAST(SUM(CASE WHEN prediction_label = 'AFIB_SUSPECTED' THEN 1 ELSE 0 END) AS INTEGER) AS afibSuspectedCount " +
-            "FROM health_records " +
-            "WHERE user_id = :userId AND status = 'COMPLETED' AND created_at BETWEEN :from AND :to " +
-            "GROUP BY 1", nativeQuery = true)
+            STATS_COLUMNS_AND_FILTER, nativeQuery = true)
     List<HealthStatProjection> getStatsByYear(@Param("userId") Long userId,
                                               @Param("from") Instant from,
                                               @Param("to") Instant to,
