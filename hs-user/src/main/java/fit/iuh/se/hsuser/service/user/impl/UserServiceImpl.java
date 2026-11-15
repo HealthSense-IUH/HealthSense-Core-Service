@@ -158,7 +158,6 @@ public class UserServiceImpl implements UserService {
 
     private void validateSelfUpdateRole(UserRole currentUserRole) {
         if (currentUserRole == UserRole.ADMIN
-                || currentUserRole == UserRole.CARE_COORDINATOR
                 || currentUserRole == UserRole.DOCTOR
                 || currentUserRole == UserRole.MEMBER)
             return;

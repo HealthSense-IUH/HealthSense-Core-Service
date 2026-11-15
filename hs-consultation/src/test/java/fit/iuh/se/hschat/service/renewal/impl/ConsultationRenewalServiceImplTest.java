@@ -104,7 +104,7 @@ class ConsultationRenewalServiceImplTest {
         stubCapacity(profile, 0, 0, 0);
         when(agreementService.createForRenewal(renewal, current, profile)).thenReturn(agreement);
 
-        var response = service.decide(9L, UserRole.CARE_COORDINATOR, 20L,
+        var response = service.decide(9L, UserRole.ADMIN, 20L,
                 new DecideConsultationRenewalRequest(true, null));
 
         assertEquals(ConsultationRenewalStatus.PENDING_ACCEPTANCE, response.getStatus());
@@ -131,7 +131,7 @@ class ConsultationRenewalServiceImplTest {
                 .thenReturn(Optional.of(currentPackage()));
         stubCapacity(eligibleProfile(1), 1, 0, 0);
 
-        var response = service.decide(9L, UserRole.CARE_COORDINATOR, 20L,
+        var response = service.decide(9L, UserRole.ADMIN, 20L,
                 new DecideConsultationRenewalRequest(true, null));
         assertEquals(ConsultationRenewalStatus.REJECTED, response.getStatus());
         assertEquals(originalEnd, session.getEndsAt());
@@ -165,7 +165,7 @@ class ConsultationRenewalServiceImplTest {
         stubCapacity(profile, 0, 0, 0);
         when(agreementService.createForRenewal(any(), any(), any())).thenReturn(renewalAgreement());
 
-        assertDoesNotThrow(() -> service.decide(9L, UserRole.CARE_COORDINATOR, 20L,
+        assertDoesNotThrow(() -> service.decide(9L, UserRole.ADMIN, 20L,
                 new DecideConsultationRenewalRequest(true, null)));
     }
 

@@ -199,8 +199,8 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
     @Override
     @Transactional
     public ConsultationRequestResponse approveRequest(Long actorId, UserRole actorRole, Long requestId, ApproveConsultationRequest request) {
-        if (actorRole != UserRole.CARE_COORDINATOR)
-            throw AppException.of(ErrorCode.ACCESS_DENIED, "detail.only-coordinator-reserve-doctor");
+        if (actorRole != UserRole.ADMIN && actorRole != UserRole.SUPER_ADMIN)
+            throw AppException.of(ErrorCode.ACCESS_DENIED, "detail.only-admin-reserve-doctor");
         log.info("Reserving doctor for consultation request {} by actor {} with role {}", requestId, actorId, actorRole);
 
         ConsultationRequest consultationRequest = requestRepository.findByIdForUpdate(requestId)
@@ -253,7 +253,7 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
                 && consultationRequest.getStatus() != ConsultationRequestStatus.WAITING_PAYMENT)
             throw new AppException(ErrorCode.INVALID_CONSULTATION_STATUS);
 
-        reservationService.release(consultationRequest, DoctorReservationReleaseReason.COORDINATOR_REJECTED);
+        reservationService.release(consultationRequest, DoctorReservationReleaseReason.ADMIN_REJECTED);
         agreementService.invalidateCurrent(requestId, "Request rejected before care activation");
 
         Instant now = Instant.now();
@@ -288,7 +288,7 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
         moreInfoCycleRepository.save(ConsultationMoreInfoCycle.builder()
                 .requestId(requestId)
                 .requestedItemsCategory(request.getRequestedItemsCategory())
-                .coordinatorMessage(request.getReason())
+                .reviewerMessage(request.getReason())
                 .requestedBy(actorId)
                 .requestedAt(now)
                 .build());
@@ -683,11 +683,11 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
                     "request:" + request.getId() + ":" + eventType + ":member"));
         if (eventType == BusinessEventType.REQUEST_CREATED
                 || eventType == BusinessEventType.REQUEST_MORE_INFO_SUBMITTED)
-            notifications.add(NotificationIntent.forRole(UserRole.CARE_COORDINATOR,
+            notifications.add(NotificationIntent.forRole(UserRole.ADMIN,
                     NotificationType.REQUEST_RECEIVED,
                     eventType == BusinessEventType.REQUEST_CREATED ? "New care request" : "Care request resubmitted",
-                    "A care request is ready for coordinator review.", BusinessDomainType.REQUEST, request.getId(),
-                    "request:" + request.getId() + ":" + eventType + ":coordinators"));
+                    "A care request is ready for administrator review.", BusinessDomainType.REQUEST, request.getId(),
+                    "request:" + request.getId() + ":" + eventType + ":admins"));
         OperationalEventPublisher.record(OperationalEventCommand.builder()
                 .domainType(BusinessDomainType.REQUEST).domainId(request.getId()).eventType(eventType)
                 .actorType(actorId == null ? BusinessActorType.SYSTEM : BusinessActorType.USER)
@@ -712,7 +712,7 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
 
     private String requestNotificationMessage(NotificationType type) {
         return switch (type) {
-            case REQUEST_NEEDS_INFO -> "Your care coordinator requested additional information.";
+            case REQUEST_NEEDS_INFO -> "An administrator requested additional information.";
             case REQUEST_REJECTED -> "Your care request was not approved. Review the request for details.";
             case AGREEMENT_READY -> "A care agreement is ready for your review and acceptance.";
             case AGREEMENT_INVALIDATED -> "Your care request was cancelled before activation.";
@@ -722,9 +722,7 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
     }
 
     private void validateConsultationManager(UserRole actorRole) {
-        if (actorRole == UserRole.SUPER_ADMIN
-                || actorRole == UserRole.ADMIN
-                || actorRole == UserRole.CARE_COORDINATOR)
+        if (actorRole == UserRole.SUPER_ADMIN || actorRole == UserRole.ADMIN)
             return;
         throw AppException.of(ErrorCode.ACCESS_DENIED, "detail.forbidden-manage-requests");
     }
@@ -839,7 +837,7 @@ public class ConsultationRequestServiceImpl implements ConsultationRequestServic
                 .map(cycle -> ConsultationMoreInfoCycleResponse.builder()
                         .id(cycle.getId())
                         .requestedItemsCategory(cycle.getRequestedItemsCategory())
-                        .coordinatorMessage(cycle.getCoordinatorMessage())
+                        .reviewerMessage(cycle.getReviewerMessage())
                         .requestedBy(cycle.getRequestedBy())
                         .requestedAt(cycle.getRequestedAt())
                         .memberResponse(cycle.getMemberResponse())

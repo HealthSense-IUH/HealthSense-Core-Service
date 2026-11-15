@@ -11,7 +11,7 @@ import java.util.List;
 
 public interface DoctorReservationService {
 
-    DoctorReservation reserve(ConsultationRequest request, Long coordinatorId, Long doctorId, Instant expiresAt);
+    DoctorReservation reserve(ConsultationRequest request, Long adminId, Long doctorId, Instant expiresAt);
 
     long getEffectiveLoad(Long doctorId, Instant now);
 

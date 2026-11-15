@@ -103,7 +103,7 @@ class AdminConsultationStatisticsHttpTest {
                 .param("to", "2026-10-01T00:00:00Z");
 
         mvc.perform(request).andExpect(status().isUnauthorized());
-        for (var role : List.of(UserRole.MEMBER, UserRole.DOCTOR, UserRole.CARE_COORDINATOR))
+        for (var role : List.of(UserRole.MEMBER, UserRole.DOCTOR))
             mvc.perform(get("/api/admin/statistics/consultations")
                             .param("from", "2026-09-01T00:00:00Z")
                             .param("to", "2026-10-01T00:00:00Z")

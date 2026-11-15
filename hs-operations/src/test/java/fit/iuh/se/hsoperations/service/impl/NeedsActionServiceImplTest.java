@@ -28,17 +28,17 @@ class NeedsActionServiceImplTest {
         NeedsActionItem item = NeedsActionItem.builder().id(12L).type(NeedsActionType.SUMMARY_OVERDUE)
                 .status(NeedsActionStatus.OPEN).priority(NeedsActionPriority.HIGH).title("Summary overdue")
                 .description("Final summary requires action").referenceType(BusinessDomainType.FINAL_SUMMARY)
-                .referenceId(50L).assignedRole("CARE_COORDINATOR").idempotencyKey("summary:50:overdue")
+                .referenceId(50L).assignedRole("ADMIN").idempotencyKey("summary:50:overdue")
                 .build();
         when(repository.findLockedById(12L)).thenReturn(Optional.of(item));
         when(repository.save(item)).thenReturn(item);
         NeedsActionServiceImpl service = new NeedsActionServiceImpl(repository);
 
-        var claimed = service.claim(UserRole.CARE_COORDINATOR, 7L, 12L);
+        var claimed = service.claim(UserRole.ADMIN, 7L, 12L);
         assertEquals(NeedsActionStatus.CLAIMED, claimed.status());
         assertEquals(7L, claimed.claimedBy());
 
-        var resolved = service.resolve(UserRole.CARE_COORDINATOR, 7L, 12L, "Summary finalized");
+        var resolved = service.resolve(UserRole.ADMIN, 7L, 12L, "Summary finalized");
         assertEquals(NeedsActionStatus.RESOLVED, resolved.status());
         assertEquals("Summary finalized", resolved.resolution());
         assertNotNull(resolved.resolvedAt());
@@ -53,6 +53,6 @@ class NeedsActionServiceImplTest {
         when(repository.findLockedById(13L)).thenReturn(Optional.of(item));
 
         assertThrows(AppException.class,
-                () -> new NeedsActionServiceImpl(repository).claim(UserRole.CARE_COORDINATOR, 7L, 13L));
+                () -> new NeedsActionServiceImpl(repository).claim(UserRole.DOCTOR, 7L, 13L));
     }
 }

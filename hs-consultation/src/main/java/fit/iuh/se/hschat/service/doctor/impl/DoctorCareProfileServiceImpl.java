@@ -129,9 +129,7 @@ public class DoctorCareProfileServiceImpl implements DoctorCareProfileService {
     }
 
     private void validateConsultationManager(UserRole actorRole) {
-        if (actorRole == UserRole.SUPER_ADMIN
-                || actorRole == UserRole.ADMIN
-                || actorRole == UserRole.CARE_COORDINATOR)
+        if (actorRole == UserRole.SUPER_ADMIN || actorRole == UserRole.ADMIN)
             return;
         throw AppException.of(ErrorCode.ACCESS_DENIED, "detail.forbidden-manage-doctor-profiles");
     }

@@ -272,7 +272,7 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
                 ConsultationStatus.ACTIVE, ConsultationStatus.ACTIVE, request.getDetails(),
                 new NeedsActionIntent(NeedsActionType.TERMINATION_REVIEW, NeedsActionPriority.HIGH,
                         "Care termination review", "An active-care participant requested termination.",
-                        BusinessDomainType.SESSION, session.getId(), UserRole.CARE_COORDINATOR.name(),
+                        BusinessDomainType.SESSION, session.getId(), UserRole.ADMIN.name(),
                         "session:" + session.getId() + ":termination-review"),
                 NotificationType.CARE_TERMINATION_REQUESTED);
         return toSessionResponse(session);
@@ -305,7 +305,7 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
                             ConsultationStatus.ACTIVE, ConsultationStatus.ACTIVE, reason.name(),
                             new NeedsActionIntent(type, NeedsActionPriority.CRITICAL,
                                     "Active care interruption", "A disabled participant requires operational review.",
-                                    BusinessDomainType.SESSION, session.getId(), UserRole.CARE_COORDINATOR.name(),
+                                    BusinessDomainType.SESSION, session.getId(), UserRole.ADMIN.name(),
                                     "session:" + session.getId() + ":interruption:" + reason),
                             NotificationType.OPERATIONAL_REVIEW_REQUIRED);
                 }));
@@ -379,10 +379,10 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
                         sessionMessage(notificationType), BusinessDomainType.SESSION, session.getId(), key + ":doctor")));
         if (eventType == BusinessEventType.SESSION_TERMINATION_REQUESTED
                 || eventType == BusinessEventType.SESSION_PARTICIPANT_INTERRUPTED)
-            notifications.add(NotificationIntent.forRole(UserRole.CARE_COORDINATOR,
+            notifications.add(NotificationIntent.forRole(UserRole.ADMIN,
                     NotificationType.OPERATIONAL_REVIEW_REQUIRED, "Care episode requires review",
-                    "An active care episode requires coordinator review.", BusinessDomainType.SESSION,
-                    session.getId(), key + ":coordinators"));
+                    "An active care episode requires administrator review.", BusinessDomainType.SESSION,
+                    session.getId(), key + ":admins"));
         OperationalEventPublisher.record(OperationalEventCommand.builder()
                 .domainType(BusinessDomainType.SESSION).domainId(session.getId()).eventType(eventType)
                 .actorType(actorId == null ? BusinessActorType.SYSTEM : BusinessActorType.USER)
@@ -406,9 +406,7 @@ public class ConsultationSessionServiceImpl implements ConsultationSessionServic
     }
 
     private void validateConsultationManager(UserRole actorRole) {
-        if (actorRole == UserRole.SUPER_ADMIN
-                || actorRole == UserRole.ADMIN
-                || actorRole == UserRole.CARE_COORDINATOR)
+        if (actorRole == UserRole.SUPER_ADMIN || actorRole == UserRole.ADMIN)
             return;
         throw AppException.of(ErrorCode.ACCESS_DENIED, "detail.forbidden-manage-sessions");
     }

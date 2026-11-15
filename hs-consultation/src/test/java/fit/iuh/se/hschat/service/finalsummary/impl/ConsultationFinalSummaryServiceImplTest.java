@@ -337,7 +337,7 @@ class ConsultationFinalSummaryServiceImplTest {
         when(sessionRepository.findById(100L)).thenReturn(Optional.of(session(ConsultationStatus.COMPLETED)));
         when(summaryRepository.findBySessionId(100L)).thenReturn(Optional.of(finalized));
 
-        ConsultationFinalSummaryResponse response = service.getForAdmin(UserRole.CARE_COORDINATOR, 100L);
+        ConsultationFinalSummaryResponse response = service.getForAdmin(UserRole.ADMIN, 100L);
 
         assertEquals(ConsultationFinalSummaryStatus.FINALIZED, response.getStatus());
     }

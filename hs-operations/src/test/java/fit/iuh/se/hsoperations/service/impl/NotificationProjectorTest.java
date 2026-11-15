@@ -67,11 +67,11 @@ class NotificationProjectorTest {
     void roleAudienceFansOutOnlyToActiveRoleMembersWithPerUserIdempotency() throws Exception {
         ObjectMapper mapper = new ObjectMapper();
         String payload = mapper.writeValueAsString(List.of(NotificationIntent.forRole(
-                UserRole.CARE_COORDINATOR, NotificationType.REQUEST_RECEIVED, "New request",
-                "A request needs coordination.", BusinessDomainType.REQUEST, 10L, "request:10:coordinators")));
+                UserRole.ADMIN, NotificationType.REQUEST_RECEIVED, "New request",
+                "A request needs review.", BusinessDomainType.REQUEST, 10L, "request:10:admins")));
         NotificationProjectionTask task = task(payload);
         when(taskRepository.findById(2L)).thenReturn(Optional.of(task));
-        when(userAccountRepository.findAllByRoleAndStatus(UserRole.CARE_COORDINATOR, AccountStatus.ACTIVE))
+        when(userAccountRepository.findAllByRoleAndStatus(UserRole.ADMIN, AccountStatus.ACTIVE))
                 .thenReturn(List.of(UserAccount.builder().id(7L).build(), UserAccount.builder().id(8L).build()));
         when(notificationRepository.existsByIdempotencyKey(anyString())).thenReturn(false);
 

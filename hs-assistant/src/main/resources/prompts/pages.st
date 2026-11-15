@@ -1,5 +1,5 @@
 # Danh sách trang của Frontend-Web, mỗi dòng: vai trò được mở | đường dẫn | tên trang | dùng để làm gì
-# Vai trò: MEMBER, DOCTOR, ADMIN, SUPER_ADMIN, CARE_COORDINATOR; nhiều vai trò cách nhau bằng dấu phẩy; ALL = mọi vai trò.
+# Vai trò: MEMBER, DOCTOR, ADMIN, SUPER_ADMIN; nhiều vai trò cách nhau bằng dấu phẩy; ALL = mọi vai trò.
 # AssistantPageCatalog đọc file này và chỉ đưa vào system prompt những dòng khớp vai trò của người đang chat.
 MEMBER | /app/general/dashboard | Bảng điều khiển | tổng quan sức khoẻ hôm nay, lần đo gần nhất, nhắc việc
 MEMBER | /app/general/afib-history | Lịch sử đo | danh sách các lần đo PPG, kết quả rung nhĩ, độ tin cậy, tải tệp đo

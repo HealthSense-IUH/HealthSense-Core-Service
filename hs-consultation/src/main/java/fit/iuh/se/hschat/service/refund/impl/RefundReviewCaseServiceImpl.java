@@ -58,12 +58,12 @@ public class RefundReviewCaseServiceImpl implements RefundReviewCaseService {
                 .idempotencyKey("refund:" + refund.getId() + ":review-required")
                 .needsAction(new NeedsActionIntent(NeedsActionType.REFUND_REVIEW_REQUIRED, NeedsActionPriority.HIGH,
                         "Refund review required", "Paid evidence requires a refund recommendation.",
-                        BusinessDomainType.REFUND, refund.getId(), UserRole.CARE_COORDINATOR.name(),
+                        BusinessDomainType.REFUND, refund.getId(), UserRole.ADMIN.name(),
                         "refund:" + refund.getId() + ":review-required"))
-                .notifications(java.util.List.of(NotificationIntent.forRole(UserRole.CARE_COORDINATOR,
+                .notifications(java.util.List.of(NotificationIntent.forRole(UserRole.ADMIN,
                         NotificationType.OPERATIONAL_REVIEW_REQUIRED, "Refund review required",
                         "Paid evidence requires a refund recommendation.", BusinessDomainType.REFUND,
-                        refund.getId(), "refund:" + refund.getId() + ":review-required:coordinators")))
+                        refund.getId(), "refund:" + refund.getId() + ":review-required:admins")))
                 .build());
     }
 

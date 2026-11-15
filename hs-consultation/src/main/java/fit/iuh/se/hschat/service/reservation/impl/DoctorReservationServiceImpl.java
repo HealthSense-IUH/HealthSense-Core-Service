@@ -56,7 +56,7 @@ public class DoctorReservationServiceImpl implements DoctorReservationService {
     @Transactional
     public DoctorReservation reserve(
             ConsultationRequest request,
-            Long coordinatorId,
+            Long adminId,
             Long doctorId,
             Instant expiresAt
     ) {
@@ -80,7 +80,7 @@ public class DoctorReservationServiceImpl implements DoctorReservationService {
                 .doctorId(doctorId)
                 .packageId(request.getPackageId())
                 .packageVersion(request.getPackageVersion())
-                .reservedBy(coordinatorId)
+                .reservedBy(adminId)
                 .reservedAt(now)
                 .expiresAt(expiresAt)
                 .status(DoctorReservationStatus.ACTIVE)
@@ -89,7 +89,7 @@ public class DoctorReservationServiceImpl implements DoctorReservationService {
         OperationalEventPublisher.record(OperationalEventCommand.builder()
                 .domainType(BusinessDomainType.RESERVATION).domainId(reservation.getId())
                 .eventType(BusinessEventType.DOCTOR_RESERVED).actorType(BusinessActorType.USER)
-                .actorUserId(coordinatorId).actorRole(UserRole.CARE_COORDINATOR.name())
+                .actorUserId(adminId).actorRole(UserRole.ADMIN.name())
                 .requestId(request.getId()).memberId(request.getMemberId()).doctorId(doctorId)
                 .newState(DoctorReservationStatus.ACTIVE.name())
                 .idempotencyKey("reservation:" + reservation.getId() + ":reserved").build());
@@ -257,11 +257,11 @@ public class DoctorReservationServiceImpl implements DoctorReservationService {
                 .previousState(previous.name()).newState(ConsultationRequestStatus.PENDING_REVIEW.name())
                 .reason(reason.name())
                 .idempotencyKey("request:" + request.getId() + ":doctor-recoordination:" + reason)
-                .notifications(java.util.List.of(NotificationIntent.forRole(UserRole.CARE_COORDINATOR,
+                .notifications(java.util.List.of(NotificationIntent.forRole(UserRole.ADMIN,
                         NotificationType.OPERATIONAL_REVIEW_REQUIRED, "Doctor coordination required",
                         "A care request requires a new Doctor reservation.", BusinessDomainType.REQUEST,
                         request.getId(), "request:" + request.getId() + ":doctor-recoordination:" + reason
-                                + ":coordinators")))
+                                + ":admins")))
                 .build());
     }
 

@@ -42,11 +42,6 @@ public class BusinessAuditQueryServiceImpl implements BusinessAuditQueryService 
 
     private Specification<BusinessAuditEvent> allowed(UserRole role) {
         if (role == UserRole.ADMIN || role == UserRole.SUPER_ADMIN) return Specification.allOf();
-        if (role == UserRole.CARE_COORDINATOR) {
-            return (r, q, b) -> r.get("domainType").in(BusinessDomainType.REQUEST, BusinessDomainType.RESERVATION,
-                    BusinessDomainType.AGREEMENT, BusinessDomainType.PAYMENT, BusinessDomainType.SESSION,
-                    BusinessDomainType.RENEWAL, BusinessDomainType.REFUND, BusinessDomainType.FINAL_SUMMARY);
-        }
         throw new AppException(ErrorCode.ACCESS_DENIED);
     }
 }

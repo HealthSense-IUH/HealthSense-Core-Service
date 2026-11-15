@@ -91,7 +91,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/member/**").hasRole("MEMBER")
                 .requestMatchers("/api/doctor/**").hasRole("DOCTOR")
                 .requestMatchers(ADMIN_ENDPOINTS).hasAnyRole("SUPER_ADMIN", "ADMIN")
-                .requestMatchers(CONSULTATION_MANAGEMENT_ENDPOINTS).hasAnyRole("SUPER_ADMIN", "ADMIN", "CARE_COORDINATOR")
+                .requestMatchers(CONSULTATION_MANAGEMENT_ENDPOINTS).hasAnyRole("SUPER_ADMIN", "ADMIN")
                 .anyRequest().authenticated()
         );
         httpSecurity.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

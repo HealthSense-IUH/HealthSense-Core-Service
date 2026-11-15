@@ -520,7 +520,7 @@ class ConsultationRequestServiceImplTest {
         ApproveConsultationRequest request = new ApproveConsultationRequest();
         request.setDoctorId(2L);
 
-        service.approveRequest(9L, UserRole.CARE_COORDINATOR, 100L, request);
+        service.approveRequest(9L, UserRole.ADMIN, 100L, request);
 
         ArgumentCaptor<ConsultationRequest> captor = ArgumentCaptor.forClass(ConsultationRequest.class);
         verify(requestRepository).save(captor.capture());
@@ -534,7 +534,7 @@ class ConsultationRequestServiceImplTest {
     }
 
     @Test
-    void twoCoordinatorsApprovingSameRequestOnlyOneTransitionWins() throws Exception {
+    void twoAdminsApprovingSameRequestOnlyOneTransitionWins() throws Exception {
         ConsultationRequest shared = ConsultationRequest.builder()
                 .id(100L)
                 .memberId(1L)
@@ -562,7 +562,7 @@ class ConsultationRequestServiceImplTest {
             Callable<Boolean> task = () -> {
                 start.await();
                 try {
-                    service.approveRequest(9L, UserRole.CARE_COORDINATOR, 100L, approval);
+                    service.approveRequest(9L, UserRole.ADMIN, 100L, approval);
                     return true;
                 } catch (AppException exception) {
                     return false;
@@ -621,9 +621,9 @@ class ConsultationRequestServiceImplTest {
         RejectConsultationRequest rejection = new RejectConsultationRequest();
         rejection.setRejectionReason("Assignment cannot proceed");
 
-        service.rejectRequest(9L, UserRole.CARE_COORDINATOR, 100L, rejection);
+        service.rejectRequest(9L, UserRole.ADMIN, 100L, rejection);
 
-        verify(reservationService).release(request, DoctorReservationReleaseReason.COORDINATOR_REJECTED);
+        verify(reservationService).release(request, DoctorReservationReleaseReason.ADMIN_REJECTED);
         assertEquals(ConsultationRequestStatus.REJECTED, request.getStatus());
     }
 
@@ -643,7 +643,7 @@ class ConsultationRequestServiceImplTest {
         ApproveConsultationRequest request = new ApproveConsultationRequest();
         request.setDoctorId(2L);
 
-        assertThrows(AppException.class, () -> service.approveRequest(9L, UserRole.CARE_COORDINATOR, 100L, request));
+        assertThrows(AppException.class, () -> service.approveRequest(9L, UserRole.ADMIN, 100L, request));
         verify(requestRepository, never()).save(any());
     }
 
@@ -666,7 +666,7 @@ class ConsultationRequestServiceImplTest {
         ApproveConsultationRequest request = new ApproveConsultationRequest();
         request.setDoctorId(2L);
 
-        service.approveRequest(9L, UserRole.CARE_COORDINATOR, 100L, request);
+        service.approveRequest(9L, UserRole.ADMIN, 100L, request);
 
         verify(reservationService).reserve(any(), eq(9L), eq(2L), any(Instant.class));
         verify(requestRepository).save(any(ConsultationRequest.class));
@@ -701,7 +701,7 @@ class ConsultationRequestServiceImplTest {
         ApproveConsultationRequest request = new ApproveConsultationRequest();
         request.setDoctorId(2L);
 
-        service.approveRequest(9L, UserRole.CARE_COORDINATOR, 100L, request);
+        service.approveRequest(9L, UserRole.ADMIN, 100L, request);
 
         ArgumentCaptor<ConsultationRequest> captor = ArgumentCaptor.forClass(ConsultationRequest.class);
         verify(requestRepository).save(captor.capture());
@@ -735,7 +735,7 @@ class ConsultationRequestServiceImplTest {
                 .thenReturn(List.of(DoctorIneligibilityReason.CAPACITY_FULL));
 
         PageResponse<DoctorCandidateResponse> response = service.getDoctorCandidates(
-                UserRole.CARE_COORDINATOR,
+                UserRole.ADMIN,
                 100L,
                 null,
                 null,
@@ -769,7 +769,7 @@ class ConsultationRequestServiceImplTest {
         ApproveConsultationRequest request = new ApproveConsultationRequest();
         request.setDoctorId(2L);
 
-        assertThrows(AppException.class, () -> service.approveRequest(9L, UserRole.CARE_COORDINATOR, 100L, request));
+        assertThrows(AppException.class, () -> service.approveRequest(9L, UserRole.ADMIN, 100L, request));
         verify(requestRepository, never()).save(any());
         verify(sessionRepository, never()).save(any());
     }
@@ -857,10 +857,10 @@ class ConsultationRequestServiceImplTest {
 
         assertEquals(ConsultationRequestStatus.PENDING_REVIEW, existing.getStatus());
         assertEquals(2, history.size());
-        assertEquals("Please describe symptoms", history.get(0).getCoordinatorMessage());
+        assertEquals("Please describe symptoms", history.get(0).getReviewerMessage());
         assertEquals("Symptoms occur nightly", history.get(0).getMemberResponse());
         assertNotNull(history.get(0).getRespondedAt());
-        assertEquals("Please clarify medication", history.get(1).getCoordinatorMessage());
+        assertEquals("Please clarify medication", history.get(1).getReviewerMessage());
         assertEquals("No current medication", history.get(1).getMemberResponse());
     }
 
@@ -977,10 +977,10 @@ class ConsultationRequestServiceImplTest {
         verify(requestRepository, times(1)).saveAndFlush(any(ConsultationRequest.class));
     }
 
-    private void requestAndSubmitMoreInfo(ConsultationRequest request, String coordinatorMessage, String response) {
+    private void requestAndSubmitMoreInfo(ConsultationRequest request, String reviewerMessage, String response) {
         RequestMoreConsultationInfoRequest needMoreInfo = new RequestMoreConsultationInfoRequest();
-        needMoreInfo.setReason(coordinatorMessage);
-        service.requestMoreInfo(9L, UserRole.CARE_COORDINATOR, request.getId(), needMoreInfo);
+        needMoreInfo.setReason(reviewerMessage);
+        service.requestMoreInfo(9L, UserRole.ADMIN, request.getId(), needMoreInfo);
 
         SubmitConsultationMoreInfoRequest submission = new SubmitConsultationMoreInfoRequest();
         submission.setResponseNote(response);

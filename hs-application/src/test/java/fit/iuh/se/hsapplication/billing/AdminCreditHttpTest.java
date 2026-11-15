@@ -100,7 +100,7 @@ class AdminCreditHttpTest {
     }
 
     @Test
-    void adminRoutesRejectAnonymousMemberDoctorAndCoordinator() throws Exception {
+    void adminRoutesRejectAnonymousMemberAndDoctor() throws Exception {
         var requests = List.of(get("/api/admin/credits/packages"),
                 get("/api/admin/credits/members"),
                 get("/api/admin/credits/payments/overview"),
@@ -109,7 +109,7 @@ class AdminCreditHttpTest {
                 post("/api/admin/credits/session-refunds").header("Idempotency-Key", "x")
                         .contentType("application/json").content("{\"sessionId\":1,\"reason\":\"fix\"}"));
         for (var request : requests) mvc.perform(request).andExpect(status().isUnauthorized());
-        for (var role : List.of(UserRole.MEMBER, UserRole.DOCTOR, UserRole.CARE_COORDINATOR))
+        for (var role : List.of(UserRole.MEMBER, UserRole.DOCTOR))
             for (var request : requests)
                 mvc.perform(request.with(authentication(actor(role)))).andExpect(status().isForbidden());
         verifyNoInteractions(context.getBean(CreditAdministrationService.class), context.getBean(ConsultationCreditRefundService.class));

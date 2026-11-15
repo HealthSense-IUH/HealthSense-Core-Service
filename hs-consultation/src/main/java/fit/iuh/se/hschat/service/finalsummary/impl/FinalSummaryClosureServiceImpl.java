@@ -135,7 +135,7 @@ public class FinalSummaryClosureServiceImpl implements FinalSummaryClosureServic
         }, eventType == BusinessEventType.SUMMARY_ESCALATED ? NeedsActionPriority.CRITICAL
                 : eventType == BusinessEventType.SUMMARY_OVERDUE ? NeedsActionPriority.HIGH : NeedsActionPriority.NORMAL,
                 "Final summary " + suffix, "The care episode requires Final Care Summary follow-up.",
-                BusinessDomainType.FINAL_SUMMARY, session.getId(), UserRole.CARE_COORDINATOR.name(),
+                BusinessDomainType.FINAL_SUMMARY, session.getId(), UserRole.ADMIN.name(),
                 summaryKey(session, suffix));
         String eventKey = "summary-closure:" + session.getId() + ":" + suffix;
         OperationalEventPublisher.record(OperationalEventCommand.builder()
@@ -148,10 +148,10 @@ public class FinalSummaryClosureServiceImpl implements FinalSummaryClosureServic
                         new NotificationIntent(session.getDoctorId(), NotificationType.SUMMARY_ACTION_REQUIRED,
                                 "Final summary action required", "A care episode requires Final Care Summary action.",
                                 BusinessDomainType.SESSION, session.getId(), eventKey + ":doctor"),
-                        NotificationIntent.forRole(UserRole.CARE_COORDINATOR,
+                        NotificationIntent.forRole(UserRole.ADMIN,
                                 NotificationType.OPERATIONAL_REVIEW_REQUIRED, "Final summary follow-up",
                                 "A care episode requires Final Care Summary follow-up.",
-                                BusinessDomainType.SESSION, session.getId(), eventKey + ":coordinators")))
+                                BusinessDomainType.SESSION, session.getId(), eventKey + ":admins")))
                 .build());
     }
 

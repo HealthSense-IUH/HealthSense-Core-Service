@@ -74,14 +74,12 @@ public class NeedsActionServiceImpl implements NeedsActionService {
     private Specification<NeedsActionItem> allowed(UserRole role) {
         if (role == UserRole.SUPER_ADMIN) return Specification.allOf();
         if (role == UserRole.ADMIN) return (r, q, b) -> r.get("assignedRole").in("ADMIN", "SUPER_ADMIN");
-        if (role == UserRole.CARE_COORDINATOR) return (r, q, b) -> b.equal(r.get("assignedRole"), "CARE_COORDINATOR");
         throw new AppException(ErrorCode.ACCESS_DENIED);
     }
 
     private boolean canAccess(UserRole role, NeedsActionItem item) {
         return role == UserRole.SUPER_ADMIN
-                || role == UserRole.ADMIN && (item.getAssignedRole().equals("ADMIN") || item.getAssignedRole().equals("SUPER_ADMIN"))
-                || role == UserRole.CARE_COORDINATOR && item.getAssignedRole().equals("CARE_COORDINATOR");
+                || role == UserRole.ADMIN && (item.getAssignedRole().equals("ADMIN") || item.getAssignedRole().equals("SUPER_ADMIN"));
     }
 
     private AppException notFound() {
