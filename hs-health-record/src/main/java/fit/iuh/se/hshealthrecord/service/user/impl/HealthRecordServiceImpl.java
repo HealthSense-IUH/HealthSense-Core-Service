@@ -383,27 +383,27 @@ public class HealthRecordServiceImpl implements HealthRecordService {
         ZonedDateTime endZoned;
         int numOfItems;
 
-        // Determine time boundaries
+        // Determine half-open time boundaries [from, to)
         switch (period.toUpperCase()) {
             case "DAY":
                 startZoned = refZoned.truncatedTo(ChronoUnit.DAYS);
-                endZoned = startZoned.plusDays(1).minusNanos(1);
+                endZoned = startZoned.plusDays(1);
                 numOfItems = 24;
                 break;
             case "WEEK":
                 startZoned = refZoned.with(TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY)).truncatedTo(ChronoUnit.DAYS);
-                endZoned = startZoned.plusDays(7).minusNanos(1);
+                endZoned = startZoned.plusDays(7);
                 numOfItems = 7;
                 break;
             case "MONTH":
                 startZoned = refZoned.with(TemporalAdjusters.firstDayOfMonth()).truncatedTo(ChronoUnit.DAYS);
-                endZoned = refZoned.with(TemporalAdjusters.lastDayOfMonth()).plusDays(1).truncatedTo(ChronoUnit.DAYS).minusNanos(1);
+                endZoned = startZoned.plusMonths(1);
                 numOfItems = startZoned.toLocalDate().lengthOfMonth();
                 break;
             case "YEAR":
             default:
                 startZoned = refZoned.with(TemporalAdjusters.firstDayOfYear()).truncatedTo(ChronoUnit.DAYS);
-                endZoned = refZoned.with(TemporalAdjusters.lastDayOfYear()).plusDays(1).truncatedTo(ChronoUnit.DAYS).minusNanos(1);
+                endZoned = startZoned.plusYears(1);
                 numOfItems = 12;
                 break;
         }
@@ -434,7 +434,7 @@ public class HealthRecordServiceImpl implements HealthRecordService {
                     .build());
         }
 
-        boolean isPastPeriod = endZoned.isBefore(ZonedDateTime.now(zoneId));
+        boolean isPastPeriod = !endZoned.isAfter(ZonedDateTime.now(zoneId));
         long cacheVersion = getUserCacheVersion(userId);
         String cacheKey = String.format("stats:v%d:%d:%s:%s:%s",
                 cacheVersion, userId, zoneId.getId(), period.toUpperCase(), startZoned.toLocalDate().toString());
