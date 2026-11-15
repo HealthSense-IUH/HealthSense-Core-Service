@@ -65,7 +65,7 @@ class OperationalEventServiceImplTest {
                 .idempotencyKey("audit:10").metadata(Map.of("providerCode", "PAID", "rawPayload", "secret data"))
                 .needsAction(new NeedsActionIntent(NeedsActionType.PAYMENT_REQUIRES_REVIEW,
                         NeedsActionPriority.HIGH, "Review", "Review payment", BusinessDomainType.PAYMENT,
-                        10L, "CARE_COORDINATOR", "work:10"))
+                        10L, "ADMIN", "work:10"))
                 .notifications(List.of(new NotificationIntent(1L, NotificationType.PAYMENT_REQUIRES_REVIEW,
                         "Payment review", "Payment requires review.", BusinessDomainType.PAYMENT, 10L, "notice:10")))
                 .build());
@@ -108,7 +108,7 @@ class OperationalEventServiceImplTest {
                 .idempotencyKey("audit:10")
                 .needsAction(new NeedsActionIntent(NeedsActionType.PAYMENT_REQUIRES_REVIEW,
                         NeedsActionPriority.HIGH, "Review", "Review payment", BusinessDomainType.PAYMENT,
-                        10L, "CARE_COORDINATOR", "work:10"))
+                        10L, "ADMIN", "work:10"))
                 .notifications(List.of(new NotificationIntent(1L, NotificationType.PAYMENT_REQUIRES_REVIEW,
                         "Review", "Review payment", BusinessDomainType.PAYMENT, 10L, "notice:10")))
                 .build()));
@@ -126,7 +126,7 @@ class OperationalEventServiceImplTest {
                 .eventType(BusinessEventType.REFUND_REVIEW_REQUIRED).idempotencyKey("audit:20")
                 .needsAction(new NeedsActionIntent(NeedsActionType.REFUND_REVIEW_REQUIRED,
                         NeedsActionPriority.HIGH, "Review", "Review refund", BusinessDomainType.REFUND,
-                        20L, "CARE_COORDINATOR", "work:20"))
+                        20L, "ADMIN", "work:20"))
                 .build()));
 
         verifyNoInteractions(needsActionRepository, projectionRepository, publisher);

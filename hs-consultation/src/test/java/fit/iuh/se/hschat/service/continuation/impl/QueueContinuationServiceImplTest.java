@@ -124,7 +124,7 @@ class QueueContinuationServiceImplTest {
         assertThrows(AppException.class,
                 () -> service.getCurrent(MEMBER_ID, UserRole.DOCTOR, SESSION_ID));
         assertThrows(AppException.class,
-                () -> service.getCurrent(MEMBER_ID, UserRole.CARE_COORDINATOR, SESSION_ID));
+                () -> service.getCurrent(MEMBER_ID, UserRole.ADMIN, SESSION_ID));
     }
 
     @Test

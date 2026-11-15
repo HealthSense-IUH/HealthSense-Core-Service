@@ -105,8 +105,8 @@ class ConsultationSessionServiceImplTest {
                 .thenReturn(List.of(overdue));
         when(sessionRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(overdue));
 
-        service.expireOverdueSessions(UserRole.CARE_COORDINATOR);
-        service.expireOverdueSessions(UserRole.CARE_COORDINATOR);
+        service.expireOverdueSessions(UserRole.ADMIN);
+        service.expireOverdueSessions(UserRole.ADMIN);
 
         ArgumentCaptor<ConsultationSession> captor = ArgumentCaptor.forClass(ConsultationSession.class);
         verify(sessionRepository).save(captor.capture());
@@ -133,7 +133,7 @@ class ConsultationSessionServiceImplTest {
                 .thenReturn(List.of(staleCandidate));
         when(sessionRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(renewedLockedSession));
 
-        service.expireOverdueSessions(UserRole.CARE_COORDINATOR);
+        service.expireOverdueSessions(UserRole.ADMIN);
 
         assertEquals(ConsultationStatus.ACTIVE, renewedLockedSession.getStatus());
         verify(sessionRepository, never()).save(any());
@@ -151,7 +151,7 @@ class ConsultationSessionServiceImplTest {
         when(sessionRepository.findByStatusAndStartedAtBefore(eq(ConsultationStatus.SCHEDULED), any(Instant.class)))
                 .thenReturn(List.of(scheduled));
 
-        service.activateScheduledSessions(UserRole.CARE_COORDINATOR);
+        service.activateScheduledSessions(UserRole.ADMIN);
 
         ArgumentCaptor<ConsultationSession> captor = ArgumentCaptor.forClass(ConsultationSession.class);
         verify(sessionRepository).save(captor.capture());
@@ -263,12 +263,12 @@ class ConsultationSessionServiceImplTest {
     }
 
     @Test
-    void coordinatorCannotUseExceptionalOverride() {
+    void nonPrivilegedRoleCannotUseExceptionalOverride() {
         AdminCreateConsultationSessionRequest request = new AdminCreateConsultationSessionRequest();
         request.setOverrideReason("Attempted bypass");
 
         assertThrows(AppException.class,
-                () -> service.createSessionByAdmin(9L, UserRole.CARE_COORDINATOR, request));
+                () -> service.createSessionByAdmin(9L, UserRole.DOCTOR, request));
         verify(sessionRepository, never()).save(any());
     }
 
@@ -277,7 +277,7 @@ class ConsultationSessionServiceImplTest {
         AdminCreateConsultationSessionRequest request = new AdminCreateConsultationSessionRequest();
 
         assertThrows(AppException.class,
-                () -> service.createSessionByAdmin(9L, UserRole.ADMIN, request));
+                () -> service.createSessionByAdmin(9L, UserRole.DOCTOR, request));
         verify(sessionRepository, never()).save(any());
     }
 
@@ -289,8 +289,8 @@ class ConsultationSessionServiceImplTest {
                 eq(ConsultationFlowType.LEGACY_V3), eq(ConsultationStatus.ACTIVE), any(), any()))
                 .thenReturn(List.of(ending));
 
-        service.expireOverdueSessions(UserRole.CARE_COORDINATOR);
-        service.expireOverdueSessions(UserRole.CARE_COORDINATOR);
+        service.expireOverdueSessions(UserRole.ADMIN);
+        service.expireOverdueSessions(UserRole.ADMIN);
 
         ArgumentCaptor<fit.iuh.se.hsoperations.dto.command.OperationalEventCommand> events =
                 ArgumentCaptor.forClass(fit.iuh.se.hsoperations.dto.command.OperationalEventCommand.class);
@@ -326,7 +326,7 @@ class ConsultationSessionServiceImplTest {
         request.setTerminationReason(CareTerminationReason.MEMBER_REQUESTED);
         request.setMeaningfulCareOccurred(true);
 
-        service.closeSession(9L, UserRole.CARE_COORDINATOR, 1L, request);
+        service.closeSession(9L, UserRole.ADMIN, 1L, request);
 
         assertEquals(ConsultationStatus.CANCELLED, session.getStatus());
         assertTrue(session.getMeaningfulCareOccurred());

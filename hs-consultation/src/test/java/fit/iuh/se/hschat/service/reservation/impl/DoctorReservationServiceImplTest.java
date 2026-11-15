@@ -200,7 +200,7 @@ class DoctorReservationServiceImplTest {
         verify(OperationalEventPublisher).record(argThat(command ->
                 command.eventType() == fit.iuh.se.hsoperations.entity.enums.BusinessEventType.DOCTOR_RECOORDINATED
                         && command.notifications().stream().anyMatch(notification ->
-                        notification.recipientRole() == UserRole.CARE_COORDINATOR)));
+                        notification.recipientRole() == UserRole.ADMIN)));
     }
 
     @Test

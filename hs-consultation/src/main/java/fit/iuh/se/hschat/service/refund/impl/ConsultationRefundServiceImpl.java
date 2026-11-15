@@ -46,7 +46,7 @@ public class ConsultationRefundServiceImpl implements ConsultationRefundService 
     @Transactional
     public ConsultationRefundResponse recommend(
             Long actorId, UserRole role, Long paymentId, RecommendRefundRequest request) {
-        requireCoordinator(role);
+        requireFinancialAdmin(role);
         ConsultationPayment payment = paymentRepository.findByIdForUpdate(paymentId)
                 .orElseThrow(() -> new AppException(ErrorCode.CONSULTATION_PAYMENT_NOT_FOUND));
         requirePaidEvidence(payment);
@@ -228,18 +228,13 @@ public class ConsultationRefundServiceImpl implements ConsultationRefundService 
         return amount;
     }
 
-    private void requireCoordinator(UserRole role) {
-        if (role != UserRole.CARE_COORDINATOR)
-            throw AppException.of(ErrorCode.ACCESS_DENIED, "detail.only-coordinator-recommend-refund");
-    }
-
     private void requireFinancialAdmin(UserRole role) {
         if (role != UserRole.ADMIN && role != UserRole.SUPER_ADMIN)
             throw AppException.of(ErrorCode.ACCESS_DENIED, "detail.only-admin-refund");
     }
 
     private void requireRefundStaff(UserRole role) {
-        if (role != UserRole.CARE_COORDINATOR && role != UserRole.ADMIN && role != UserRole.SUPER_ADMIN)
+        if (role != UserRole.ADMIN && role != UserRole.SUPER_ADMIN)
             throw new AppException(ErrorCode.ACCESS_DENIED);
     }
 

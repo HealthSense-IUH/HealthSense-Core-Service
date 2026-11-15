@@ -57,7 +57,7 @@ class UserStatisticsServiceImplTest {
                         new fit.iuh.se.hsshared.statistics.StatisticsCountBucketResponse(LocalDate.parse("2026-10-02"), 0),
                         new fit.iuh.se.hsshared.statistics.StatisticsCountBucketResponse(LocalDate.parse("2026-10-03"), 5)),
                 result.registrationTrend());
-        assertEquals(5, result.byRole().size());
+        assertEquals(4, result.byRole().size());
         assertEquals(0, count(result.byRole(), "SUPER_ADMIN"));
         assertEquals(100, count(result.byRole(), "MEMBER"));
         assertEquals(3, result.byStatus().size());

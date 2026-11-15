@@ -16,7 +16,7 @@ public class ConsultationMoreInfoCycleResponse {
 
     Long id;
     String requestedItemsCategory;
-    String coordinatorMessage;
+    String reviewerMessage;
     Long requestedBy;
     Instant requestedAt;
     String memberResponse;

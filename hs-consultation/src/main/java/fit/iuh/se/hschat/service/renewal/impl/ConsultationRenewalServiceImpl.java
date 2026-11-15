@@ -108,7 +108,7 @@ public class ConsultationRenewalServiceImpl implements ConsultationRenewalServic
     @Override
     @Transactional
     public ConsultationRenewalResponse beginReview(Long actorId, UserRole role, Long renewalId) {
-        requireCoordinator(role);
+        requireOperationsAdmin(role);
         ConsultationRenewal renewal = renewalRepository.findByIdForUpdate(renewalId)
                 .orElseThrow(() -> AppException.of(ErrorCode.ENTITY_NOT_FOUND, "detail.renewal-not-found"));
         if (renewal.getStatus() != ConsultationRenewalStatus.REQUESTED)
@@ -129,7 +129,7 @@ public class ConsultationRenewalServiceImpl implements ConsultationRenewalServic
     @Transactional
     public ConsultationRenewalResponse decide(
             Long actorId, UserRole role, Long renewalId, DecideConsultationRenewalRequest request) {
-        requireCoordinator(role);
+        requireOperationsAdmin(role);
         ConsultationRenewal renewal = renewalRepository.findByIdForUpdate(renewalId)
                 .orElseThrow(() -> AppException.of(ErrorCode.ENTITY_NOT_FOUND, "detail.renewal-not-found"));
         if (renewal.getStatus() != ConsultationRenewalStatus.UNDER_REVIEW)
@@ -521,8 +521,8 @@ public class ConsultationRenewalServiceImpl implements ConsultationRenewalServic
             throw AppException.of(ErrorCode.INVALID_CONSULTATION_STATUS, "detail.renewal-same-participants");
     }
 
-    private void requireCoordinator(UserRole role) {
-        if (role != UserRole.CARE_COORDINATOR && role != UserRole.ADMIN && role != UserRole.SUPER_ADMIN)
+    private void requireOperationsAdmin(UserRole role) {
+        if (role != UserRole.ADMIN && role != UserRole.SUPER_ADMIN)
             throw new AppException(ErrorCode.ACCESS_DENIED);
     }
 

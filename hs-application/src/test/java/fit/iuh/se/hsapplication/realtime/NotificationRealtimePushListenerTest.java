@@ -57,11 +57,11 @@ class NotificationRealtimePushListenerTest {
     @Test
     void pushesToRoleTopicForRoleRecipient() {
         listener.on(eventWith(NotificationIntent.forRole(
-                UserRole.CARE_COORDINATOR, NotificationType.OPERATIONAL_REVIEW_REQUIRED,
+                UserRole.ADMIN, NotificationType.OPERATIONAL_REVIEW_REQUIRED,
                 "title", "msg", BusinessDomainType.PAYMENT, 1L, "key-2")));
 
         verify(messagingTemplate).convertAndSend(
-                (String) eq("/topic/notifications/roles/CARE_COORDINATOR"),
+                (String) eq("/topic/notifications/roles/ADMIN"),
                 ArgumentMatchers.<Map<String, String>>eq(Map.of("type", "OPERATIONAL_REVIEW_REQUIRED")));
         verifyNoMoreInteractions(messagingTemplate);
     }

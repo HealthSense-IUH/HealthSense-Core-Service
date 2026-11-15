@@ -36,7 +36,7 @@ class ConsultationCreditRefundServiceImplTest {
         assertEquals(ErrorCode.CREDIT_REFUND_NOT_ELIGIBLE,
                 assertThrows(AppException.class, () -> service.refund(1L, UserRole.ADMIN, 10L, "reason", "key")).getErrorCode());
         assertEquals(ErrorCode.ACCESS_DENIED,
-                assertThrows(AppException.class, () -> service.refund(1L, UserRole.CARE_COORDINATOR, 10L, "reason", "key")).getErrorCode());
+                assertThrows(AppException.class, () -> service.refund(1L, UserRole.DOCTOR, 10L, "reason", "key")).getErrorCode());
         verifyNoInteractions(credits);
     }
 }

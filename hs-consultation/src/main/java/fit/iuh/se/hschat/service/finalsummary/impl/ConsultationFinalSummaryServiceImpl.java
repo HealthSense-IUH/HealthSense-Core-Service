@@ -237,9 +237,7 @@ public class ConsultationFinalSummaryServiceImpl implements ConsultationFinalSum
     }
 
     private void validateConsultationManager(UserRole actorRole) {
-        if (actorRole == UserRole.SUPER_ADMIN
-                || actorRole == UserRole.ADMIN
-                || actorRole == UserRole.CARE_COORDINATOR)
+        if (actorRole == UserRole.SUPER_ADMIN || actorRole == UserRole.ADMIN)
             return;
         throw AppException.of(ErrorCode.ACCESS_DENIED, "detail.forbidden-view-final-summaries");
     }

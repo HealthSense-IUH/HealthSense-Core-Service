@@ -95,7 +95,7 @@ class PaymentCancellationServiceImplTest {
         when(paymentRepository.findByIdForUpdate(200L)).thenReturn(Optional.of(payment));
 
         assertThrows(AppException.class,
-                () -> service.reconcileProviderCancellation(9L, UserRole.CARE_COORDINATOR, 200L));
+                () -> service.reconcileProviderCancellation(9L, UserRole.DOCTOR, 200L));
         service.reconcileProviderCancellation(9L, UserRole.ADMIN, 200L);
 
         assertEquals(PaymentProviderCancellationStatus.SUCCEEDED, payment.getProviderCancellationStatus());

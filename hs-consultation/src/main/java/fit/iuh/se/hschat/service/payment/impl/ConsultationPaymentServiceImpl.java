@@ -607,7 +607,7 @@ public class ConsultationPaymentServiceImpl implements ConsultationPaymentServic
                 NotificationType.PAYMENT_REQUIRES_REVIEW,
                 new NeedsActionIntent(NeedsActionType.PAYMENT_REQUIRES_REVIEW, NeedsActionPriority.HIGH,
                         "Payment requires review", "Verified payment evidence could not safely activate care.",
-                        BusinessDomainType.PAYMENT, payment.getId(), UserRole.CARE_COORDINATOR.name(),
+                        BusinessDomainType.PAYMENT, payment.getId(), UserRole.ADMIN.name(),
                         "payment:" + payment.getId() + ":requires-review"));
         if (payment.getPaymentPurpose() == ConsultationPaymentPurpose.RENEWAL)
             renewalService.markRequiresReview(payment);
@@ -623,10 +623,10 @@ public class ConsultationPaymentServiceImpl implements ConsultationPaymentServic
                     paymentNotificationTitle(notificationType), paymentNotificationMessage(notificationType),
                     BusinessDomainType.PAYMENT, payment.getId(), key + ":member"));
         if (eventType == BusinessEventType.PAYMENT_REQUIRES_REVIEW)
-            notifications.add(NotificationIntent.forRole(UserRole.CARE_COORDINATOR,
+            notifications.add(NotificationIntent.forRole(UserRole.ADMIN,
                     NotificationType.OPERATIONAL_REVIEW_REQUIRED, "Payment requires review",
-                    "Verified payment evidence requires coordinator review and did not activate care.",
-                    BusinessDomainType.PAYMENT, payment.getId(), key + ":coordinators"));
+                    "Verified payment evidence requires administrator review and did not activate care.",
+                    BusinessDomainType.PAYMENT, payment.getId(), key + ":admins"));
         OperationalEventPublisher.record(OperationalEventCommand.builder()
                 .domainType(BusinessDomainType.PAYMENT).domainId(payment.getId()).eventType(eventType)
                 .actorType(actorType).actorUserId(actorId)

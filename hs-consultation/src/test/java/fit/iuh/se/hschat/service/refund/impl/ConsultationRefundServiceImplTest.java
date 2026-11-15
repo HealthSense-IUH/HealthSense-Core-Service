@@ -59,20 +59,17 @@ class ConsultationRefundServiceImplTest {
     }
 
     @Test
-    void coordinatorRecommendsButCannotApproveOrExecute() {
+    void adminCanRecommendRefund() {
         ConsultationPayment payment = paidPayment();
         when(paymentRepository.findByIdForUpdate(200L)).thenReturn(Optional.of(payment));
         when(agreementRepository.findById(700L)).thenReturn(Optional.of(agreement()));
         when(refundRepository.findByPaymentIdForUpdate(200L)).thenReturn(Optional.empty());
 
-        var response = service.recommend(9L, UserRole.CARE_COORDINATOR, 200L,
+        var response = service.recommend(9L, UserRole.ADMIN, 200L,
                 recommendation(RefundRecommendation.FULL, null));
 
         assertEquals(ConsultationRefundStatus.RECOMMENDED, response.getStatus());
         assertEquals(payment.getAmount(), response.getRecommendedAmount());
-        assertThrows(AppException.class, () -> service.decide(9L, UserRole.CARE_COORDINATOR,
-                800L, decision(true, payment.getAmount())));
-        assertThrows(AppException.class, () -> service.execute(9L, UserRole.CARE_COORDINATOR, 800L));
     }
 
     @Test

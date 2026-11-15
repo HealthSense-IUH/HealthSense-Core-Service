@@ -182,8 +182,7 @@ public class AdminUserServiceImpl implements AdminUserService {
         if (currentUserRole == UserRole.SUPER_ADMIN && targetRole != UserRole.SUPER_ADMIN)
             return;
         if (currentUserRole == UserRole.ADMIN && (
-                targetRole == UserRole.CARE_COORDINATOR
-                        || targetRole == UserRole.DOCTOR
+                targetRole == UserRole.DOCTOR
                         || targetRole == UserRole.MEMBER
         ))
             return;

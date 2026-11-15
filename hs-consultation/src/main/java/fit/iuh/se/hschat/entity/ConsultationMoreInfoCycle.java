@@ -33,8 +33,8 @@ public class ConsultationMoreInfoCycle extends BaseEntity {
     @Column(name = "requested_items_category", length = 120)
     String requestedItemsCategory;
 
-    @Column(name = "coordinator_message", nullable = false, length = 1000)
-    String coordinatorMessage;
+    @Column(name = "reviewer_message", nullable = false, length = 1000)
+    String reviewerMessage;
 
     @Column(name = "requested_by", nullable = false)
     Long requestedBy;
