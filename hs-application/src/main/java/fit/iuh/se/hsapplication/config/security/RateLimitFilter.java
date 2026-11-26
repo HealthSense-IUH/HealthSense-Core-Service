@@ -46,6 +46,12 @@ public class RateLimitFilter extends OncePerRequestFilter {
     @Value("${app.assistant.rate-limit.window-seconds:60}")
     long assistantWindowSeconds;
 
+    @Value("${app.auth.rate-limit.capacity:15}")
+    long authCapacity;
+
+    @Value("${app.auth.rate-limit.window-seconds:60}")
+    long authWindowSeconds;
+
     @Override
     protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
         if (!enabled || "OPTIONS".equalsIgnoreCase(request.getMethod())) {
@@ -61,9 +67,14 @@ public class RateLimitFilter extends OncePerRequestFilter {
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain) throws ServletException, IOException {
         String actorKey = resolveKey(request);
-        RateLimitResult result = isAssistantStreamRequest(request)
-                ? rateLimiterService.consume("assistant:" + actorKey, assistantCapacity, assistantWindowSeconds)
-                : rateLimiterService.consume(actorKey);
+        RateLimitResult result;
+        if (isAssistantStreamRequest(request)) {
+            result = rateLimiterService.consume("assistant:" + actorKey, assistantCapacity, assistantWindowSeconds);
+        } else if (isSensitiveAuthRequest(request)) {
+            result = rateLimiterService.consume("auth:" + actorKey, authCapacity, authWindowSeconds);
+        } else {
+            result = rateLimiterService.consume(actorKey);
+        }
 
         response.setHeader(RATE_LIMIT_LIMIT, String.valueOf(result.getLimit()));
         response.setHeader(RATE_LIMIT_REMAINING, String.valueOf(result.getRemaining()));
@@ -87,6 +98,17 @@ public class RateLimitFilter extends OncePerRequestFilter {
                 && uri != null
                 && uri.startsWith("/api/assistant/conversations/")
                 && uri.endsWith("/stream");
+    }
+
+    private boolean isSensitiveAuthRequest(HttpServletRequest request) {
+        String uri = request.getRequestURI();
+        if (!"POST".equalsIgnoreCase(request.getMethod()) || uri == null) {
+            return false;
+        }
+        return uri.equals("/api/auth/login")
+                || uri.equals("/api/auth/mobile/login")
+                || uri.equals("/api/auth/register")
+                || uri.startsWith("/api/auth/forgot-password/");
     }
 
     private String resolveKey(HttpServletRequest request) {

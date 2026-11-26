@@ -35,6 +35,8 @@ class RateLimitFilterTest {
         ReflectionTestUtils.setField(filter, "enabled", true);
         ReflectionTestUtils.setField(filter, "assistantCapacity", 20L);
         ReflectionTestUtils.setField(filter, "assistantWindowSeconds", 60L);
+        ReflectionTestUtils.setField(filter, "authCapacity", 15L);
+        ReflectionTestUtils.setField(filter, "authWindowSeconds", 60L);
     }
 
     @AfterEach
@@ -44,7 +46,7 @@ class RateLimitFilterTest {
 
     @Test
     void ignoresSpoofedXForwardedForHeaderAndUsesRemoteAddr() throws Exception {
-        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/auth/login");
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/public/ping");
         request.setRemoteAddr("10.0.0.5");
         request.addHeader("X-Forwarded-For", "1.2.3.4");
         MockHttpServletResponse response = new MockHttpServletResponse();
@@ -56,6 +58,24 @@ class RateLimitFilterTest {
 
         verify(rateLimiterService).consume("ip:10.0.0.5");
         verify(chain).doFilter(request, response);
+    }
+
+    @Test
+    void appliesStricterAuthBucketOnLoginAndForgotPassword() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/auth/mobile/login");
+        request.setRemoteAddr("10.0.0.9");
+        request.addHeader("X-Forwarded-For", "9.9.9.9");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        FilterChain chain = mock(FilterChain.class);
+        when(rateLimiterService.consume("auth:ip:10.0.0.9", 15L, 60L))
+                .thenReturn(new RateLimitResult(false, 15L, 0L, 45L));
+
+        filter.doFilter(request, response, chain);
+
+        assertThat(response.getStatus()).isEqualTo(429);
+        assertThat(response.getHeader("retry-after")).isEqualTo("45");
+        verify(rateLimiterService).consume("auth:ip:10.0.0.9", 15L, 60L);
+        verify(chain, never()).doFilter(request, response);
     }
 
     @Test

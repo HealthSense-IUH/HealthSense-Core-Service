@@ -97,7 +97,12 @@ public class S3Service {
      * Tạo Object Key chuẩn theo thư mục, ID người dùng và Timestamp
      */
     public String generateObjectKey(String folder, Long userId, String fileName) {
-        String cleanName = fileName != null ? fileName.trim().replaceAll("[^a-zA-Z0-9.\\-_]", "_").toLowerCase() : "file";
+        String cleanName = fileName != null
+                ? fileName.trim().replaceAll("[^a-zA-Z0-9.\\-_]", "_").replaceAll("\\.{2,}", ".").toLowerCase()
+                : "file";
+        if (cleanName.isBlank() || ".".equals(cleanName)) {
+            cleanName = "file";
+        }
         String normalizedFolder = folder.endsWith("/") ? folder : folder + "/";
         return String.format("%s%d/%d_%s", normalizedFolder, userId, System.currentTimeMillis(), cleanName);
     }

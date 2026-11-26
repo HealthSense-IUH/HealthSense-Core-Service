@@ -170,9 +170,14 @@ public class HealthRecordServiceImpl implements HealthRecordService {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                 @Override
                 public void afterCommit() {
-                    rabbitTemplate.convertAndSend(exchange, routingKey, message);
-                    log.info("Sent RecordProcessingMessage after commit to exchange '{}' with routingKey '{}': recordId={}",
-                            exchange, routingKey, message.getRecordId());
+                    try {
+                        rabbitTemplate.convertAndSend(exchange, routingKey, message);
+                        log.info("Sent RecordProcessingMessage after commit to exchange '{}' with routingKey '{}': recordId={}",
+                                exchange, routingKey, message.getRecordId());
+                    } catch (Exception ex) {
+                        log.error("Failed to publish RecordProcessingMessage after commit (recordId={}); StuckHealthRecordRecoveryJob will handle timeout if needed.",
+                                message.getRecordId(), ex);
+                    }
                 }
             });
         } else {

@@ -13,6 +13,7 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.web.util.HtmlUtils;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 
@@ -73,7 +74,10 @@ public class EmailServiceImpl implements EmailService {
     @Override
     public void sendTemporaryPasswordAsync(String email, String displayName, String role, String temporaryPassword) {
         try {
-            String safeName = displayName == null || displayName.isBlank() ? email : displayName.trim();
+            String safeName = HtmlUtils.htmlEscape(
+                    displayName == null || displayName.isBlank() ? email : displayName.trim());
+            String safeRole = HtmlUtils.htmlEscape(role == null ? "" : role.trim());
+            String safePassword = HtmlUtils.htmlEscape(temporaryPassword == null ? "" : temporaryPassword);
             String html = """
                     <div style="font-family:Arial,sans-serif;line-height:1.5;color:#1f2937">
                       <h2>Your HealthSense account has been created</h2>
@@ -82,7 +86,7 @@ public class EmailServiceImpl implements EmailService {
                       <p style="font-size:20px;font-weight:700;letter-spacing:2px;background:#f3f4f6;padding:12px 16px;border-radius:6px;display:inline-block">%s</p>
                       <p>Please change your password after your first login.</p>
                     </div>
-                    """.formatted(safeName, role, temporaryPassword);
+                    """.formatted(safeName, safeRole, safePassword);
 
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(

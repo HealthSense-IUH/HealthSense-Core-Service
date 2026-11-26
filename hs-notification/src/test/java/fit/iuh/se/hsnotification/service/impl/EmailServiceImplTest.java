@@ -45,4 +45,22 @@ class EmailServiceImplTest {
         assertEquals("Thanh toán mua token thành công - HealthSense", message.getSubject());
         assertEquals("member@example.com", message.getAllRecipients()[0].toString());
     }
+
+    @Test
+    void temporaryPasswordEmailEscapesHtmlInDisplayName() throws Exception {
+        JavaMailSender mailSender = mock(JavaMailSender.class);
+        MimeMessage message = new MimeMessage(Session.getInstance(new Properties()));
+        when(mailSender.createMimeMessage()).thenReturn(message);
+
+        var service = new EmailServiceImpl(mailSender, new SpringTemplateEngine());
+        ReflectionTestUtils.setField(service, "from", "no-reply@healthsense.test");
+        service.sendTemporaryPasswordAsync("doc@example.com", "<script>alert(1)</script>", "DOCTOR", "Tmp#1234");
+
+        verify(mailSender).send(message);
+        var rawOut = new java.io.ByteArrayOutputStream();
+        message.writeTo(rawOut);
+        String rawMime = rawOut.toString(java.nio.charset.StandardCharsets.UTF_8);
+        org.junit.jupiter.api.Assertions.assertFalse(rawMime.contains("<script>"));
+        org.junit.jupiter.api.Assertions.assertTrue(rawMime.contains("&lt;script&gt;"));
+    }
 }
