@@ -51,7 +51,7 @@ public class HealthRecordController {
     String aiCallbackSecret;
 
     @NonFinal
-    @Value("${app.security.ai-callback.enforce:false}")
+    @Value("${app.security.ai-callback.enforce:true}")
     boolean enforceAiCallbackSignature;
 
     @PostMapping("/presigned-url")

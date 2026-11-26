@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ "main" ]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 jobs:
   build-and-test:
     name: Build & Test
@@ -25,8 +29,8 @@ jobs:
       - name: Make maven wrapper executable
         run: chmod +x mvnw
 
-      - name: Build with Maven
-        run: ./mvnw clean package -DskipTests
+      - name: Build and run unit tests with Maven
+        run: ./mvnw -B -T 1C test -Dtest='!*IntegrationTest,!HsApplicationTests' -Dsurefire.failIfNoSpecifiedTests=false
 
   publish-jib:
     name: Build & Push Image
@@ -50,7 +54,7 @@ jobs:
 
       - name: Build and Push Docker Image with Jib
         run: |
-          ./mvnw clean package jib:build \
+          ./mvnw -B -T 1C package jib:build \
             -pl hs-application -am \
             -DskipTests \
             -Djib.to.image=docker.io/${{ secrets.DOCKERHUB_USERNAME }}/healthsense-core-service:latest \

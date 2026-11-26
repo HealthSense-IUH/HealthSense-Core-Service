@@ -81,7 +81,10 @@ public class AssistantController {
 						chunk -> send(emitter, "delta", Map.of("text", chunk)),
 						error -> {
 							log.warn("Assistant SSE lỗi: {}", error.toString());
-							send(emitter, "error", Map.of("message", "Cara đang gặp sự cố, vui lòng thử lại sau."));
+							String message = "en".equals(user.language())
+									? "Cara is experiencing an issue, please try again later."
+									: "Cara đang gặp sự cố, vui lòng thử lại sau.";
+							send(emitter, "error", Map.of("message", message));
 							emitter.complete();
 						},
 						() -> {

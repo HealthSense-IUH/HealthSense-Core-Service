@@ -32,6 +32,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -58,6 +59,7 @@ public class HealthRecordServiceImpl implements HealthRecordService {
     private final ApplicationEventPublisher eventPublisher;
     private final org.springframework.data.redis.core.StringRedisTemplate redisTemplate;
     private final tools.jackson.databind.ObjectMapper objectMapper;
+    private final TransactionTemplate transactionTemplate;
 
     @Value("${app.rabbitmq.exchange:health.record.exchange}")
     private String exchange;
@@ -119,14 +121,17 @@ public class HealthRecordServiceImpl implements HealthRecordService {
     }
 
     @Override
-    @Transactional
     public HealthRecordResponse uploadDirectAndProcess(Long userId, MultipartFile file) {
         log.info("Direct upload and process for user {} with file {}", userId, file != null ? file.getOriginalFilename() : "null");
         if (file == null || file.isEmpty()) {
             throw AppException.of(ErrorCode.INVALID_ARGUMENT, "detail.upload-file-empty");
         }
-        String fileName = file.getOriginalFilename() != null ? file.getOriginalFilename() : "health_record.csv";
+        String fileName = file.getOriginalFilename() != null ? file.getOriginalFilename().trim() : "health_record.csv";
+        if (!fileName.toLowerCase(java.util.Locale.ROOT).endsWith(".csv")) {
+            throw AppException.of(ErrorCode.INVALID_ARGUMENT, "detail.upload-file-csv-only");
+        }
         String s3Key = s3Service.generateObjectKey(S3Service.FOLDER_RECORDS, userId, fileName);
+        // Upload S3 ngoài transaction để không giữ kết nối DB (HikariCP) suốt quá trình truyền mạng
         try {
             s3Service.uploadFileDirect(s3Key, file.getInputStream(), file.getSize(), file.getContentType() != null ? file.getContentType() : "text/csv");
         } catch (IOException e) {
@@ -134,26 +139,30 @@ public class HealthRecordServiceImpl implements HealthRecordService {
             throw new RuntimeException("Lỗi đọc file upload: " + e.getMessage(), e);
         }
 
-        HealthRecord record = HealthRecord.builder()
-                .userId(userId)
-                .fileName(fileName)
-                .s3FileKey(s3Key)
-                .fileSize(file.getSize())
-                .status(RecordStatus.PROCESSING)
-                .build();
-        record = repository.save(record);
+        long fileSize = file.getSize();
+        HealthRecord saved = transactionTemplate.execute(status -> {
+            HealthRecord record = HealthRecord.builder()
+                    .userId(userId)
+                    .fileName(fileName)
+                    .s3FileKey(s3Key)
+                    .fileSize(fileSize)
+                    .status(RecordStatus.PROCESSING)
+                    .build();
+            record = repository.save(record);
 
-        log.info("Record {} saved via direct upload. Scheduling RabbitMQ event after commit...", record.getId());
-        RecordProcessingMessage message = RecordProcessingMessage.builder()
-                .recordId(record.getId())
-                .s3Key(record.getS3FileKey())
-                .userId(record.getUserId())
-                .fileName(record.getFileName())
-                .build();
-        sendProcessingMessageAfterCommit(message);
-        publishAvailableForCare(record);
+            log.info("Record {} saved via direct upload. Scheduling RabbitMQ event after commit...", record.getId());
+            RecordProcessingMessage message = RecordProcessingMessage.builder()
+                    .recordId(record.getId())
+                    .s3Key(record.getS3FileKey())
+                    .userId(record.getUserId())
+                    .fileName(record.getFileName())
+                    .build();
+            sendProcessingMessageAfterCommit(message);
+            publishAvailableForCare(record);
+            return record;
+        });
 
-        return mapper.toResponse(record);
+        return mapper.toResponse(saved);
     }
 
     private void sendProcessingMessageAfterCommit(RecordProcessingMessage message) {

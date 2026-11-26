@@ -5,4 +5,8 @@ import fit.iuh.se.hsapplication.dto.ratelimit.RateLimitResult;
 public interface RateLimiterService {
 
     RateLimitResult consume(String key);
+
+    default RateLimitResult consume(String key, long customCapacity, long customWindowSeconds) {
+        return consume(key);
+    }
 }

@@ -40,9 +40,19 @@ public class RateLimitFilter extends OncePerRequestFilter {
     @Value("${app.rate-limit.enabled}")
     boolean enabled;
 
+    @Value("${app.assistant.rate-limit.capacity:20}")
+    long assistantCapacity;
+
+    @Value("${app.assistant.rate-limit.window-seconds:60}")
+    long assistantWindowSeconds;
+
     @Override
     protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
-        return !enabled || "OPTIONS".equalsIgnoreCase(request.getMethod());
+        if (!enabled || "OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            return true;
+        }
+        String uri = request.getRequestURI();
+        return uri != null && (uri.equals("/actuator/health") || uri.startsWith("/actuator/health/"));
     }
 
     @Override
@@ -50,8 +60,10 @@ public class RateLimitFilter extends OncePerRequestFilter {
             @NonNull HttpServletRequest request,
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain) throws ServletException, IOException {
-        String key = resolveKey(request);
-        RateLimitResult result = rateLimiterService.consume(key);
+        String actorKey = resolveKey(request);
+        RateLimitResult result = isAssistantStreamRequest(request)
+                ? rateLimiterService.consume("assistant:" + actorKey, assistantCapacity, assistantWindowSeconds)
+                : rateLimiterService.consume(actorKey);
 
         response.setHeader(RATE_LIMIT_LIMIT, String.valueOf(result.getLimit()));
         response.setHeader(RATE_LIMIT_REMAINING, String.valueOf(result.getRemaining()));
@@ -69,6 +81,14 @@ public class RateLimitFilter extends OncePerRequestFilter {
         objectMapper.writeValue(response.getWriter(), new ApiResponse<>(errorCode.getCode(), ErrorMessages.code(errorCode, RequestLanguage.resolve(request))));
     }
 
+    private boolean isAssistantStreamRequest(HttpServletRequest request) {
+        String uri = request.getRequestURI();
+        return "POST".equalsIgnoreCase(request.getMethod())
+                && uri != null
+                && uri.startsWith("/api/assistant/conversations/")
+                && uri.endsWith("/stream");
+    }
+
     private String resolveKey(HttpServletRequest request) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.getPrincipal() instanceof UserAuthentication user) {
@@ -77,22 +97,12 @@ public class RateLimitFilter extends OncePerRequestFilter {
         return "ip:" + resolveClientIp(request);
     }
 
+    /**
+     * Dùng remoteAddr đã được Spring ForwardedHeaderFilter chuẩn hóa theo server.forward-headers-strategy=framework,
+     * tránh client tự giả mạo header X-Forwarded-For để vượt rate limit.
+     */
     private String resolveClientIp(HttpServletRequest request) {
-        String forwardedFor = request.getHeader("X-Forwarded-For");
-        if (forwardedFor != null && !forwardedFor.isBlank()) {
-            return forwardedFor.split(",")[0].trim();
-        }
-
-        String forwarded = request.getHeader("Forwarded");
-        if (forwarded != null && !forwarded.isBlank()) {
-            for (String part : forwarded.split(";")) {
-                String trimmed = part.trim();
-                if (trimmed.toLowerCase().startsWith("for=")) {
-                    return trimmed.substring(4).replace("\"", "");
-                }
-            }
-        }
-
-        return request.getRemoteAddr() == null ? "unknown" : request.getRemoteAddr();
+        String remoteAddr = request.getRemoteAddr();
+        return (remoteAddr == null || remoteAddr.isBlank()) ? "unknown" : remoteAddr;
     }
 }

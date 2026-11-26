@@ -8,9 +8,10 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
 
-import java.time.Duration;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -19,6 +20,22 @@ import java.time.Duration;
 public class RedisRateLimiterService implements RateLimiterService {
 
     private static final String KEY_PREFIX = "rate-limit:";
+
+    /**
+     * Atomic INCR + EXPIRE + TTL trong 1 round-trip Redis.
+     * Nếu key mới tạo (current == 1) hoặc mất TTL (ttl < 0 do lỗi trước đó), tự đặt lại EXPIRE để tránh khóa vĩnh viễn.
+     */
+    @SuppressWarnings("rawtypes")
+    private static final DefaultRedisScript<List> ATOMIC_CONSUME_SCRIPT = new DefaultRedisScript<>(
+            "local current = redis.call('INCR', KEYS[1]) " +
+                    "local ttl = redis.call('TTL', KEYS[1]) " +
+                    "if current == 1 or ttl < 0 then " +
+                    "  redis.call('EXPIRE', KEYS[1], tonumber(ARGV[1])) " +
+                    "  ttl = tonumber(ARGV[1]) " +
+                    "end " +
+                    "return {current, ttl}",
+            List.class
+    );
 
     final StringRedisTemplate redisTemplate;
 
@@ -30,29 +47,44 @@ public class RedisRateLimiterService implements RateLimiterService {
 
     @Override
     public RateLimitResult consume(String key) {
+        return consume(key, capacity, windowSeconds);
+    }
+
+    @Override
+    public RateLimitResult consume(String key, long customCapacity, long customWindowSeconds) {
+        long effectiveCapacity = Math.max(1L, customCapacity);
+        long effectiveWindow = Math.max(1L, customWindowSeconds);
         String redisKey = KEY_PREFIX + key;
 
         try {
-            Long current = redisTemplate.opsForValue().increment(redisKey);
-            if (current != null && current == 1L) {
-                redisTemplate.expire(redisKey, Duration.ofSeconds(windowSeconds));
-            }
-
-            long used = current == null ? 0L : current;
-            long remaining = Math.max(capacity - used, 0L);
-            long retryAfter = retryAfter(redisKey);
-            return new RateLimitResult(used <= capacity, capacity, remaining, retryAfter);
+            List<?> result = redisTemplate.execute(
+                    ATOMIC_CONSUME_SCRIPT,
+                    List.of(redisKey),
+                    String.valueOf(effectiveWindow)
+            );
+            long used = extractLong(result, 0, 1L);
+            long ttl = extractLong(result, 1, effectiveWindow);
+            long remaining = Math.max(effectiveCapacity - used, 0L);
+            long retryAfter = ttl < 0 ? effectiveWindow : ttl;
+            return new RateLimitResult(used <= effectiveCapacity, effectiveCapacity, remaining, retryAfter);
         } catch (RuntimeException exception) {
             log.warn("Rate limiter failed for key {}. Request is allowed.", key, exception);
-            return new RateLimitResult(true, capacity, capacity, 0L);
+            return new RateLimitResult(true, effectiveCapacity, effectiveCapacity, 0L);
         }
     }
 
-    private long retryAfter(String redisKey) {
-        Long ttl = redisTemplate.getExpire(redisKey);
-        if (ttl == null || ttl < 0) {
-            return windowSeconds;
+    private static long extractLong(List<?> list, int index, long fallback) {
+        if (list == null || index >= list.size() || list.get(index) == null) {
+            return fallback;
         }
-        return ttl;
+        Object value = list.get(index);
+        if (value instanceof Number number) {
+            return number.longValue();
+        }
+        try {
+            return Long.parseLong(value.toString());
+        } catch (NumberFormatException ex) {
+            return fallback;
+        }
     }
 }

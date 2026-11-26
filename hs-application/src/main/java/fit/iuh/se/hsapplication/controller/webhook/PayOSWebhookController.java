@@ -25,10 +25,12 @@ import vn.payos.model.webhooks.Webhook;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class PayOSWebhookController {
 
+    // PayOS SDK (vn.payos.model.webhooks.Webhook) dùng Jackson 2 annotations, dùng chung 1 instance thread-safe.
+    private static final ObjectMapper PAYOS_OBJECT_MAPPER = new ObjectMapper();
+
     ConsultationPaymentService consultationPaymentService;
     PayOSPaymentGateway paymentGateway;
     CreditPayOSWebhookService creditPayments;
-    ObjectMapper objectMapper = new ObjectMapper();
 
     @RequestMapping(value = {"", "/", "/**"}, method = {RequestMethod.GET, RequestMethod.HEAD})
     public ApiResponse<String> health() {
@@ -44,13 +46,13 @@ public class PayOSWebhookController {
             return new ApiResponse<>();
         }
 
-        JsonNode root = objectMapper.readTree(body);
+        JsonNode root = PAYOS_OBJECT_MAPPER.readTree(body);
         if (!root.hasNonNull("data") || !root.hasNonNull("signature")) {
             log.info("Received payOS webhook validation ping");
             return new ApiResponse<>();
         }
 
-        Webhook webhook = objectMapper.treeToValue(root, Webhook.class);
+        Webhook webhook = PAYOS_OBJECT_MAPPER.treeToValue(root, Webhook.class);
         final fit.iuh.se.hschat.dto.VerifiedPayOSPayment verified;
         try {
             verified = paymentGateway.verifyWebhook(webhook);

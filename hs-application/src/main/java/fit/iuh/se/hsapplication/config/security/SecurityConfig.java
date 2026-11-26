@@ -52,6 +52,8 @@ public class SecurityConfig {
             "/public/payments/webhook/payos",
             "/public/payments/webhook/payos/**",
             "/ws/consultations/**",
+            "/actuator/health",
+            "/actuator/health/**",
     };
 
     static String[] ADMIN_ENDPOINTS = {
@@ -92,6 +94,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/doctor/**").hasRole("DOCTOR")
                 .requestMatchers(ADMIN_ENDPOINTS).hasAnyRole("SUPER_ADMIN", "ADMIN")
                 .requestMatchers(CONSULTATION_MANAGEMENT_ENDPOINTS).hasAnyRole("SUPER_ADMIN", "ADMIN")
+                .requestMatchers("/actuator/**").hasAnyRole("SUPER_ADMIN", "ADMIN")
                 .anyRequest().authenticated()
         );
         httpSecurity.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
