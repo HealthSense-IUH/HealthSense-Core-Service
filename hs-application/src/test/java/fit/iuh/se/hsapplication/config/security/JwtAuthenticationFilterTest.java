@@ -102,4 +102,18 @@ class JwtAuthenticationFilterTest {
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNotNull();
         verify(chain).doFilter(request, response);
     }
+
+    @Test
+    void skipsValidationOnPublicMobileLoginEvenWithStaleBearerHeader() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/auth/mobile/login");
+        request.addHeader(HttpHeaders.AUTHORIZATION, "Bearer expired-or-revoked-token");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        FilterChain chain = mock(FilterChain.class);
+        when(jwtDecoder.decode("expired-or-revoked-token")).thenThrow(new JwtException("expired"));
+
+        filter.doFilter(request, response, chain);
+
+        assertThat(response.getStatus()).isEqualTo(200);
+        verify(chain).doFilter(request, response);
+    }
 }

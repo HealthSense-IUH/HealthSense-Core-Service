@@ -38,8 +38,27 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final String BEARER_PREFIX = "Bearer ";
     private static final String ACCESS_TOKEN_TYPE = "access";
 
+    private static final List<String> PUBLIC_AUTH_PATHS = List.of(
+            "/api/auth/login",
+            "/api/auth/register",
+            "/api/auth/refresh",
+            "/api/auth/mobile/login",
+            "/api/auth/mobile/refresh",
+            "/api/auth/forgot-password/"
+    );
+
     JwtDecoder jwtDecoder;
     ObjectMapper objectMapper;
+
+    @Override
+    protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
+        String uri = request.getRequestURI();
+        if (uri == null) {
+            return false;
+        }
+        return PUBLIC_AUTH_PATHS.stream().anyMatch(path ->
+                path.endsWith("/") ? uri.startsWith(path) : uri.equals(path));
+    }
 
     @Override
     protected void doFilterInternal(
