@@ -77,6 +77,7 @@ public class QueueFinalSummaryLifecycleServiceImpl implements QueueFinalSummaryL
         session.setSummaryEscalatedAt(null);
         session.setSummaryEscalationReason(null);
         sessionRepository.save(session);
+        resolveSummaryNeedsActions(session);
         recordSummaryFinalized(session, summary, now);
 
         if (session.getDoctorReleasedAt() != null) return;
@@ -121,6 +122,7 @@ public class QueueFinalSummaryLifecycleServiceImpl implements QueueFinalSummaryL
 
         if (summary != null && summary.getStatus() == ConsultationFinalSummaryStatus.FINALIZED) {
             session.setSummaryClosureStatus(FinalSummaryClosureStatus.SUMMARY_FINALIZED);
+            resolveSummaryNeedsActions(session);
             Instant finalizedAt = summary.getFinalizedAt();
             boolean timely = finalizedAt != null && session.getSummaryDueAt() != null
                     && finalizedAt.isBefore(session.getSummaryDueAt());
@@ -180,6 +182,12 @@ public class QueueFinalSummaryLifecycleServiceImpl implements QueueFinalSummaryL
         if (session.getFlowType() != ConsultationFlowType.QUEUE_DISPATCH_V1
                 || session.getStatus() != ConsultationStatus.COMPLETED)
             throw new AppException(ErrorCode.INVALID_CONSULTATION_STATUS);
+    }
+
+    private void resolveSummaryNeedsActions(ConsultationSession session) {
+        operationalEventPublisher.resolveNeedsAction("summary-action:" + session.getId() + ":pending", "Final summary finalized");
+        operationalEventPublisher.resolveNeedsAction("summary-action:" + session.getId() + ":overdue", "Final summary finalized");
+        operationalEventPublisher.resolveNeedsAction("summary-action:" + session.getId() + ":escalated", "Final summary finalized");
     }
 
     private void recordSummaryFinalized(

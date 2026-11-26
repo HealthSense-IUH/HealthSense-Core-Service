@@ -66,6 +66,9 @@ class QueueFinalSummaryLifecycleServiceImplTest {
         assertNull(profile.getBusySessionId());
         assertEquals(DoctorReleaseReason.SUMMARY_FINALIZED, session.getDoctorReleaseReason());
         assertEquals(DUE_AT.minusSeconds(1), session.getDoctorReleasedAt());
+        verify(events).resolveNeedsAction("summary-action:50:pending", "Final summary finalized");
+        verify(events).resolveNeedsAction("summary-action:50:overdue", "Final summary finalized");
+        verify(events).resolveNeedsAction("summary-action:50:escalated", "Final summary finalized");
         verify(applicationEvents).publishEvent(isA(DoctorDispatchStatusChanged.class));
         verify(events).record(argThat(command -> command.eventType() == BusinessEventType.DOCTOR_AVAILABLE));
     }
@@ -182,6 +185,9 @@ class QueueFinalSummaryLifecycleServiceImplTest {
         assertEquals(FinalSummaryClosureStatus.SUMMARY_FINALIZED, session.getSummaryClosureStatus());
         assertEquals(DoctorDispatchStatus.AVAILABLE, profile.getDispatchStatus());
         assertEquals(DoctorReleaseReason.SUMMARY_FINALIZED, session.getDoctorReleaseReason());
+        verify(events).resolveNeedsAction("summary-action:50:pending", "Final summary finalized");
+        verify(events).resolveNeedsAction("summary-action:50:overdue", "Final summary finalized");
+        verify(events).resolveNeedsAction("summary-action:50:escalated", "Final summary finalized");
     }
 
     @Test

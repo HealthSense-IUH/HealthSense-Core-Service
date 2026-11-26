@@ -12,6 +12,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 
@@ -19,6 +20,8 @@ import java.util.List;
 @RequiredArgsConstructor
 @Slf4j
 public class CreditPayOSRecoveryJob {
+    private static final Duration ORPHAN_PENDING_ORDER_TTL = Duration.ofHours(1);
+
     private final CreditPaymentAttemptRepository attempts;
     private final CreditOrderRepository orders;
     private final CreditPaymentGateway gateway;
@@ -26,10 +29,29 @@ public class CreditPayOSRecoveryJob {
 
     @Scheduled(fixedDelayString = "${app.billing.payos.recovery-delay-ms:60000}")
     public void reconcileExpired() {
+        Instant now = Instant.now();
         var candidates = attempts.findTop100ByProviderAndStatusInAndExpiresAtBeforeOrderByExpiresAtAsc(
                 CreditPaymentProvider.PAYOS,
-                List.of(CreditPaymentStatus.CREATING, CreditPaymentStatus.PENDING), Instant.now());
+                List.of(CreditPaymentStatus.CREATING, CreditPaymentStatus.PENDING), now);
         for (var attempt : candidates) reconcile(attempt.getId(), attempt.getOrderCode());
+        expireOrphanPendingOrders(now.minus(ORPHAN_PENDING_ORDER_TTL));
+    }
+
+    private void expireOrphanPendingOrders(Instant cutoff) {
+        var orphanOrders = orders.findOrphanPendingOrdersCreatedBefore(cutoff);
+        for (var orphan : orphanOrders) {
+            try {
+                transactions.executeWithoutResult(status -> orders.findByIdForUpdate(orphan.getId()).ifPresent(locked -> {
+                    if (locked.getStatus() == CreditOrderStatus.PENDING_PAYMENT
+                            && attempts.findFirstByOrderIdOrderByAttemptNumberDesc(locked.getId()).isEmpty()) {
+                        locked.setStatus(CreditOrderStatus.EXPIRED);
+                        orders.saveAndFlush(locked);
+                    }
+                }));
+            } catch (RuntimeException exception) {
+                log.warn("Unable to expire orphan pending credit order {}", orphan.getId(), exception);
+            }
+        }
     }
 
     private void reconcile(Long attemptId, Long orderCode) {

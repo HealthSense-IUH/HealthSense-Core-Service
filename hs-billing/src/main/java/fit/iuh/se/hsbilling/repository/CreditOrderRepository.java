@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -25,6 +26,14 @@ public interface CreditOrderRepository extends JpaRepository<CreditPurchaseOrder
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select o from CreditPurchaseOrder o where o.id = :id")
     Optional<CreditPurchaseOrder> findByIdForUpdate(Long id);
+
+    @Query("""
+            select o from CreditPurchaseOrder o
+             where o.status = fit.iuh.se.hsbilling.entity.enums.CreditOrderStatus.PENDING_PAYMENT
+               and o.createdAt < :cutoff
+               and not exists (select 1 from CreditPaymentAttempt a where a.orderId = o.id)
+            """)
+    List<CreditPurchaseOrder> findOrphanPendingOrdersCreatedBefore(@Param("cutoff") Instant cutoff);
 
     @Query("""
             select o.memberId as memberId,

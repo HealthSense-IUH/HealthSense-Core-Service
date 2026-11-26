@@ -44,6 +44,7 @@ public class RedisAuthSessionService implements AuthSessionService {
         ));
         redisTemplate.expire(sessionKey, ttl);
         redisTemplate.opsForSet().add(userSessionsKey, session.getSessionId());
+        pruneExpiredSessionIds(session.getUserId(), session.getSessionId());
         redisTemplate.expire(userSessionsKey, ttl);
     }
 
@@ -51,6 +52,7 @@ public class RedisAuthSessionService implements AuthSessionService {
     public Optional<AuthSession> findById(Long userId, String sessionId) {
         Map<Object, Object> entries = redisTemplate.opsForHash().entries(key(userId, sessionId));
         if (entries.isEmpty()) {
+            redisTemplate.opsForSet().remove(userSessionsKey(userId), sessionId);
             return Optional.empty();
         }
         return Optional.of(new AuthSession(
@@ -67,6 +69,7 @@ public class RedisAuthSessionService implements AuthSessionService {
         redisTemplate.opsForHash().put(key(userId, sessionId), REFRESH_TOKEN_HASH, refreshTokenHash);
         redisTemplate.expire(key(userId, sessionId), ttl);
         redisTemplate.opsForSet().add(userSessionsKey(userId), sessionId);
+        pruneExpiredSessionIds(userId, sessionId);
         redisTemplate.expire(userSessionsKey(userId), ttl);
     }
 
@@ -96,6 +99,21 @@ public class RedisAuthSessionService implements AuthSessionService {
         }
         if (!sessionKeys.isEmpty()) redisTemplate.delete(sessionKeys);
         redisTemplate.delete(userSessionsKey);
+    }
+
+    private void pruneExpiredSessionIds(Long userId, String activeSessionId) {
+        String userSessionsKey = userSessionsKey(userId);
+        Set<String> sessionIds = redisTemplate.opsForSet().members(userSessionsKey);
+        if (sessionIds == null || sessionIds.isEmpty()) {
+            return;
+        }
+        Object[] expired = sessionIds.stream()
+                .filter(id -> !id.equals(activeSessionId))
+                .filter(id -> !Boolean.TRUE.equals(redisTemplate.hasKey(key(userId, id))))
+                .toArray();
+        if (expired.length > 0) {
+            redisTemplate.opsForSet().remove(userSessionsKey, expired);
+        }
     }
 
     private String key(Long userId, String sessionId) {
