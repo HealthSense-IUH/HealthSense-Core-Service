@@ -4,6 +4,7 @@ import fit.iuh.se.hsshared.generator.SnowflakeGenerated;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import org.hibernate.annotations.BatchSize;
 
 import java.time.LocalDate;
 
@@ -13,6 +14,7 @@ import java.time.LocalDate;
 @Setter
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
+@BatchSize(size = 50)
 @Entity
 @Table(name = "user_profiles")
 public class UserProfile extends BaseEntity {

@@ -46,6 +46,8 @@ public class ConsultationMoreInfoCycle extends BaseEntity {
     String memberResponse;
 
     @ElementCollection(fetch = FetchType.EAGER)
+    @org.hibernate.annotations.Fetch(org.hibernate.annotations.FetchMode.SUBSELECT)
+    @org.hibernate.annotations.BatchSize(size = 50)
     @CollectionTable(
             name = "consultation_more_info_response_records",
             joinColumns = @JoinColumn(name = "cycle_id")

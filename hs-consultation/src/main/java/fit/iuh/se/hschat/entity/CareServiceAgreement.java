@@ -70,6 +70,8 @@ public class CareServiceAgreement extends BaseEntity {
     @Builder.Default
     @Immutable
     @ElementCollection(fetch = FetchType.EAGER)
+    @org.hibernate.annotations.Fetch(org.hibernate.annotations.FetchMode.SUBSELECT)
+    @org.hibernate.annotations.BatchSize(size = 50)
     @CollectionTable(name = "agreement_included_services", joinColumns = @JoinColumn(name = "agreement_id"))
     @Enumerated(EnumType.STRING)
     @Column(name = "service_code", nullable = false, length = 80)
@@ -79,6 +81,8 @@ public class CareServiceAgreement extends BaseEntity {
     @Builder.Default
     @Immutable
     @ElementCollection(fetch = FetchType.EAGER)
+    @org.hibernate.annotations.Fetch(org.hibernate.annotations.FetchMode.SUBSELECT)
+    @org.hibernate.annotations.BatchSize(size = 50)
     @CollectionTable(name = "agreement_excluded_services", joinColumns = @JoinColumn(name = "agreement_id"))
     @Enumerated(EnumType.STRING)
     @Column(name = "service_code", nullable = false, length = 80)

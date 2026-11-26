@@ -93,6 +93,8 @@ public class ConsultationRequest extends BaseEntity {
     String relevantSelfReportedContext;
 
     @ElementCollection(fetch = FetchType.EAGER)
+    @org.hibernate.annotations.Fetch(org.hibernate.annotations.FetchMode.SUBSELECT)
+    @org.hibernate.annotations.BatchSize(size = 50)
     @CollectionTable(
             name = "consultation_request_health_records",
             joinColumns = @JoinColumn(name = "request_id")

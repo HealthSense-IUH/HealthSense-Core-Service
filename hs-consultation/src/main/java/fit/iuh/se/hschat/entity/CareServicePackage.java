@@ -70,6 +70,8 @@ public class CareServicePackage extends BaseEntity {
 
     @Builder.Default
     @ElementCollection(fetch = FetchType.EAGER)
+    @org.hibernate.annotations.Fetch(org.hibernate.annotations.FetchMode.SUBSELECT)
+    @org.hibernate.annotations.BatchSize(size = 50)
     @CollectionTable(
             name = "care_service_package_included_services",
             joinColumns = @JoinColumn(name = "package_version_id")
@@ -81,6 +83,8 @@ public class CareServicePackage extends BaseEntity {
 
     @Builder.Default
     @ElementCollection(fetch = FetchType.EAGER)
+    @org.hibernate.annotations.Fetch(org.hibernate.annotations.FetchMode.SUBSELECT)
+    @org.hibernate.annotations.BatchSize(size = 50)
     @CollectionTable(
             name = "care_service_package_excluded_services",
             joinColumns = @JoinColumn(name = "package_version_id")
