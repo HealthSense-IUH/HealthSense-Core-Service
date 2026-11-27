@@ -99,4 +99,12 @@ final class WorkoutText {
         if (english()) return MONTH_DAY_EN.format(monday) + " - " + MONTH_DAY_EN.format(sunday);
         return "Ngày " + monday.getDayOfMonth() + " - Ngày " + sunday.getDayOfMonth() + " tháng " + sunday.getMonthValue();
     }
+
+    /** "Khoảng thời gian năng động nhất: 07:00 - 08:00" / "Most active period: 07:00 - 08:00". */
+    static String activePeriod(int peakHour) {
+        String range = String.format(Locale.US, "%02d:00 - %02d:00", peakHour, peakHour + 1);
+        return english()
+                ? "Most active period: " + range
+                : "Khoảng thời gian năng động nhất: " + range;
+    }
 }

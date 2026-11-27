@@ -33,6 +33,7 @@ class WorkoutTextTest {
         assertEquals("Đi bộ", WorkoutText.exerciseName("walking", true, "Đi bộ"));
         assertEquals("CN", WorkoutText.dayLabel(6));
         assertEquals("Ngày 28 - Ngày 4 tháng 10", WorkoutText.weekRange(monday, sunday));
+        assertEquals("Khoảng thời gian năng động nhất: 07:00 - 08:00", WorkoutText.activePeriod(7));
 
         language("en");
         assertEquals("Walking", WorkoutText.exerciseName("walking", true, "Đi bộ"));
@@ -42,6 +43,7 @@ class WorkoutTextTest {
         assertEquals("Pickleball", WorkoutText.exerciseName("pickleball", true, "Pickleball"));
         assertEquals("Sun", WorkoutText.dayLabel(6));
         assertEquals("Sep 28 - Oct 4", WorkoutText.weekRange(monday, sunday));
+        assertEquals("Most active period: 07:00 - 08:00", WorkoutText.activePeriod(7));
         assertEquals("Walking", WorkoutText.sessionExerciseName("walking", "Đi bộ"));
         assertEquals("Push-ups", WorkoutText.sessionExerciseName("push_up", "Hít đất"));
         // Bài tự tạo / tên tự đặt: giữ nguyên

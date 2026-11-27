@@ -368,7 +368,8 @@ public class WorkoutServiceImpl implements WorkoutService {
         WorkoutSession session = sessionRepository.findByIdAndUserId(sessionId, userId)
                 .orElseThrow(() -> AppException.of(ErrorCode.INVALID_ARGUMENT, "detail.workout-session-not-found", sessionId));
 
-        String name = session.getExerciseName() != null ? session.getExerciseName() : "HealthSense Workout Session";
+        String rawName = session.getExerciseName() != null ? session.getExerciseName() : "HealthSense Workout Session";
+        String name = escapeXml(rawName);
         String startTimeIso = session.getStartedAt() != null ? session.getStartedAt().toString() : Instant.now().toString();
 
         StringBuilder gpx = new StringBuilder();
@@ -384,15 +385,38 @@ public class WorkoutServiceImpl implements WorkoutService {
         gpx.append("    <name>").append(name).append("</name>\n");
         gpx.append("    <trkseg>\n");
 
-        if (session.getAvgHeartRate() != null) {
-            gpx.append("      <trkpt lat=\"10.762622\" lon=\"106.660172\">\n");
-            gpx.append("        <time>").append(startTimeIso).append("</time>\n");
-            gpx.append("        <extensions>\n");
-            gpx.append("          <gpxtpx:TrackPointExtension>\n");
-            gpx.append("            <gpxtpx:hr>").append(session.getAvgHeartRate()).append("</gpxtpx:hr>\n");
-            gpx.append("          </gpxtpx:TrackPointExtension>\n");
-            gpx.append("        </extensions>\n");
-            gpx.append("      </trkpt>\n");
+        if (session.getGpxTrackJson() != null && !session.getGpxTrackJson().isBlank()) {
+            try {
+                List<Map<String, Object>> points = objectMapper.readValue(
+                        session.getGpxTrackJson(),
+                        new tools.jackson.core.type.TypeReference<List<Map<String, Object>>>() {}
+                );
+                for (Map<String, Object> pt : points) {
+                    Object latObj = pt.get("latitude");
+                    Object lonObj = pt.get("longitude");
+                    if (!(latObj instanceof Number latNum) || !(lonObj instanceof Number lonNum)) continue;
+                    double lat = latNum.doubleValue();
+                    double lon = lonNum.doubleValue();
+                    if (!Double.isFinite(lat) || !Double.isFinite(lon)) continue;
+                    gpx.append(String.format(Locale.US, "      <trkpt lat=\"%.6f\" lon=\"%.6f\">\n", lat, lon));
+                    if (pt.get("altitude") instanceof Number altNum && Double.isFinite(altNum.doubleValue())) {
+                        gpx.append(String.format(Locale.US, "        <ele>%.2f</ele>\n", altNum.doubleValue()));
+                    }
+                    String ptTime = startTimeIso;
+                    if (pt.get("timestamp") instanceof Number tsNum) {
+                        ptTime = Instant.ofEpochMilli(tsNum.longValue()).toString();
+                    }
+                    gpx.append("        <time>").append(ptTime).append("</time>\n");
+                    if (session.getAvgHeartRate() != null) {
+                        gpx.append("        <extensions><gpxtpx:TrackPointExtension><gpxtpx:hr>")
+                                .append(session.getAvgHeartRate())
+                                .append("</gpxtpx:hr></gpxtpx:TrackPointExtension></extensions>\n");
+                    }
+                    gpx.append("      </trkpt>\n");
+                }
+            } catch (Exception e) {
+                log.warn("Failed to parse gpxTrackJson for session {}: {}", sessionId, e.getMessage());
+            }
         }
 
         gpx.append("    </trkseg>\n");
@@ -400,6 +424,14 @@ public class WorkoutServiceImpl implements WorkoutService {
         gpx.append("</gpx>");
 
         return gpx.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
+    }
+
+    private static String escapeXml(String value) {
+        return value.replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&apos;");
     }
 
     private WorkoutSessionResponse mapToSessionResponse(WorkoutSession s) {
@@ -608,7 +640,7 @@ public class WorkoutServiceImpl implements WorkoutService {
         }
         String activePeriodStr = (maxSteps == 0 || peakHour == -1)
                 ? ""
-                : String.format(Locale.US, "Khoảng thời gian năng động nhất: %02d:00 - %02d:00", peakHour, peakHour + 1);
+                : WorkoutText.activePeriod(peakHour);
 
         double distKm = step.getDistanceMeters() != null
                 ? Double.parseDouble(String.format(Locale.US, "%.2f", step.getDistanceMeters() / 1000.0))
