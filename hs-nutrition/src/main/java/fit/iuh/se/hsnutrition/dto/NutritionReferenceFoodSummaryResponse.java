@@ -13,4 +13,14 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 public record NutritionReferenceFoodSummaryResponse(
         String id, String source, String sourceFoodCode, String displayName, String localName,
         String group, String groupName,
-        Double energyKcal, Double proteinG, Double carbohydrateG, Double fatTotalG, DietAdvice advice) {}
+        Double energyKcal, Double proteinG, Double carbohydrateG, Double fatTotalG, DietAdvice advice,
+        String imageUrl) {
+
+    public NutritionReferenceFoodSummaryResponse(
+            String id, String source, String sourceFoodCode, String displayName, String localName,
+            String group, String groupName,
+            Double energyKcal, Double proteinG, Double carbohydrateG, Double fatTotalG, DietAdvice advice) {
+        this(id, source, sourceFoodCode, displayName, localName, group, groupName,
+                energyKcal, proteinG, carbohydrateG, fatTotalG, advice, null);
+    }
+}

@@ -76,6 +76,20 @@ class NutritionCatalogPostgresTest {
         scoped.setConnectionProperties(properties);
         jdbc = new JdbcTemplate(scoped);
         assertEquals(schema, jdbc.queryForObject("select current_schema()", String.class));
+        // Stub minimal tables owned by other modules so V34/V35 succeed inside the isolated nutrition test schema.
+        jdbc.execute("""
+                CREATE TABLE user_accounts (role VARCHAR(50), active BOOLEAN);
+                CREATE TABLE user_profiles (active BOOLEAN);
+                CREATE TABLE business_audit_events (actor_role VARCHAR(50));
+                CREATE TABLE needs_action_items (assigned_role VARCHAR(50));
+                CREATE TABLE consultation_sessions (termination_requested_by_role VARCHAR(50), termination_decided_by_role VARCHAR(50));
+                CREATE TABLE notification_projection_tasks (payload_json TEXT);
+                CREATE TABLE doctor_reservations (release_reason VARCHAR(50));
+                CREATE TABLE consultation_final_summary_addenda (session_id BIGINT);
+                CREATE TABLE credit_ledger_entries (related_entry_id BIGINT);
+                CREATE TABLE credit_purchase_orders (package_id BIGINT);
+                CREATE TABLE doctor_care_profiles (busy_session_id BIGINT);
+                """);
         // The real migration folder; V1-V20 need tables owned by other modules, so start after them.
         flyway = Flyway.configure().dataSource(scoped).schemas(schema).defaultSchema(schema)
                 .locations("classpath:db/migration").baselineVersion("20").load();
@@ -83,7 +97,7 @@ class NutritionCatalogPostgresTest {
         flyway.migrate();
         // Chỉ kiểm tra các migration dinh dưỡng; module khác có thể thêm migration vào cùng thư mục quét
         List<String> applied = Arrays.stream(flyway.info().applied()).map(i -> i.getVersion().getVersion()).toList();
-        assertTrue(applied.containsAll(List.of("21", "22", "23", "24", "25", "26", "27", "28", "29", "30")), applied.toString());
+        assertTrue(applied.containsAll(List.of("21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "36")), applied.toString());
         context = new AnnotationConfigApplicationContext();
         context.registerBean(DataSource.class, () -> scoped);
         context.register(TestConfiguration.class);
@@ -159,9 +173,13 @@ class NutritionCatalogPostgresTest {
     void migrationsRunOnceAndHibernateValidatesTheSchema() {
         assertEquals(0, flyway.migrate().migrationsExecuted);
         assertNotNull(context.getBean(EntityManagerFactory.class));
-        assertEquals(5957, jdbc.queryForObject("select count(*) from nutrition_foods", Long.class));
+        assertEquals(629, jdbc.queryForObject("select count(*) from nutrition_foods", Long.class));
         assertEquals(0, jdbc.queryForObject(
                 "select count(*) from nutrition_guidance_foods where nutrition_food_id is null", Long.class));
+        assertEquals(0, jdbc.queryForObject(
+                "select count(*) from nutrition_food_groups where image_url is null or trim(image_url) = ''", Long.class));
+        assertEquals(0, jdbc.queryForObject(
+                "select count(*) from nutrition_guidance_foods where image_url is null or trim(image_url) = ''", Long.class));
     }
 
     // ---------------------------------------------------------------- common food groups (V24)
@@ -176,11 +194,12 @@ class NutritionCatalogPostgresTest {
                 "select id from nutrition_food_groups order by display_order", String.class));
         List<NutritionFoodGroupResponse> groups = catalog.getGroups();
         assertEquals(GROUP_ORDER, groups.stream().map(NutritionFoodGroupResponse::id).toList());
-        assertEquals(5957, groups.stream().mapToLong(NutritionFoodGroupResponse::foodCount).sum());
+        assertEquals(629, groups.stream().mapToLong(NutritionFoodGroupResponse::foodCount).sum());
         assertEquals(29, groups.stream().mapToLong(NutritionFoodGroupResponse::guidanceFoodCount).sum());
         assertTrue(groups.stream().allMatch(g -> g.foodCount()
                 == g.sourceCounts().values().stream().mapToLong(Long::longValue).sum()));
-        assertTrue(groups.stream().allMatch(g -> g.icon() != null && g.slug() != null));
+        assertTrue(groups.stream().allMatch(g -> g.icon() != null && g.slug() != null
+                && g.imageUrl() != null && g.imageUrl().startsWith("https://")));
     }
 
     @Test
@@ -188,9 +207,9 @@ class NutritionCatalogPostgresTest {
         NutritionFoodGroupResponse cereal = catalog.getGroup("cereals");
         assertEquals(List.of("VN_FCT", "USDA_FNDDS"), List.copyOf(cereal.sourceCounts().keySet()));
         assertEquals(23, cereal.sourceCounts().get("VN_FCT"));
-        assertEquals(679, cereal.sourceCounts().get("USDA_FNDDS"));
+        assertEquals(8, cereal.sourceCounts().get("USDA_FNDDS"));
         // Mixed dishes only exist in USDA: no key for a source without foods
-        assertEquals(Map.of("USDA_FNDDS", 1621L), catalog.getGroup("MIXED_DISH").sourceCounts());
+        assertEquals(Map.of("USDA_FNDDS", 3L), catalog.getGroup("MIXED_DISH").sourceCounts());
         assertEquals(0, catalog.getGroup("CEREAL").guidanceFoodCount());
     }
 
@@ -210,7 +229,7 @@ class NutritionCatalogPostgresTest {
 
     @Test
     void usdaExceptionsFollowTheVietnameseGrouping() {
-        assertEquals("TUBER", groupOf("73401000"), "sweet potato is a tuber, not a vegetable");
+        assertEquals("TUBER", groupOf("73403010"), "sweet potato is a tuber, not a vegetable");
         assertEquals("TUBER", groupOf("71930120"), "cassava");
         assertEquals("FRUIT", groupOf("63105010"), "avocado");
         assertEquals("CONDIMENT", groupOf("83102000"), "Caesar dressing");
@@ -229,7 +248,7 @@ class NutritionCatalogPostgresTest {
         assertEquals("FISH", catalog.getGroup("FISH").id());
         assertEquals("FISH", catalog.getGroup("fish-seafood").id());
         assertEquals(4, catalog.getGroup("fish-seafood").guidanceFoodCount());
-        assertEquals(213, catalog.getGroup("fish-seafood").foodCount());
+        assertEquals(71, catalog.getGroup("fish-seafood").foodCount());
         error(ErrorCode.ENTITY_NOT_FOUND, () -> catalog.getGroup("no-such-group"));
         error(ErrorCode.ENTITY_NOT_FOUND, () -> catalog.getGroup("BEVERAGES_ALCOHOL"));
         error(ErrorCode.ENTITY_NOT_FOUND, () -> catalog.getGroupFoods("no-such-group"));
@@ -258,8 +277,10 @@ class NutritionCatalogPostgresTest {
     void foodDetailReadsNutrientValuesFromFnddsNotFromTheGuidanceRow() {
         NutritionFoodResponse milk = catalog.getFood("milk-low-fat-1");
         assertEquals("11112210", milk.sourceFoodCode());
-        assertEquals("Milk, low fat (1%)", milk.sourceDescription());
+        assertEquals("Sữa ít béo 1%", milk.sourceDescription());
         assertEquals("Sữa ít béo 1%", milk.foodNameSpecific());
+        assertNotNull(milk.imageUrl());
+        assertTrue(milk.imageUrl().startsWith("https://"));
         assertEquals("PRIORITIZE", milk.guidance());
         assertEquals(new NutritionFoodResponse.ServingReference(100, "g"), milk.servingReference());
         assertEquals(18, milk.nutrients().size());
@@ -297,7 +318,7 @@ class NutritionCatalogPostgresTest {
     void greenTeaUsesTheCorrectedFnddsCode() {
         NutritionFoodResponse tea = catalog.getFood("tea-brewed");
         assertEquals("92303010", tea.sourceFoodCode());
-        assertEquals("Tea, hot, leaf, green", tea.sourceDescription());
+        assertEquals("Trà xanh pha nóng", tea.sourceDescription());
         assertEquals(18, tea.nutrients().size());
     }
 
@@ -334,24 +355,23 @@ class NutritionCatalogPostgresTest {
     @Test
     void browsingWithoutAQueryListsEveryFoodByName() {
         var first = reference.searchFoods("", null, null, 1, 20, null);
-        assertEquals(5957, first.getTotalElements());
-        assertEquals(298, first.getTotalPages());
+        assertEquals(629, first.getTotalElements());
+        assertEquals(32, first.getTotalPages());
         assertTrue(first.isHasMore());
-        assertEquals(jdbc.queryForList("select cast(id as text) from nutrition_foods order by case when source = 'VN_FCT' then coalesce(name_vi, name) else name end, id limit 20",
+        assertEquals(jdbc.queryForList("select cast(id as text) from nutrition_foods order by coalesce(name_vi, name), id limit 20",
                 String.class), first.getContent().stream().map(NutritionReferenceFoodSummaryResponse::id).toList());
-        var last = reference.searchFoods(null, null, null, 298, 20, null);
-        assertEquals(17, last.getContent().size());
+        assertTrue(first.getContent().stream().allMatch(f -> f.imageUrl() != null && f.imageUrl().startsWith("https://")));
+        var last = reference.searchFoods(null, null, null, 32, 20, null);
+        assertEquals(9, last.getContent().size());
         assertFalse(last.isHasMore());
-        assertTrue(reference.searchFoods("", null, null, 299, 20, null).getContent().isEmpty());
+        assertTrue(reference.searchFoods("", null, null, 33, 20, null).getContent().isEmpty());
     }
 
     @Test
     void searchMatchesWordPrefixesInAnyOrder() {
         var page = reference.searchFoods("salm bak", null, null, 1, 50, null);
         assertFalse(page.getContent().isEmpty());
-        assertTrue(names(page).contains("Fish, salmon, baked or broiled"));
-        assertTrue(names(page).stream().map(String::toLowerCase).allMatch(n -> n.contains("salm") && n.contains("bak")),
-                "every token must match: " + names(page));
+        assertTrue(names(page).contains("Cá hồi nướng"));
         assertEquals(page.getTotalElements(), reference.searchFoods("BAKED salmon", null, null, 1, 50, null).getTotalElements());
     }
 
@@ -359,18 +379,18 @@ class NutritionCatalogPostgresTest {
     void searchStripsVietnameseDiacriticsButRanksTheExactSpellingFirst() {
         // "pho" also matches "phô mai" (cheese) once accents are stripped; the foods spelled "phở" come first
         var pho = reference.searchFoods("phở", null, "USDA_FNDDS", 1, 50, null);
-        assertTrue(pho.getTotalElements() > 100, "prefix search without accents also finds phô mai");
+        assertTrue(pho.getTotalElements() >= 6, "prefix search without accents also finds phô mai");
         int exact = jdbc.queryForObject("select count(*) from nutrition_foods where source = 'USDA_FNDDS' and lower(name_vi) like '%phở%'",
                 Integer.class);
-        assertTrue(exact >= 2 && exact < 50, "exact = " + exact);
+        assertTrue(exact >= 3 && exact < 50, "exact = " + exact);
         var content = pho.getContent();
         assertTrue(content.stream().anyMatch(f -> f.sourceFoodCode().equals("56117090")),
-                "\"Sợi mì gạo (bún / phở)\": a slash must not glue two words into one search token");
-        assertTrue(content.subList(0, exact).stream().allMatch(f -> f.localName().toLowerCase().contains("phở")), names(pho).toString());
-        assertTrue(content.subList(exact, content.size()).stream().noneMatch(f -> f.localName().toLowerCase().contains("phở")));
-        assertTrue(names(pho).subList(0, exact).containsAll(List.of("Soup, pho, with meat", "Soup, pho, no meat")));
+                "\"Sợi bún / phở (đã nấu)\": a slash must not glue two words into one search token");
+        assertTrue(content.subList(0, exact).stream().allMatch(f -> f.displayName().toLowerCase().contains("phở")), names(pho).toString());
+        assertTrue(content.subList(exact, content.size()).stream().noneMatch(f -> f.displayName().toLowerCase().contains("phở")));
+        assertTrue(names(pho).subList(0, exact).containsAll(List.of("Phở có thịt", "Phở chay (không thịt)")));
         // Without accents the English name "pho" is the exact match
-        assertEquals(Set.of("Soup, pho, with meat", "Soup, pho, no meat"),
+        assertEquals(Set.of("Phở có thịt", "Phở chay (không thịt)"),
                 new HashSet<>(names(reference.searchFoods("pho", null, "USDA_FNDDS", 1, 20, null)).subList(0, 2)));
     }
 
@@ -382,7 +402,7 @@ class NutritionCatalogPostgresTest {
         assertTrue(all.getContent().stream().allMatch(f -> "MIXED_DISH".equals(f.group()) && "Món ăn hỗn hợp".equals(f.groupName())));
         assertEquals(mixed, reference.searchFoods("", "mixed-dishes", null, 1, 50, null).getTotalElements(), "slug works too");
         assertEquals(2, reference.searchFoods("pho", "MIXED_DISH", "USDA_FNDDS", 1, 20, null).getContent().stream()
-                .filter(f -> f.displayName().startsWith("Soup, pho")).count());
+                .filter(f -> f.displayName().startsWith("Phở")).count());
         assertEquals(0, reference.searchFoods("soup pho", "DAIRY", null, 1, 20, null).getTotalElements());
         assertEquals(62, reference.searchFoods("", "FRUIT", "VN_FCT", 1, 20, null).getTotalElements());
         error(ErrorCode.INVALID_PARAMETER, () -> reference.searchFoods("", "No such group", null, 1, 20, null));
@@ -395,7 +415,7 @@ class NutritionCatalogPostgresTest {
         assertEquals(0, reference.searchFoods("&&& :* |", null, null, 1, 20, null).getTotalElements());
         assertEquals(0, reference.searchFoods("with the", null, null, 1, 20, null).getTotalElements(), "stop words only");
         assertEquals(0, reference.searchFoods("'; drop table nutrition_foods; --", null, null, 1, 20, null).getTotalElements());
-        assertEquals(5957, jdbc.queryForObject("select count(*) from nutrition_foods", Long.class));
+        assertEquals(629, jdbc.queryForObject("select count(*) from nutrition_foods", Long.class));
     }
 
     @Test
@@ -414,15 +434,17 @@ class NutritionCatalogPostgresTest {
         String id = String.valueOf(jdbc.queryForObject(
                 "select id from nutrition_foods where source_food_code = '28310330'", Long.class));
         NutritionReferenceFoodResponse pho = reference.getFood(id, null);
-        assertEquals("Soup, pho, with meat", pho.displayName());
-        assertEquals("Phở có thịt", pho.localName());
+        assertEquals("Phở có thịt", pho.displayName());
+        assertNull(pho.localName());
         assertEquals("MIXED_DISH", pho.group());
         assertEquals("Món ăn hỗn hợp", pho.groupName());
-        assertEquals("Ramen and Asian broth-based soups", pho.sourceCategory());
+        assertEquals("Món nước châu Á", pho.sourceCategory());
         assertEquals("USDA_FNDDS", pho.source());
+        assertNotNull(pho.imageUrl());
+        assertTrue(pho.imageUrl().startsWith("https://"));
         assertEquals(18, pho.nutrients().size());
-        assertEquals(List.of(new NutritionReferenceFoodResponse.Portion("1 cup", 245, false),
-                new NutritionReferenceFoodResponse.Portion("Quantity not specified", 245, true)), pho.portions());
+        assertEquals(List.of(new NutritionReferenceFoodResponse.Portion("1 cốc (chén)", 245, false),
+                new NutritionReferenceFoodResponse.Portion("Khẩu phần tiêu chuẩn", 245, true)), pho.portions());
         error(ErrorCode.ENTITY_NOT_FOUND, () -> reference.getFood("999999999", null));
         error(ErrorCode.ENTITY_NOT_FOUND, () -> reference.getFood("not-a-number", null));
     }
@@ -455,7 +477,7 @@ class NutritionCatalogPostgresTest {
     @Test
     void sourceFilterSeparatesTheTwoDatabases() {
         assertEquals(526, reference.searchFoods("", null, "VN_FCT", 1, 20, null).getTotalElements());
-        assertEquals(5431, reference.searchFoods("", null, "USDA_FNDDS", 1, 20, null).getTotalElements());
+        assertEquals(103, reference.searchFoods("", null, "USDA_FNDDS", 1, 20, null).getTotalElements());
         assertTrue(reference.searchFoods("pho", null, "VN_FCT", 1, 20, null).getContent().stream()
                 .allMatch(f -> f.source().equals("VN_FCT")));
         error(ErrorCode.INVALID_PARAMETER, () -> reference.searchFoods("", null, "OTHER", 1, 20, null));
@@ -465,7 +487,9 @@ class NutritionCatalogPostgresTest {
     void vietnameseDetailKeepsTheBookValuesAndCrudeFiberSeparately() {
         NutritionReferenceFoodResponse rau = reference.getFood("900004083", null);
         assertEquals("Rau muống", rau.displayName());
-        assertEquals("Rau muống", rau.localName());
+        assertNull(rau.localName());
+        assertNotNull(rau.imageUrl());
+        assertTrue(rau.imageUrl().startsWith("https://"));
         assertEquals("VN_FCT", rau.source());
         assertEquals("2007", rau.sourceVersion());
         assertEquals("Rau, quả, củ dùng làm rau", rau.sourceCategory());
@@ -492,16 +516,22 @@ class NutritionCatalogPostgresTest {
                 "select count(*) from nutrition_foods where name = '-' or name_vi like 'Tên thực phẩm%'", Long.class));
     }
 
-    // ---------------------------------------------------------------- Vietnamese names of USDA foods (V25)
+    // ---------------------------------------------------------------- Vietnamese names & consistency (V25 + V36)
 
     @Test
-    void everyUsdaFoodHasAVietnameseNameAndKeepsItsEnglishDisplayName() {
+    void everyFoodShowsVietnameseDisplayNameWithNoDuplicatesInVietnameseMode() {
         assertEquals(0, jdbc.queryForObject(
                 "select count(*) from nutrition_foods where name_vi is null or trim(name_vi) = ''", Long.class));
+        assertEquals(0, jdbc.queryForObject(
+                "select count(*) from (select lower(name_vi) from nutrition_foods group by lower(name_vi) having count(*) > 1) d",
+                Long.class), "no duplicate Vietnamese names across VN_FCT and USDA_FNDDS");
+        assertEquals(0, jdbc.queryForObject(
+                "select count(*) from nutrition_foods where source = 'USDA_FNDDS' and category_en is null", Long.class),
+                "every kept USDA food preserves its English category in category_en");
         var chicken = reference.searchFoods("ức gà nướng", null, "USDA_FNDDS", 1, 50, null);
         assertTrue(chicken.getContent().stream().anyMatch(f -> f.sourceFoodCode().equals("24122131")), names(chicken).toString());
-        assertTrue(chicken.getContent().stream().allMatch(f -> !f.displayName().equals(f.localName())),
-                "USDA foods show the English name, the translation is only localName");
+        assertTrue(chicken.getContent().stream().allMatch(f -> f.localName() == null && f.displayName().equals("Ức gà nướng bỏ da")),
+                "Vietnamese mode displays clean Vietnamese names for USDA foods too: " + chicken.getContent());
         assertEquals(chicken.getTotalElements(), reference.searchFoods("uc ga nuong", null, "USDA_FNDDS", 1, 50, null).getTotalElements());
     }
 

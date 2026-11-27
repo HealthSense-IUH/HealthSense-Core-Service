@@ -134,7 +134,7 @@ public class NutritionCatalogServiceImpl implements NutritionCatalogService {
                 LocalizedText.pick(item.getCardiovascularContext(), item.getCardiovascularContextEn()),
                 LocalizedText.pick(item.getAfContext(), item.getAfContextEn()),
                 LocalizedText.pick(item.getMedicationContext(), item.getMedicationContextEn()),
-                food.getSourceFoodCode(), food.getName(),
+                food.getSourceFoodCode(), LocalizedText.pick(food.getNameVi(), food.getName()),
                 PER_100_GRAMS, nutrients, highlights, evidence, item.getImageUrl());
     }
 

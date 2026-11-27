@@ -251,8 +251,9 @@ class NutritionHttpTest {
     @Test
     void referenceSearchJsonIsAPageOfSummaries() throws Exception {
         var pho = new NutritionReferenceFoodSummaryResponse("2707124", "USDA_FNDDS", "28310330",
-                "Soup, pho, with meat", "Phở có thịt", "MIXED_DISH", "Món ăn hỗn hợp", 77.0, 5.81, 5.6, null,
-                new DietAdvice("CAUTION", List.of(new DietAdvice.Reason("SODIUM_MEDIUM", "CAUTION", "Muối ở mức vừa")), true));
+                "Phở có thịt", null, "MIXED_DISH", "Món ăn hỗn hợp", 77.0, 5.81, 5.6, null,
+                new DietAdvice("CAUTION", List.of(new DietAdvice.Reason("SODIUM_MEDIUM", "CAUTION", "Muối ở mức vừa")), true),
+                "https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=600");
         DietProfile diet = new DietProfile(java.util.Set.of(DietRuleCode.SODIUM), true, java.util.Map.of());
         when(prescriptions.profileOf(123L)).thenReturn(diet);
         when(reference.searchFoods("pho", "MIXED_DISH", "USDA_FNDDS", 2, 10, diet)).thenReturn(
@@ -269,8 +270,9 @@ class NutritionHttpTest {
                 .andExpect(jsonPath("$.data.content[0].id").value("2707124"))
                 .andExpect(jsonPath("$.data.content[0].sourceFoodCode").value("28310330"))
                 .andExpect(jsonPath("$.data.content[0].source").value("USDA_FNDDS"))
-                .andExpect(jsonPath("$.data.content[0].displayName").value("Soup, pho, with meat"))
-                .andExpect(jsonPath("$.data.content[0].localName").value("Phở có thịt"))
+                .andExpect(jsonPath("$.data.content[0].displayName").value("Phở có thịt"))
+                .andExpect(jsonPath("$.data.content[0].localName").doesNotExist())
+                .andExpect(jsonPath("$.data.content[0].imageUrl").value("https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=600"))
                 .andExpect(jsonPath("$.data.content[0].group").value("MIXED_DISH"))
                 .andExpect(jsonPath("$.data.content[0].groupName").value("Món ăn hỗn hợp"))
                 .andExpect(jsonPath("$.data.content[0].category").doesNotExist())
@@ -289,23 +291,25 @@ class NutritionHttpTest {
         DietProfile general = DietProfile.general(java.util.Map.of());
         when(prescriptions.profileOf(123L)).thenReturn(general);
         when(reference.getFood("2707124", general)).thenReturn(new NutritionReferenceFoodResponse("2707124", "28310330",
-                "Soup, pho, with meat", "Phở có thịt", "MIXED_DISH", "Món ăn hỗn hợp", "Ramen and Asian broth-based soups",
+                "Phở có thịt", null, "MIXED_DISH", "Món ăn hỗn hợp", "Món nước châu Á",
                 "USDA_FNDDS", "2021-2023", 12.5,
                 List.of(new NutrientValue("energy", "Năng lượng", 77, "kcal", true)),
-                List.of(new NutritionReferenceFoodResponse.Portion("1 cup", 245, false),
-                        new NutritionReferenceFoodResponse.Portion("Quantity not specified", 245, true)),
-                new DietAdvice("OK", List.of(), false)));
+                List.of(new NutritionReferenceFoodResponse.Portion("1 cốc (chén)", 245, false),
+                        new NutritionReferenceFoodResponse.Portion("Khẩu phần tiêu chuẩn", 245, true)),
+                new DietAdvice("OK", List.of(), false),
+                "https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=600"));
         mvc.perform(get("/api/nutrition/reference/foods/2707124").with(authentication(actor(UserRole.MEMBER))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.sourceVersion").value("2021-2023"))
-                .andExpect(jsonPath("$.data.displayName").value("Soup, pho, with meat"))
-                .andExpect(jsonPath("$.data.localName").value("Phở có thịt"))
+                .andExpect(jsonPath("$.data.displayName").value("Phở có thịt"))
+                .andExpect(jsonPath("$.data.localName").doesNotExist())
+                .andExpect(jsonPath("$.data.imageUrl").value("https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=600"))
                 .andExpect(jsonPath("$.data.group").value("MIXED_DISH"))
-                .andExpect(jsonPath("$.data.sourceCategory").value("Ramen and Asian broth-based soups"))
+                .andExpect(jsonPath("$.data.sourceCategory").value("Món nước châu Á"))
                 .andExpect(jsonPath("$.data.nameVi").doesNotExist())
                 .andExpect(jsonPath("$.data.wastePct").value(12.5))
                 .andExpect(jsonPath("$.data.nutrients[0].isKey").value(true))
-                .andExpect(jsonPath("$.data.portions[0].description").value("1 cup"))
+                .andExpect(jsonPath("$.data.portions[0].description").value("1 cốc (chén)"))
                 .andExpect(jsonPath("$.data.portions[0].gramWeight").value(245.0))
                 .andExpect(jsonPath("$.data.portions[1].isDefault").value(true))
                 .andExpect(jsonPath("$.data.portions[1].default").doesNotExist())

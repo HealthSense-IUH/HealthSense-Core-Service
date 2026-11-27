@@ -97,4 +97,6 @@ public class NutritionFood {
     BigDecimal epaG;
     @Column(name = "dha_g")
     BigDecimal dhaG;
+    @Column(name = "image_url", length = 512)
+    String imageUrl;
 }

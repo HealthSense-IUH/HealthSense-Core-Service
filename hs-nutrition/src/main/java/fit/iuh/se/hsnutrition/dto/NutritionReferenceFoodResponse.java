@@ -18,7 +18,15 @@ import java.util.List;
 public record NutritionReferenceFoodResponse(
         String id, String sourceFoodCode, String displayName, String localName, String group, String groupName,
         String sourceCategory, String source, String sourceVersion, Double wastePct, List<NutrientValue> nutrients,
-        List<Portion> portions, DietAdvice advice) {
+        List<Portion> portions, DietAdvice advice, String imageUrl) {
+
+    public NutritionReferenceFoodResponse(
+            String id, String sourceFoodCode, String displayName, String localName, String group, String groupName,
+            String sourceCategory, String source, String sourceVersion, Double wastePct, List<NutrientValue> nutrients,
+            List<Portion> portions, DietAdvice advice) {
+        this(id, sourceFoodCode, displayName, localName, group, groupName, sourceCategory, source, sourceVersion,
+                wastePct, nutrients, portions, advice, null);
+    }
 
     public record Portion(String description, double gramWeight, @JsonProperty("isDefault") boolean isDefault) {}
 }

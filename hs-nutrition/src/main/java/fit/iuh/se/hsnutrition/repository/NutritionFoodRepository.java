@@ -24,10 +24,10 @@ public interface NutritionFoodRepository extends JpaRepository<NutritionFood, Lo
     String NAME_WORDS = "(' ' || regexp_replace(lower(f.name), '[^" + WORD_CHARS + "]+', ' ', 'g') || ' ')";
 
     /**
-     * Sắp theo tên hiển thị, khớp displayName ở service: tiếng Việt thì món VN_FCT theo tên Việt, còn lại (và mọi món
-     * khi xem tiếng Anh) theo tên gốc.
+     * Sắp theo tên hiển thị đồng nhất theo ngôn ngữ: tiếng Việt luôn sắp theo name_vi cho mọi nguồn;
+     * tiếng Anh sắp theo name gốc.
      */
-    String DISPLAY_NAME_ORDER = "case when f.source = 'VN_FCT' and cast(:vietnamese as boolean) "
+    String DISPLAY_NAME_ORDER = "case when cast(:vietnamese as boolean) "
             + "then coalesce(f.name_vi, f.name) else f.name end, f.id";
 
     String SEARCH_FILTER = """

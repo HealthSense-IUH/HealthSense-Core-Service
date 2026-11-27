@@ -82,7 +82,8 @@ public class NutritionReferenceServiceImpl implements NutritionReferenceService 
                 displayName(food), localName(food), group.getId(), groupName(group),
                 LocalizedText.pick(food.getCategory(), food.getCategoryEn()),
                 food.getSource(), food.getSourceVersion(), NutrientMapper.amount(food.getWastePct()),
-                NutrientMapper.of(food), foodPortions, diet == null ? null : DietAdvisor.advise(food, diet));
+                NutrientMapper.of(food), foodPortions, diet == null ? null : DietAdvisor.advise(food, diet),
+                resolveImageUrl(food, group));
     }
 
     /**
@@ -122,26 +123,36 @@ public class NutritionReferenceServiceImpl implements NutritionReferenceService 
     }
 
     /**
-     * Tên hiển thị theo nguồn: thực phẩm Việt Nam hiện tên tiếng Việt; thực phẩm USDA giữ tên gốc tiếng Anh,
-     * còn tên dịch (name_vi) trả riêng ở localName. Phải khớp với sắp xếp trong NutritionFoodRepository.
-     * Request tiếng Anh thì mọi món hiện tên tiếng Anh (name; bảng Việt Nam có sẵn tên tiếng Anh trong sách).
+     * Tên hiển thị đồng nhất theo ngôn ngữ yêu cầu:
+     * - Tiếng Việt: mọi thực phẩm (cả VN_FCT lẫn USDA_FNDDS) đều hiện tên tiếng Việt (name_vi).
+     * - Tiếng Anh: mọi thực phẩm hiện tên tiếng Anh gốc (name).
+     * Phải khớp với sắp xếp trong NutritionFoodRepository.
      */
     static String displayName(NutritionFood food) {
         return displayName(food, RequestLanguage.current());
     }
 
     static String displayName(NutritionFood food, Locale locale) {
-        boolean vietnameseName = SOURCE_VIETNAM.equals(food.getSource()) && RequestLanguage.isVietnamese(locale);
-        return vietnameseName && food.getNameVi() != null ? food.getNameVi() : food.getName();
+        if (RequestLanguage.isVietnamese(locale) && food.getNameVi() != null && !food.getNameVi().isBlank()) {
+            return food.getNameVi();
+        }
+        return food.getName();
     }
 
     /**
-     * Tên phụ dưới tên hiển thị: tiếng Việt luôn là name_vi; tiếng Anh chỉ giữ tên gốc tiếng Việt của món Việt Nam
-     * (món USDA không cần bản dịch tiếng Việt khi đang xem tiếng Anh).
+     * Tên phụ dưới tên hiển thị: tiếng Việt để trống (tránh hiện lẫn tiếng Anh);
+     * tiếng Anh giữ tên gốc tiếng Việt của món Việt Nam để dễ nhận diện.
      */
     static String localName(NutritionFood food) {
-        if (RequestLanguage.isVietnamese(RequestLanguage.current())) return food.getNameVi();
+        if (RequestLanguage.isVietnamese(RequestLanguage.current())) return null;
         return SOURCE_VIETNAM.equals(food.getSource()) ? food.getNameVi() : null;
+    }
+
+    private static String resolveImageUrl(NutritionFood food, NutritionFoodGroup group) {
+        if (food.getImageUrl() != null && !food.getImageUrl().isBlank()) {
+            return food.getImageUrl();
+        }
+        return group != null ? group.getImageUrl() : null;
     }
 
     private static String groupName(NutritionFoodGroup group) {
@@ -165,6 +176,7 @@ public class NutritionReferenceServiceImpl implements NutritionReferenceService 
                 NutrientMapper.amount(food.getEnergyKcal()),
                 NutrientMapper.amount(food.getProteinG()), NutrientMapper.amount(food.getCarbohydrateG()),
                 NutrientMapper.amount(food.getFatTotalG()),
-                diet == null ? null : DietAdvisor.advise(food, diet));
+                diet == null ? null : DietAdvisor.advise(food, diet),
+                resolveImageUrl(food, group));
     }
 }
