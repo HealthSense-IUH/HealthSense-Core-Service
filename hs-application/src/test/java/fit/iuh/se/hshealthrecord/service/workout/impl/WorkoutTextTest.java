@@ -36,9 +36,14 @@ class WorkoutTextTest {
 
         language("en");
         assertEquals("Walking", WorkoutText.exerciseName("walking", true, "Đi bộ"));
+        assertEquals("Indoor walking", WorkoutText.exerciseName("indoor_walking", true, "Đi bộ trong nhà"));
+        assertEquals("Treadmill", WorkoutText.exerciseName("treadmill", true, "Máy chạy bộ"));
+        assertEquals("Swimming", WorkoutText.exerciseName("pool_swimming", true, "Bơi lội"));
+        assertEquals("Pickleball", WorkoutText.exerciseName("pickleball", true, "Pickleball"));
         assertEquals("Sun", WorkoutText.dayLabel(6));
         assertEquals("Sep 28 - Oct 4", WorkoutText.weekRange(monday, sunday));
         assertEquals("Walking", WorkoutText.sessionExerciseName("walking", "Đi bộ"));
+        assertEquals("Push-ups", WorkoutText.sessionExerciseName("push_up", "Hít đất"));
         // Bài tự tạo / tên tự đặt: giữ nguyên
         assertEquals("Đi bộ buổi sáng", WorkoutText.exerciseName("walking", false, "Đi bộ buổi sáng"));
         assertEquals("Chạy quanh hồ", WorkoutText.sessionExerciseName("running", "Chạy quanh hồ"));
