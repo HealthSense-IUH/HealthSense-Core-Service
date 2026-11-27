@@ -4,6 +4,19 @@
 -- tùy chỉnh của người dùng hay lịch sử workout_sessions cũ.
 -- =========================================================================
 
+-- 0. Nới rộng CHECK constraint của Hibernate/Postgres để chấp nhận INDOOR_STEP
+ALTER TABLE workout_exercises
+    DROP CONSTRAINT IF EXISTS workout_exercises_tracking_type_check;
+ALTER TABLE workout_exercises
+    ADD CONSTRAINT workout_exercises_tracking_type_check
+        CHECK (tracking_type IN ('TIME_CALORIES', 'DISTANCE_GPS', 'INDOOR_STEP', 'SETS_REST'));
+
+ALTER TABLE workout_sessions
+    DROP CONSTRAINT IF EXISTS workout_sessions_tracking_type_check;
+ALTER TABLE workout_sessions
+    ADD CONSTRAINT workout_sessions_tracking_type_check
+        CHECK (tracking_type IN ('TIME_CALORIES', 'DISTANCE_GPS', 'INDOOR_STEP', 'SETS_REST'));
+
 -- 1. Xóa 3 bài hệ thống cũ không còn dùng trong danh mục tinh gọn 18 bài
 DELETE FROM workout_exercises
 WHERE is_system = TRUE
