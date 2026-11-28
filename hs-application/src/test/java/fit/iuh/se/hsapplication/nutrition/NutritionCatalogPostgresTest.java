@@ -97,7 +97,7 @@ class NutritionCatalogPostgresTest {
         flyway.migrate();
         // Chỉ kiểm tra các migration dinh dưỡng; module khác có thể thêm migration vào cùng thư mục quét
         List<String> applied = Arrays.stream(flyway.info().applied()).map(i -> i.getVersion().getVersion()).toList();
-        assertTrue(applied.containsAll(List.of("21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "36")), applied.toString());
+        assertTrue(applied.containsAll(List.of("21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "36", "37")), applied.toString());
         context = new AnnotationConfigApplicationContext();
         context.registerBean(DataSource.class, () -> scoped);
         context.register(TestConfiguration.class);
@@ -180,6 +180,12 @@ class NutritionCatalogPostgresTest {
                 "select count(*) from nutrition_food_groups where image_url is null or trim(image_url) = ''", Long.class));
         assertEquals(0, jdbc.queryForObject(
                 "select count(*) from nutrition_guidance_foods where image_url is null or trim(image_url) = ''", Long.class));
+        assertEquals(0, jdbc.queryForObject(
+                "select count(*) from nutrition_foods where image_url is null or trim(image_url) = ''", Long.class));
+        assertEquals(629, jdbc.queryForObject(
+                "select count(distinct image_url) from nutrition_foods", Long.class));
+        assertEquals(29, jdbc.queryForObject(
+                "select count(distinct image_url) from nutrition_guidance_foods", Long.class));
     }
 
     // ---------------------------------------------------------------- common food groups (V24)
