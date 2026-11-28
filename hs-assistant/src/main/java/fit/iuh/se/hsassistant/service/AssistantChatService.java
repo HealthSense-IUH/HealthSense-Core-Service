@@ -24,7 +24,7 @@ import java.util.Locale;
 
 /**
  * Lõi của trợ lý: ghép system prompt (StringTemplate trong resources/prompts), bộ nhớ hội thoại,
- * tool đọc dữ liệu người dùng, rồi gọi OpenAI ở chế độ streaming và trả về từng mẩu chữ (Flux).
+ * tool đọc dữ liệu người dùng, rồi gọi Anthropic Claude ở chế độ streaming và trả về từng mẩu chữ (Flux).
  */
 @Slf4j
 @Service

@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Ước tính dinh dưỡng bữa ăn (ảnh món ăn và/hoặc mô tả văn bản) qua Spring AI OpenAI Vision,
+ * Ước tính dinh dưỡng bữa ăn (ảnh món ăn và/hoặc mô tả văn bản) qua Spring AI Anthropic Claude Vision,
  * kết hợp đối chiếu bảng thành phần thực phẩm (VN_FCT / USDA) và đơn ăn uống tim mạch của hội viên.
  */
 @Slf4j
@@ -41,9 +41,16 @@ public class MealEstimateService {
 
     private static final String SYSTEM_PROMPT = """
             You are a clinical nutritionist assistant specializing in Vietnamese and international meals for cardiovascular & atrial fibrillation (AFib) patients.
-            Given a meal photo and/or meal description, identify every food/drink item, estimate realistic portion weights in grams, and calculate calories, protein, carbohydrate, total fat, saturated fat, sugars, sodium (mg), and potassium (mg).
+            First determine whether the attached photo and/or description depicts or describes actual food, meals, ingredients, or beverages.
+            If it is NOT food/drink (for example: a bill, receipt, text screenshot, document, person, object, scenery, or meaningless text like "test"), return ONLY valid JSON:
+            {
+              "isFood": false,
+              "rejectionReason": "1 concise polite sentence in the requested language explaining that the input is not food or a beverage and asking the user to provide a meal photo or food description"
+            }
+            Otherwise, identify every food/drink item, estimate realistic portion weights in grams, and calculate calories, protein, carbohydrate, total fat, saturated fat, sugars, sodium (mg), and potassium (mg).
             Return ONLY valid JSON (no markdown fences, no commentary outside JSON) matching this exact schema:
             {
+              "isFood": true,
               "mealName": "short concise meal title in the requested language",
               "confidence": "HIGH" | "MEDIUM" | "LOW",
               "totalGrams": number,
@@ -176,6 +183,14 @@ public class MealEstimateService {
                     isEnglish
                             ? "AI returned an unreadable nutrition estimate. Please try again."
                             : "Không đọc được kết quả ước tính dinh dưỡng. Vui lòng thử lại.");
+        }
+
+        if (root.has("isFood") && !root.path("isFood").asBoolean(true)) {
+            String fallbackReason = isEnglish
+                    ? "This photo or description does not appear to be food or a beverage. Please provide a meal photo or describe what you ate."
+                    : "Ảnh hoặc mô tả này không phải là món ăn hay đồ uống. Vui lòng chọn ảnh bữa ăn hoặc mô tả thực phẩm cụ thể.";
+            throw new AppException(ErrorCode.INVALID_ARGUMENT,
+                    textOr(root.path("rejectionReason"), fallbackReason));
         }
 
         List<MealItem> items = new ArrayList<>();
